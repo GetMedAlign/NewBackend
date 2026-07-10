@@ -34,13 +34,22 @@ export class EmailTwoFactor implements TwoFactorPort {
     const codeHash = await this.hasher.hash(code);
     const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
 
-    // Persist via asSystem — two_factor_codes has no app_authenticated policy
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    // Persist via asSystem — two_factor_codes has no app_authenticated policy.
+    // Consume any still-live codes for this user before inserting the new one,
+    // so that at most one active code exists per user at any time.
+    await this.prisma.asSystem(async (client) => {
+      await client.$executeRaw`
+        UPDATE two_factor_codes
+        SET consumed_at = NOW()
+        WHERE user_id = ${userId}::uuid
+          AND consumed_at IS NULL
+          AND expires_at > NOW()
+      `;
+      await client.$executeRaw`
         INSERT INTO two_factor_codes (user_id, code_hash, expires_at, attempts)
         VALUES (${userId}::uuid, ${codeHash}, ${expiresAt}, 0)
-      `,
-    );
+      `;
+    });
 
     // Fetch the user's email to send the code
     const rows = await this.prisma.asSystem((client) =>
@@ -62,7 +71,10 @@ export class EmailTwoFactor implements TwoFactorPort {
   }
 
   async verifyCode(userId: string, code: string): Promise<boolean> {
-    // Load the latest unconsumed, unexpired code for this user
+    // Load the latest unconsumed, unexpired code for this user.
+    // Because issueCode now consumes all prior live codes before inserting,
+    // there is at most one active code per user; ordering by expires_at DESC
+    // selects it correctly (TTL is fixed at CODE_TTL_MINUTES for every code).
     const rows = await this.prisma.asSystem((client) =>
       client.$queryRaw<TwoFactorRow[]>`
         SELECT id, code_hash, expires_at, consumed_at, attempts

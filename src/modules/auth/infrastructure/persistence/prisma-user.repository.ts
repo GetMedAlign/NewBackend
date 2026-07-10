@@ -6,16 +6,11 @@ import { User } from '../../domain/entities/user.entity';
 /**
  * Role priority order for getPrimaryRole.
  * When a user has multiple roles, we return the highest-privilege one:
- * admin > superadmin > clinic > patient.
- *
- * Rationale: admin is the operational high-trust role used day-to-day;
- * superadmin is the root account and is ordered just below admin here so
- * that a user who is both admin and superadmin is surfaced as admin.
- * clinic ranks above patient since clinic users have broader data access.
+ * superadmin > admin > clinic > patient.
  */
 const ROLE_PRIORITY: Record<string, number> = {
-  admin: 4,
-  superadmin: 3,
+  superadmin: 4,
+  admin: 3,
   clinic: 2,
   patient: 1,
 };

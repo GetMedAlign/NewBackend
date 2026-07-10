@@ -63,6 +63,36 @@ describe('EmailTwoFactor', () => {
       expect(mockEmailSender.send).toHaveBeenCalledTimes(1);
     });
 
+    it('consumes prior live code when a new code is issued (at most one active code per user)', async () => {
+      // Issue first code — must be live after issuance
+      await emailTwoFactor.issueCode(testUserId);
+      const afterFirst = await prisma.asSystem((c) =>
+        c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
+          SELECT id, consumed_at FROM two_factor_codes
+          WHERE user_id = ${testUserId}::uuid
+          ORDER BY expires_at ASC
+        `,
+      );
+      expect(afterFirst).toHaveLength(1);
+      expect(afterFirst[0]!.consumed_at).toBeNull();
+      const firstId = afterFirst[0]!.id;
+
+      // Issue second code — prior code must now be consumed
+      await emailTwoFactor.issueCode(testUserId);
+      const afterSecond = await prisma.asSystem((c) =>
+        c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
+          SELECT id, consumed_at FROM two_factor_codes
+          WHERE user_id = ${testUserId}::uuid
+          ORDER BY expires_at ASC
+        `,
+      );
+      expect(afterSecond).toHaveLength(2);
+      const first = afterSecond.find((r) => r.id === firstId)!;
+      const second = afterSecond.find((r) => r.id !== firstId)!;
+      expect(first.consumed_at).not.toBeNull(); // first code consumed
+      expect(second.consumed_at).toBeNull();    // only the new code is live
+    });
+
     it('sets expires_at to roughly now + 10 min', async () => {
       await emailTwoFactor.issueCode(testUserId);
 
