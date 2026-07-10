@@ -23,6 +23,14 @@ import type { Env } from '../../infrastructure/config/env.schema';
 import type { PasswordHasherPort } from './domain/ports/password-hasher.port';
 import type { EmailSenderPort } from './infrastructure/adapters/email-sender.port';
 
+import { AuthController } from './infrastructure/http/auth.controller';
+import { SignUpUseCase } from './application/sign-up.use-case';
+import { SignInUseCase } from './application/sign-in.use-case';
+import { VerifyTwoFactorUseCase } from './application/verify-two-factor.use-case';
+import { ResendTwoFactorUseCase } from './application/resend-two-factor.use-case';
+import { GetMeUseCase } from './application/get-me.use-case';
+import { SignOutUseCase } from './application/sign-out.use-case';
+
 @Module({
   imports: [
     ConfigModule,
@@ -30,7 +38,16 @@ import type { EmailSenderPort } from './infrastructure/adapters/email-sender.por
     CryptoModule,
     JwtModule.register({}),
   ],
+  controllers: [AuthController],
   providers: [
+    // Application use cases
+    SignUpUseCase,
+    SignInUseCase,
+    VerifyTwoFactorUseCase,
+    ResendTwoFactorUseCase,
+    GetMeUseCase,
+    SignOutUseCase,
+
     // Argon2PasswordHasher is used both as a concrete class and via its port token
     Argon2PasswordHasher,
     {

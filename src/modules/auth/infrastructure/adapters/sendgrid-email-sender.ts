@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 import type { EmailSenderPort } from './email-sender.port';
 import type { Env } from '../../../../infrastructure/config/env.schema';
 

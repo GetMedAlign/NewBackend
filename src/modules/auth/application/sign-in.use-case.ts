@@ -70,6 +70,7 @@ export class SignInUseCase {
       actorRole: PRE_AUTH_ROLE,
       ip: input.ip ?? null,
       actionType: 'signin_2fa_issued',
+      affectedRecord: user.id,
     });
 
     return { requiresTwoFactor: true };

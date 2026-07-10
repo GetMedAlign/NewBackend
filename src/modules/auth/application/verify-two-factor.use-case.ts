@@ -55,6 +55,7 @@ export class VerifyTwoFactorUseCase {
       actorRole: role,
       ip: input.ip ?? null,
       actionType: 'signin_succeeded',
+      affectedRecord: user.id,
     });
 
     return { token, userId: user.id, role };
