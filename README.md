@@ -1,183 +1,55 @@
 # MedAlign Backend
 
-Hexagonal NestJS + Prisma + Supabase backend with Postgres Row-Level Security (RLS).
+The MedAlign backend, rebuilt as a hexagonal NestJS (TypeScript) service on Prisma + Supabase Postgres, with app-managed auth, Postgres Row-Level Security, DB-side audit logging, and field encryption.
 
-## Documentation
+- **Architecture:** [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+- **Design spec:** [`docs/superpowers/specs/2026-07-10-backend-foundation-design.md`](./docs/superpowers/specs/2026-07-10-backend-foundation-design.md)
+- **Implementation plan:** [`docs/superpowers/plans/2026-07-10-backend-foundation.md`](./docs/superpowers/plans/2026-07-10-backend-foundation.md)
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Hexagonal design principles
+## Stack
 
-## Quick Start
+NestJS · TypeScript (strict) · pnpm · Prisma · Supabase Postgres · argon2 · `@nestjs/jwt` · zod · Jest + supertest · SendGrid. Node 20.
 
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL 14+
-- Supabase account (or local instance)
-
-### Setup
+## Quick start
 
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Set up environment
-cp .env.example .env.local
-# Edit .env.local with your secrets
-
-# 3. Apply database migrations
-npm run prisma:migrate:dev
-
-# 4. Start dev server
-npm run dev
+pnpm install
+cp .env.example .env.local        # fill in secrets
+supabase start                    # local Postgres (Docker)
+pnpm prisma migrate dev           # apply migrations (RLS + audit)
+pnpm dev                          # http://localhost:3000
 ```
 
-Server runs on `http://localhost:3000`
-
-## Security Architecture
-
-### Row-Level Security (RLS)
-
-Every table has Postgres RLS policies:
-
-- **clients**: Client can read own, admin can read all
-- **user_roles**: User can read own, admin can manage
-- **audit_log**: Admin can read, no client writes
-
-### Session Context
-
-Per-request middleware sets Postgres session variables:
-
-- `app.current_user_id` (UUID)
-- `app.current_user_type` ('admin' | 'partner' | 'client')
-- `app.current_ip_address` (IP)
-
-RLS policies evaluate via: `current_setting('app.current_user_id')`
-
-### Audit Logging
-
-Automatic audit trail via Postgres triggers:
-
-1. Every table mutation fires trigger
-2. Trigger reads session context
-3. Calls `append_audit_log()` function
-4. Audit log is append-only (immutable)
-
-## Development
-
-### Folder Structure
-
-```
-src/
-├── core/
-│   ├── domain/           # Pure business logic
-│   │   ├── entities/     # Domain objects
-│   │   └── repositories/ # PORT interfaces
-│   └── use-cases/        # Application logic
-├── infrastructure/       # ADAPTERS
-│   ├── database/         # Prisma
-│   ├── repositories/     # Implementations
-│   ├── http/             # Controllers
-│   ├── config/           # Configuration
-│   └── supabase/         # Auth
-└── common/               # Shared utilities
-```
-
-### Commands
+## Testing
 
 ```bash
-# Development
-npm run dev              # Watch mode
-npm run build            # Production build
-npm start                # Run built app
-
-# Testing
-npm test                 # Run unit tests
-npm run test:watch       # Watch mode
-npm run test:integration # Integration tests
-
-# Database
-npm run prisma:generate  # Generate Prisma client
-npm run prisma:migrate:dev  # Create migration
-npm run prisma:migrate:deploy  # Apply migrations
-npm run prisma:seed      # Run seed script
-
-# Code Quality
-npm run lint             # ESLint
-npm run format           # Prettier
+pnpm jest         # unit
+pnpm test:e2e     # integration/e2e against local Supabase Postgres
 ```
 
-## API Endpoints (Phase 1)
+Integration tests run against a real local Postgres and verify RLS isolation, audit writes, encryption round-trips, and the full auth flow.
 
-```bash
-# Health
-GET /health
-  → { "status": "ok" }
+## Auth API (Foundation slice)
 
-# Auth (requires JWT)
-GET /auth/me
-  → { "userId": "...", "email": "...", "userType": "..." }
+Contract-compatible with the existing .NET service, so the frontend is unchanged:
 
-GET /auth/role
-  → { "role": "admin" | "partner" | "client" }
-
-# Clients (requires JWT, RLS enforced)
-GET /clients/me
-  → { "clientId": "...", "email": "...", "createdAt": "..." }
+```
+POST /auth/signup
+POST /auth/signin        -> { requiresTwoFactor: true }   (no token yet)
+POST /auth/2fa/verify    -> sets HttpOnly session cookie
+POST /auth/2fa/send      -> resend the email OTP
+GET  /auth/me            -> current user + role
+POST /auth/signout
+GET  /health             -> { status: "ok" }
 ```
 
-## Phases
+Roles: `patient | clinic | admin | superadmin`.
 
-- **Phase 1:** Auth + RLS ✅ (this repo)
-- **Phase 2:** Audit logging service
-- **Phase 3:** PII encryption (AES-256-GCM)
-- **Phase 4:** Extended config + secrets
-- **Phase 5:** Testing + error handling
-- **Phase 6:** Feature modules (claims, payments, etc.)
+## Rebuild roadmap (6 slices)
 
-## Testing Strategy
-
-### Unit Tests
-
-Domain logic isolated from framework:
-
-```typescript
-describe('ClientEntity', () => {
-  it('should determine ownership', () => {
-    const client = new ClientEntity(...);
-    expect(client.isOwnedBy('user-123')).toBe(true);
-  });
-});
-```
-
-### Integration Tests
-
-Full stack including RLS:
-
-```typescript
-describe("RLS", () => {
-  it("client should not read other clients' data", async () => {
-    await prisma.setSessionContext("client-user", "client", "127.0.0.1");
-    const result = await prisma.client.findUnique({
-      where: { id: "other-client-id" },
-    });
-    expect(result).toBeNull(); // RLS blocks it
-  });
-});
-```
-
-## Implementation Plan
-
-See **[docs/superpowers/plans/2026-07-10-phase-1-auth-rls.md](./docs/superpowers/plans/2026-07-10-phase-1-auth-rls.md)** for:
-
-- 10 bite-sized tasks
-- Complete code for each task
-- Test commands
-- Commit messages
-- Exact file paths
-
-## References
-
-- [NestJS Documentation](https://docs.nestjs.com)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Supabase RLS](https://supabase.com/docs/guides/auth/row-level-security)
-- [Postgres Session Variables](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-SET)
+1. **Foundation** (this slice) — scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
+2. Patient journey — assessments, matching, leads.
+3. Clinics & clinic portal.
+4. Admin & superadmin.
+5. Billing, background jobs, email.
+6. Cutover — data migration from SQL Server, go-live.

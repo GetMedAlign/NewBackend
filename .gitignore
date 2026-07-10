@@ -30,8 +30,5 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Prisma
-.env
-
-/docs/superpowers
+# SDD scratch (progress notes only; specs/plans are tracked)
 .superpowers
