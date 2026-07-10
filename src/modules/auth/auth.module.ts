@@ -17,6 +17,7 @@ import { Argon2PasswordHasher } from './infrastructure/adapters/argon2-password-
 import { JwtTokenService } from './infrastructure/adapters/jwt-token.service';
 import { EmailTwoFactor } from './infrastructure/adapters/email-two-factor';
 import { SendGridEmailSender } from './infrastructure/adapters/sendgrid-email-sender';
+import { LoggingEmailSender } from './infrastructure/adapters/logging-email-sender';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { PostgresAuditAdapter } from './infrastructure/adapters/postgres-audit.adapter';
 import type { Env } from '../../infrastructure/config/env.schema';
@@ -48,6 +49,10 @@ import { SignOutUseCase } from './application/sign-out.use-case';
     GetMeUseCase,
     SignOutUseCase,
 
+    // Concrete email sender classes — both registered so the factory can pick
+    SendGridEmailSender,
+    LoggingEmailSender,
+
     // Argon2PasswordHasher is used both as a concrete class and via its port token
     Argon2PasswordHasher,
     {
@@ -67,10 +72,18 @@ import { SignOutUseCase } from './application/sign-out.use-case';
         ),
     },
 
-    // EmailSenderPort → SendGridEmailSender
+    // EmailSenderPort — LoggingEmailSender in dev/test, SendGridEmailSender in production
     {
       provide: EMAIL_SENDER,
-      useClass: SendGridEmailSender,
+      inject: [ConfigService, SendGridEmailSender, LoggingEmailSender],
+      useFactory: (
+        config: ConfigService<Env, true>,
+        sendGrid: SendGridEmailSender,
+        logging: LoggingEmailSender,
+      ): EmailSenderPort => {
+        const env = config.get<string>('NODE_ENV');
+        return env === 'development' || env === 'test' ? logging : sendGrid;
+      },
     },
 
     // TwoFactorPort → EmailTwoFactor
