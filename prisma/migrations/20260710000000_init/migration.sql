@@ -48,7 +48,7 @@ CREATE TABLE "audit_log" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actor_user_id" UUID,
-    "actor_role" TEXT,
+    "actor_role" TEXT NOT NULL,
     "ip_address" TEXT,
     "action_type" TEXT NOT NULL,
     "affected_record" TEXT NOT NULL,

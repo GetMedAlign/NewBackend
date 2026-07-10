@@ -74,7 +74,7 @@ model AuditLog {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   actorUserId    String?  @map("actor_user_id") @db.Uuid
-  actorRole      String?  @map("actor_role")
+  actorRole      String   @map("actor_role")
   ipAddress      String?  @map("ip_address")
   actionType     String   @map("action_type")
   affectedRecord String   @map("affected_record")
