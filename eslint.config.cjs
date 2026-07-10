@@ -13,7 +13,7 @@ module.exports = [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: './tsconfig.lint.json',
+        project: './tsconfig.json',
         tsconfigRootDir: __dirname,
         sourceType: 'module',
       },
