@@ -184,6 +184,15 @@ describe('Auth (e2e)', () => {
     expect(cleared).toBe(true);
   });
 
+  it('POST /auth/signup with an already-registered email returns 409', async () => {
+    await agent()
+      .post('/auth/signup')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ email, password })
+      .expect(409);
+  });
+
   it('POST /auth/signin WITHOUT the x-csrf-token header returns 403', async () => {
     await agent()
       .post('/auth/signin')

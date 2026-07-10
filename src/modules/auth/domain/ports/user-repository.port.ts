@@ -7,6 +7,8 @@ export interface UserRepositoryPort {
   getPrimaryRole(userId: string): Promise<string>;
   recordFailedLogin(id: string): Promise<void>;
   resetFailedLogin(id: string): Promise<void>;
+  setRecoveryPhone(userId: string, phone: string): Promise<void>;
+  getRecoveryPhone(userId: string): Promise<string | null>;
 }
 
 export const USER_REPOSITORY = Symbol('UserRepositoryPort');

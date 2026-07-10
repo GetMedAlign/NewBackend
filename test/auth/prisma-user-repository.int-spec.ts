@@ -2,7 +2,9 @@
  * Integration tests for PrismaUserRepository.
  * Requires a real Postgres instance — DATABASE_URL loaded from test/.env.test.
  */
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../src/infrastructure/prisma/prisma.service';
+import { AesGcmEncryptionService } from '../../src/infrastructure/crypto/aes-gcm-encryption.service';
 import { PrismaUserRepository } from '../../src/modules/auth/infrastructure/persistence/prisma-user.repository';
 
 let prisma: PrismaService;
@@ -11,7 +13,11 @@ let repo: PrismaUserRepository;
 beforeAll(async () => {
   prisma = new PrismaService();
   await prisma.onModuleInit();
-  repo = new PrismaUserRepository(prisma);
+  const configService = new ConfigService<{ ENCRYPTION_KEY: string }>({
+    ENCRYPTION_KEY: process.env['ENCRYPTION_KEY'] ?? '',
+  });
+  const encryption = new AesGcmEncryptionService(configService as never);
+  repo = new PrismaUserRepository(prisma, encryption);
 });
 
 afterAll(async () => {

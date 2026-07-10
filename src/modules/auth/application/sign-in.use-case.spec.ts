@@ -35,6 +35,8 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   getPrimaryRole: jest.fn(),
   recordFailedLogin: jest.fn().mockResolvedValue(undefined),
   resetFailedLogin: jest.fn(),
+  setRecoveryPhone: jest.fn(),
+  getRecoveryPhone: jest.fn(),
 });
 
 const makeAudit = (): jest.Mocked<AuditPort> => ({

@@ -25,6 +25,8 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   getPrimaryRole: jest.fn(),
   recordFailedLogin: jest.fn(),
   resetFailedLogin: jest.fn(),
+  setRecoveryPhone: jest.fn(),
+  getRecoveryPhone: jest.fn(),
 });
 
 describe('ResendTwoFactorUseCase', () => {
