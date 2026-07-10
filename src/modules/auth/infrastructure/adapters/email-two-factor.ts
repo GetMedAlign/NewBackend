@@ -52,8 +52,9 @@ export class EmailTwoFactor implements TwoFactorPort {
     });
 
     // Fetch the user's email to send the code
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<UserEmailRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<UserEmailRow[]>`
         SELECT email FROM users WHERE id = ${userId}::uuid
       `,
     );
@@ -75,8 +76,9 @@ export class EmailTwoFactor implements TwoFactorPort {
     // Because issueCode now consumes all prior live codes before inserting,
     // there is at most one active code per user; ordering by expires_at DESC
     // selects it correctly (TTL is fixed at CODE_TTL_MINUTES for every code).
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<TwoFactorRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<TwoFactorRow[]>`
         SELECT id, code_hash, expires_at, consumed_at, attempts
         FROM two_factor_codes
         WHERE user_id = ${userId}::uuid
@@ -97,8 +99,9 @@ export class EmailTwoFactor implements TwoFactorPort {
 
     if (isValid) {
       // Mark as consumed
-      await this.prisma.asSystem((client) =>
-        client.$executeRaw`
+      await this.prisma.asSystem(
+        (client) =>
+          client.$executeRaw`
           UPDATE two_factor_codes
           SET consumed_at = NOW()
           WHERE id = ${row.id}::uuid
@@ -108,8 +111,9 @@ export class EmailTwoFactor implements TwoFactorPort {
     }
 
     // Increment attempt counter on failure
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`
         UPDATE two_factor_codes
         SET attempts = attempts + 1
         WHERE id = ${row.id}::uuid

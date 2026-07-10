@@ -60,8 +60,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
    */
   async create(email: string, passwordHash: string): Promise<string> {
     try {
-      const rows = await this.prisma.asSystem((client) =>
-        client.$queryRaw<{ id: string }[]>`
+      const rows = await this.prisma.asSystem(
+        (client) =>
+          client.$queryRaw<{ id: string }[]>`
           SELECT create_user(${email}::citext, ${passwordHash}) AS id
         `,
       );
@@ -77,8 +78,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<UserRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<UserRow[]>`
         SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until
         FROM users
         WHERE email = ${email}::citext
@@ -89,8 +91,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
   }
 
   async findById(id: string): Promise<User | null> {
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<UserRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<UserRow[]>`
         SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until
         FROM users
         WHERE id = ${id}::uuid
@@ -109,8 +112,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
    * If somehow no roles exist, falls back to 'patient'.
    */
   async getPrimaryRole(userId: string): Promise<string> {
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<RoleRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<RoleRow[]>`
         SELECT role FROM user_roles WHERE user_id = ${userId}::uuid
       `,
     );
@@ -131,8 +135,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
   async recordFailedLogin(id: string): Promise<void> {
     const lockAt = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
 
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`
         UPDATE users
         SET
           failed_login_count = failed_login_count + 1,
@@ -148,8 +153,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
 
   /** Clears failed_login_count and removes the account lock. */
   async resetFailedLogin(id: string): Promise<void> {
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`
         UPDATE users
         SET failed_login_count = 0, locked_until = NULL
         WHERE id = ${id}::uuid
@@ -163,8 +169,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
    */
   async setRecoveryPhone(userId: string, phone: string): Promise<void> {
     const ciphertext = this.encryption.encrypt(phone);
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`
         UPDATE users
         SET recovery_phone_encrypted = ${ciphertext}
         WHERE id = ${userId}::uuid
@@ -177,8 +184,9 @@ export class PrismaUserRepository implements UserRepositoryPort {
    * null; otherwise decrypts via EncryptionPort and returns plaintext.
    */
   async getRecoveryPhone(userId: string): Promise<string | null> {
-    const rows = await this.prisma.asSystem((client) =>
-      client.$queryRaw<RecoveryPhoneRow[]>`
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<RecoveryPhoneRow[]>`
         SELECT recovery_phone_encrypted
         FROM users
         WHERE id = ${userId}::uuid

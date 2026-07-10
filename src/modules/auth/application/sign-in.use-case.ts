@@ -1,15 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InvalidCredentialsError } from '../domain/errors/invalid-credentials.error';
 import { AccountLockedError } from '../domain/errors/account-locked.error';
-import {
-  PasswordHasherPort,
-  PASSWORD_HASHER,
-} from '../domain/ports/password-hasher.port';
+import { PasswordHasherPort, PASSWORD_HASHER } from '../domain/ports/password-hasher.port';
 import { TwoFactorPort, TWO_FACTOR } from '../domain/ports/two-factor.port';
-import {
-  UserRepositoryPort,
-  USER_REPOSITORY,
-} from '../domain/ports/user-repository.port';
+import { UserRepositoryPort, USER_REPOSITORY } from '../domain/ports/user-repository.port';
 import { AuditPort, AUDIT } from '../domain/ports/audit.port';
 
 /**

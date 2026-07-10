@@ -33,7 +33,7 @@ Integration tests run against a real local Postgres and verify RLS isolation, au
 ## API docs
 
 - **Swagger UI**: `http://localhost:3000/docs` — served automatically when the server is running.
-- **`openapi.json`**: committed to the repo root. Import directly into Postman via *File → Import → select `openapi.json`*.
+- **`openapi.json`**: committed to the repo root. Import directly into Postman via _File → Import → select `openapi.json`_.
 - **Regenerate** (offline, no DB required):
   ```bash
   pnpm openapi

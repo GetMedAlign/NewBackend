@@ -1,14 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InvalidTwoFactorCodeError } from '../domain/errors/invalid-two-factor-code.error';
-import {
-  TokenServicePort,
-  TOKEN_SERVICE,
-} from '../domain/ports/token-service.port';
+import { TokenServicePort, TOKEN_SERVICE } from '../domain/ports/token-service.port';
 import { TwoFactorPort, TWO_FACTOR } from '../domain/ports/two-factor.port';
-import {
-  UserRepositoryPort,
-  USER_REPOSITORY,
-} from '../domain/ports/user-repository.port';
+import { UserRepositoryPort, USER_REPOSITORY } from '../domain/ports/user-repository.port';
 import { AuditPort, AUDIT } from '../domain/ports/audit.port';
 
 export interface VerifyTwoFactorInput {

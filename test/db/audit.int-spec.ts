@@ -12,8 +12,9 @@ let service: PrismaService;
 let idA: string;
 
 async function createUser(email: string): Promise<string> {
-  const rows = await service.asSystem((client) =>
-    client.$queryRaw<{ id: string }[]>`
+  const rows = await service.asSystem(
+    (client) =>
+      client.$queryRaw<{ id: string }[]>`
       SELECT create_user(${email}::citext, 'h') AS id
     `,
   );
@@ -26,9 +27,7 @@ beforeAll(async () => {
   service = new PrismaService();
   await service.onModuleInit();
 
-  await service.asSystem(
-    (client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`,
-  );
+  await service.asSystem((client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`);
   await service.asSystem(
     (client) => client.$executeRaw`TRUNCATE audit_log RESTART IDENTITY CASCADE`,
   );
@@ -37,9 +36,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await service.asSystem(
-    (client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`,
-  );
+  await service.asSystem((client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`);
   await service.asSystem(
     (client) => client.$executeRaw`TRUNCATE audit_log RESTART IDENTITY CASCADE`,
   );
@@ -48,24 +45,23 @@ afterAll(async () => {
 
 describe('audit triggers', () => {
   it('records a user_updated audit row with actor context and no password_hash', async () => {
-    await service.withUserContext(
-      { userId: idA, role: 'patient', ip: '203.0.113.7' },
-      (tx) =>
-        tx.user.update({
-          where: { id: idA },
-          data: { emailConfirmed: true },
-        }),
+    await service.withUserContext({ userId: idA, role: 'patient', ip: '203.0.113.7' }, (tx) =>
+      tx.user.update({
+        where: { id: idA },
+        data: { emailConfirmed: true },
+      }),
     );
 
-    const rows = await service.asSystem((client) =>
-      client.$queryRaw<
-        {
-          actor_user_id: string;
-          action_type: string;
-          affected_record: string;
-          new_value: Record<string, unknown>;
-        }[]
-      >`
+    const rows = await service.asSystem(
+      (client) =>
+        client.$queryRaw<
+          {
+            actor_user_id: string;
+            action_type: string;
+            affected_record: string;
+            new_value: Record<string, unknown>;
+          }[]
+        >`
         SELECT actor_user_id, action_type, affected_record, new_value
         FROM audit_log
         WHERE action_type = 'user_updated'

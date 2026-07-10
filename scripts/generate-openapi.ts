@@ -44,7 +44,10 @@ type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noopStub = { execute: async () => ({}) as any };
 
-function stubProvider(token: InjectionToken): { provide: InjectionToken; useValue: typeof noopStub } {
+function stubProvider(token: InjectionToken): {
+  provide: InjectionToken;
+  useValue: typeof noopStub;
+} {
   return { provide: token, useValue: noopStub };
 }
 
@@ -83,8 +86,8 @@ async function generate(): Promise<void> {
     .setVersion('0.1.0')
     .setDescription(
       'MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie ' +
-      'set on POST /auth/2fa/verify. All non-GET requests require an ' +
-      '`x-csrf-token` header matching the value returned by the CSRF middleware.',
+        'set on POST /auth/2fa/verify. All non-GET requests require an ' +
+        '`x-csrf-token` header matching the value returned by the CSRF middleware.',
     )
     .addCookieAuth('access_token')
     .build();

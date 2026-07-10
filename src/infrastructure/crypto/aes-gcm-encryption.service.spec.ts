@@ -1,7 +1,4 @@
-import {
-  createCipheriv,
-  randomBytes,
-} from 'crypto';
+import { createCipheriv, randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.schema';
 import { AesGcmEncryptionService } from './aes-gcm-encryption.service';
@@ -120,10 +117,7 @@ describe('AesGcmEncryptionService', () => {
       const nonce = randomBytes(12);
       const plaintext = 'layout sanity check';
       const cipher = createCipheriv('aes-256-gcm', key, nonce);
-      const ciphertextBuf = Buffer.concat([
-        cipher.update(plaintext, 'utf8'),
-        cipher.final(),
-      ]);
+      const ciphertextBuf = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
       const tag = cipher.getAuthTag();
       // Layout: nonce(12) || ciphertext || tag(16)
       const combined = Buffer.concat([nonce, ciphertextBuf, tag]);

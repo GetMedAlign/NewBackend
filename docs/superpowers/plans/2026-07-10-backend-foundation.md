@@ -23,6 +23,7 @@
 ### Task 1: Project scaffold + validated config + health
 
 **Files:**
+
 - Create: `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `.eslintrc.cjs`, `nest-cli.json`, `jest.config.ts`, `.env.example`, `.nvmrc`
 - Create: `src/main.ts`, `src/app.module.ts`
 - Create: `src/infrastructure/config/env.schema.ts`, `src/infrastructure/config/config.module.ts`
@@ -30,6 +31,7 @@
 - Test: `src/infrastructure/config/env.schema.spec.ts`, `test/health.e2e-spec.ts`
 
 **Interfaces:**
+
 - Produces: `Env` (zod-inferred type) and a global Nest `ConfigService<Env, true>`; `GET /health` → `{ status: 'ok' }`.
 
 - [ ] **Step 1: Write failing test** — `env.schema.spec.ts`: `parseEnv({})` throws; `parseEnv(validFixture)` returns typed object; `ENCRYPTION_KEY` not 32 bytes → throws.
@@ -38,7 +40,9 @@
 import { parseEnv } from './env.schema';
 it('rejects missing vars', () => expect(() => parseEnv({})).toThrow());
 it('rejects non-32-byte ENCRYPTION_KEY', () =>
-  expect(() => parseEnv({ ...valid, ENCRYPTION_KEY: Buffer.from('short').toString('base64') })).toThrow(/32 bytes/));
+  expect(() =>
+    parseEnv({ ...valid, ENCRYPTION_KEY: Buffer.from('short').toString('base64') }),
+  ).toThrow(/32 bytes/));
 ```
 
 - [ ] **Step 2: Run, verify fail** — `pnpm jest env.schema` → FAIL (module not found).
@@ -52,11 +56,13 @@ it('rejects non-32-byte ENCRYPTION_KEY', () =>
 ### Task 2: Database schema + migration
 
 **Files:**
+
 - Create: `prisma/schema.prisma`, `supabase/config.toml` (via `supabase init`)
 - Create: `prisma/migrations/<ts>_init/migration.sql`
 - Test: `test/db/schema.int-spec.ts`
 
 **Interfaces:**
+
 - Produces: tables `users`, `user_roles`, `two_factor_codes`, `audit_log`; enum `app_role`; Prisma models `User`, `UserRole`, `TwoFactorCode`, `AuditLog`.
 
 - [ ] **Step 1:** `supabase init`; document `supabase start` in README. Confirm `DATABASE_URL` points at local Supabase db.
@@ -70,11 +76,13 @@ it('rejects non-32-byte ENCRYPTION_KEY', () =>
 ### Task 3: PrismaService + `withUserContext` RLS wrapper
 
 **Files:**
+
 - Create: `src/infrastructure/prisma/prisma.service.ts`, `prisma.module.ts`
 - Create: `src/infrastructure/prisma/request-context.ts` (`RequestContext = { userId: string|null, role: string|null, ip: string|null }`)
 - Test: `src/infrastructure/prisma/prisma.service.int-spec.ts`
 
 **Interfaces:**
+
 - Produces: `PrismaService extends PrismaClient` with
   `withUserContext<T>(ctx: RequestContext, fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T>` and
   `asSystem<T>(fn): Promise<T>` (no user context; for signup/system).
@@ -94,7 +102,8 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 }
 ```
 
-  `asSystem` runs `fn(this)` with no context set.
+`asSystem` runs `fn(this)` with no context set.
+
 - [ ] **Step 3:** Run test → PASS.
 - [ ] **Step 4: Commit** — `feat(db): add PrismaService with per-request RLS transaction context`
 
@@ -103,10 +112,12 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 ### Task 4: RLS policies, has_role, create_user, audit triggers
 
 **Files:**
+
 - Create: `prisma/migrations/<ts>_rls_audit/migration.sql`
 - Test: `test/db/rls.int-spec.ts`, `test/db/audit.int-spec.ts`
 
 **Interfaces:**
+
 - Produces: `has_role(uuid, app_role) bool`; `create_user(email citext, password_hash text) returns uuid` (SECURITY DEFINER); `append_audit_log(...)` (SECURITY DEFINER); triggers on `users`, `user_roles`; RLS policies per spec §6–§7. A dedicated DB role `app_authenticated` (RLS-subject) used by the app connection.
 
 - [ ] **Step 1: Write failing RLS test** — seed user A and user B (via `create_user` + role). Using `withUserContext(A)`, `tx.user.findMany()` returns only A's row; `withUserContext(admin)` returns all. Run → FAIL.
@@ -120,11 +131,13 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 ### Task 5: AES-256-GCM encryption service
 
 **Files:**
+
 - Create: `src/modules/auth/domain/ports/encryption.port.ts` (`EncryptionPort { encrypt(s:string):string; decrypt(s:string):string }`)
 - Create: `src/infrastructure/crypto/aes-gcm-encryption.service.ts`, `crypto.module.ts`
 - Test: `src/infrastructure/crypto/aes-gcm-encryption.service.spec.ts`
 
 **Interfaces:**
+
 - Produces: `AesGcmEncryptionService implements EncryptionPort` bound to `EncryptionPort` DI token.
 
 - [ ] **Step 1: Write failing test** — round-trip `decrypt(encrypt(x)) === x`; two `encrypt(x)` differ (random nonce); output is valid base64; tampering the ciphertext throws. Run → FAIL.
@@ -137,12 +150,14 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 ### Task 6: Auth domain + outbound adapters
 
 **Files:**
+
 - Create: `src/modules/auth/domain/` — `entities/user.entity.ts`, `value-objects/email.ts`, `value-objects/hashed-password.ts`, `errors/*.ts`, `ports/{user-repository,password-hasher,token-service,two-factor,audit}.port.ts`
 - Create: `src/modules/auth/infrastructure/adapters/` — `argon2-password-hasher.ts`, `jwt-token.service.ts`, `email-two-factor.ts`
 - Create: `src/modules/auth/infrastructure/persistence/prisma-user.repository.ts`
 - Test: value-object specs + adapter specs (argon2 hash/verify; jwt sign/verify; repository int-spec using `withUserContext`/`asSystem`)
 
 **Interfaces:**
+
 - Produces (exact signatures later tasks rely on):
   - `PasswordHasherPort { hash(pw:string):Promise<string>; verify(pw:string, hash:string):Promise<boolean> }`
   - `TokenServicePort { issue(claims:{sub:string; role:string}):string; verify(token:string):{sub:string; role:string} }`
@@ -161,10 +176,12 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 ### Task 7: Auth use cases
 
 **Files:**
+
 - Create: `src/modules/auth/application/` — `sign-up.use-case.ts`, `sign-in.use-case.ts`, `verify-two-factor.use-case.ts`, `resend-two-factor.use-case.ts`, `get-me.use-case.ts`, `sign-out.use-case.ts`
 - Test: one `.spec.ts` per use case (ports mocked)
 
 **Interfaces:**
+
 - Consumes: all ports from Task 6.
 - Produces: use-case classes with `execute(input): Promise<output>`; `SignInUseCase` returns `{ requiresTwoFactor: true }` and never a token; `VerifyTwoFactorUseCase` returns `{ token, userId, role }`.
 
@@ -179,12 +196,14 @@ async withUserContext<T>(ctx: RequestContext, fn: (tx) => Promise<T>) {
 ### Task 8: HTTP layer, security hardening, end-to-end auth
 
 **Files:**
+
 - Create: `src/modules/auth/infrastructure/http/` — `auth.controller.ts`, `dtos/*.ts`
 - Create: `src/infrastructure/security/` — `jwt-cookie.guard.ts` (global, fail-closed), `public.decorator.ts` (`@Public()`), `roles.guard.ts` + `roles.decorator.ts`, `csrf.middleware.ts`, `rate-limit` config, `cookie.ts`, `all-exceptions.filter.ts`, `current-user.decorator.ts`
 - Modify: `src/app.module.ts` (wire global guard, filter, rate limiter, auth module)
 - Test: `test/auth.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 7 use cases; `TokenServicePort`; `PrismaService.withUserContext`.
 - Produces: endpoints `POST /auth/signup|signin|2fa/verify|2fa/send|signout`, `GET /auth/me`; `@Public()`, `@CurrentUser()`, `@Roles()`.
 

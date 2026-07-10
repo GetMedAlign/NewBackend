@@ -15,8 +15,9 @@ let idB: string;
 let idAdmin: string;
 
 async function createUser(email: string): Promise<string> {
-  const rows = await service.asSystem((client) =>
-    client.$queryRaw<{ id: string }[]>`
+  const rows = await service.asSystem(
+    (client) =>
+      client.$queryRaw<{ id: string }[]>`
       SELECT create_user(${email}::citext, 'h') AS id
     `,
   );
@@ -30,9 +31,7 @@ beforeAll(async () => {
   await service.onModuleInit();
 
   // Clean slate for deterministic assertions.
-  await service.asSystem(
-    (client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`,
-  );
+  await service.asSystem((client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`);
 
   idA = await createUser('a@x.com');
   idB = await createUser('b@x.com');
@@ -46,17 +45,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await service.asSystem(
-    (client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`,
-  );
+  await service.asSystem((client) => client.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`);
   await service.onModuleDestroy();
 });
 
 describe('RLS enforcement', () => {
   it('patient sees only their own user row via findMany', async () => {
-    const rows = await service.withUserContext(
-      { userId: idA, role: 'patient', ip: null },
-      (tx) => tx.user.findMany(),
+    const rows = await service.withUserContext({ userId: idA, role: 'patient', ip: null }, (tx) =>
+      tx.user.findMany(),
     );
 
     expect(rows).toHaveLength(1);
@@ -64,18 +60,16 @@ describe('RLS enforcement', () => {
   });
 
   it('patient cannot read another user row via findUnique', async () => {
-    const row = await service.withUserContext(
-      { userId: idA, role: 'patient', ip: null },
-      (tx) => tx.user.findUnique({ where: { id: idB } }),
+    const row = await service.withUserContext({ userId: idA, role: 'patient', ip: null }, (tx) =>
+      tx.user.findUnique({ where: { id: idB } }),
     );
 
     expect(row).toBeNull();
   });
 
   it('admin sees all user rows via findMany', async () => {
-    const rows = await service.withUserContext(
-      { userId: idAdmin, role: 'admin', ip: null },
-      (tx) => tx.user.findMany(),
+    const rows = await service.withUserContext({ userId: idAdmin, role: 'admin', ip: null }, (tx) =>
+      tx.user.findMany(),
     );
 
     const ids = rows.map((r) => r.id).sort();

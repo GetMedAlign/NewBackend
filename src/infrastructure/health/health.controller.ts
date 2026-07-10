@@ -8,7 +8,11 @@ export class HealthController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Health check', description: 'Returns OK when the service is running.' })
-  @ApiResponse({ status: 200, description: 'Service is healthy', schema: { example: { status: 'ok' } } })
+  @ApiResponse({
+    status: 200,
+    description: 'Service is healthy',
+    schema: { example: { status: 'ok' } },
+  })
   check(): { status: string } {
     return { status: 'ok' };
   }

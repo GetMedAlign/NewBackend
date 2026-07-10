@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-} from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { EncryptionPort } from '../../modules/auth/domain/ports/encryption.port';
 import type { Env } from '../config/env.schema';
 
@@ -23,10 +19,7 @@ export class AesGcmEncryptionService implements EncryptionPort {
   encrypt(plaintext: string): string {
     const nonce = randomBytes(NONCE_BYTES);
     const cipher = createCipheriv('aes-256-gcm', this.key, nonce);
-    const encrypted = Buffer.concat([
-      cipher.update(plaintext, 'utf8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
 
     // Layout: nonce(12) || ciphertext || tag(16)
@@ -49,9 +42,6 @@ export class AesGcmEncryptionService implements EncryptionPort {
     decipher.setAuthTag(tag);
 
     // Auth-tag failures throw here — we let them propagate
-    return Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final(),
-    ]).toString('utf8');
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
   }
 }

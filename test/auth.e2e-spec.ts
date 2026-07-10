@@ -79,8 +79,8 @@ describe('Auth (e2e)', () => {
 
   afterAll(async () => {
     // Clean up the created user (cascades roles, 2fa codes) via asSystem.
-    await prisma.asSystem((client) =>
-      client.$executeRaw`DELETE FROM users WHERE email = ${email}::citext`,
+    await prisma.asSystem(
+      (client) => client.$executeRaw`DELETE FROM users WHERE email = ${email}::citext`,
     );
     await app.close();
   });
@@ -106,8 +106,9 @@ describe('Auth (e2e)', () => {
     expect(typeof res.body.userId).toBe('string');
     const userId: string = res.body.userId;
 
-    const rows = await prisma.asSystem((client) =>
-      client.$queryRaw<{ action_type: string }[]>`
+    const rows = await prisma.asSystem(
+      (client) =>
+        client.$queryRaw<{ action_type: string }[]>`
         SELECT action_type
         FROM audit_log
         WHERE action_type = 'user_created'
@@ -206,7 +207,10 @@ describe('Auth (e2e)', () => {
 
     // Fresh csrf token via a GET.
     const health = await agent().get('/health').expect(200);
-    const token = cookieValue(health.headers['set-cookie'] as unknown as string[], 'csrf_token') as string;
+    const token = cookieValue(
+      health.headers['set-cookie'] as unknown as string[],
+      'csrf_token',
+    ) as string;
 
     await agent()
       .post('/auth/signup')
@@ -227,8 +231,8 @@ describe('Auth (e2e)', () => {
 
     expect([423, 429]).toContain(lastStatus);
 
-    await prisma.asSystem((client) =>
-      client.$executeRaw`DELETE FROM users WHERE email = ${lockEmail}::citext`,
+    await prisma.asSystem(
+      (client) => client.$executeRaw`DELETE FROM users WHERE email = ${lockEmail}::citext`,
     );
   });
 });

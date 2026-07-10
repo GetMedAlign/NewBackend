@@ -1,11 +1,11 @@
 # MedAlign Backend Rebuild — Foundation Slice Design Spec
 
-| | |
-|---|---|
-| **Author** | Brian (with Claude) |
-| **Date** | 2026-07-10 |
-| **Status** | Approved design, ready for planning |
-| **Slice** | Phase 1, sub-project 1 of 6: Foundation |
+|            |                                         |
+| ---------- | --------------------------------------- |
+| **Author** | Brian (with Claude)                     |
+| **Date**   | 2026-07-10                              |
+| **Status** | Approved design, ready for planning     |
+| **Slice**  | Phase 1, sub-project 1 of 6: Foundation |
 
 > This spec is the source of truth for the Foundation slice. It supersedes any documents generated earlier in the session by a runaway agent (which were based on discarded assumptions: Supabase Auth, Reclaim's clients/partners domain, and a connection-unsafe RLS pattern). Do not build from those.
 
@@ -31,6 +31,7 @@ This spec covers only the Foundation.
 The Foundation establishes the base every later slice depends on, and proves the full security stack end to end using **authentication as the first vertical slice** (everything depends on auth).
 
 **In scope:**
+
 - NestJS + TypeScript (strict) project on a hexagonal architecture, with a composition root.
 - Config module with zod-validated env at boot.
 - Prisma against Supabase Postgres, with migrations tooling.
@@ -59,8 +60,8 @@ Three layers; dependencies point inward only (infrastructure → application →
 - **Domain (core).** Pure TypeScript, zero framework/IO imports. Entities and value objects (`User`, `Email`, `HashedPassword`, `Role`), domain errors, and **ports** (interfaces): `UserRepositoryPort`, `PasswordHasherPort`, `TokenServicePort`, `TwoFactorPort`, `AuditPort`, `EncryptionPort`, `ClockPort`.
 - **Application (use cases).** One class per use case (`SignUpUseCase`, `SignInUseCase`, `VerifyTwoFactorUseCase`, `ResendTwoFactorUseCase`, `GetMeUseCase`, `SignOutUseCase`). Orchestrates domain + ports; no Nest or Prisma imports.
 - **Infrastructure (adapters).**
-  - *Inbound:* NestJS controllers, DTOs, guards, global exception filter. Translate HTTP ↔ use cases.
-  - *Outbound:* `PrismaUserRepository`, `Argon2PasswordHasher`, `JwtTokenService`, `EmailTwoFactor` (SendGrid), `PostgresAuditAdapter`, `AesGcmEncryptionService`, `SystemClock`. Each implements a domain port.
+  - _Inbound:_ NestJS controllers, DTOs, guards, global exception filter. Translate HTTP ↔ use cases.
+  - _Outbound:_ `PrismaUserRepository`, `Argon2PasswordHasher`, `JwtTokenService`, `EmailTwoFactor` (SendGrid), `PostgresAuditAdapter`, `AesGcmEncryptionService`, `SystemClock`. Each implements a domain port.
 - **Composition root:** each Nest module binds ports to adapters via DI tokens.
 
 Directory layout:
@@ -111,6 +112,7 @@ RLS enabled on all tables. Policies read the request context set by `withUserCon
 - `current_setting('app.current_user_role', true)` — for admin/superadmin checks (defense in depth alongside `has_role`).
 
 Foundation policies:
+
 - **users:** a user may `SELECT`/`UPDATE` their own row (`id = app.current_user_id`); `admin`/`superadmin` may read all.
 - **user_roles:** user may read own; `admin`/`superadmin` may manage.
 - **audit_log:** `admin`/`superadmin` may `SELECT`; no `INSERT/UPDATE/DELETE` granted to the app role (writes happen only through `append_audit_log`).
@@ -132,6 +134,7 @@ The app connects to Postgres as a **non-superuser role subject to RLS** (never t
 ## 9. Auth flow and API (contract-compatible)
 
 Endpoints mirror the current .NET contract:
+
 - `POST /auth/signup`
 - `POST /auth/signin` → verifies password (argon2id, with dummy-hash timing equalization), issues a single-use email OTP, returns `requiresTwoFactor` (no JWT yet).
 - `POST /auth/2fa/verify` → validates OTP (single-use, attempt-limited), issues JWT, sets HttpOnly + Secure + SameSite cookie.

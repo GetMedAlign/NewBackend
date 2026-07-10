@@ -1,9 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InvalidCredentialsError } from '../domain/errors/invalid-credentials.error';
-import {
-  UserRepositoryPort,
-  USER_REPOSITORY,
-} from '../domain/ports/user-repository.port';
+import { UserRepositoryPort, USER_REPOSITORY } from '../domain/ports/user-repository.port';
 
 export interface GetMeInput {
   userId: string;
@@ -17,9 +14,7 @@ export interface GetMeOutput {
 
 @Injectable()
 export class GetMeUseCase {
-  constructor(
-    @Inject(USER_REPOSITORY) private readonly repo: UserRepositoryPort,
-  ) {}
+  constructor(@Inject(USER_REPOSITORY) private readonly repo: UserRepositoryPort) {}
 
   async execute(input: GetMeInput): Promise<GetMeOutput> {
     const user = await this.repo.findById(input.userId);

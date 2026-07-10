@@ -21,16 +21,12 @@ describe('LoggingEmailSender', () => {
 
     await expect(sender.send(to, subject, body)).resolves.toBeUndefined();
 
-    expect(logSpy).toHaveBeenCalledWith(
-      `[DEV EMAIL] to=${to} subject=${subject} body=${body}`,
-    );
+    expect(logSpy).toHaveBeenCalledWith(`[DEV EMAIL] to=${to} subject=${subject} body=${body}`);
   });
 
   it('does not call SendGrid', async () => {
     // Verify no external calls are made by ensuring no unhandled promise rejections
     // and no network calls during the test.
-    await expect(
-      sender.send('dev@test.com', 'Test subject', 'Test body'),
-    ).resolves.toBeUndefined();
+    await expect(sender.send('dev@test.com', 'Test subject', 'Test body')).resolves.toBeUndefined();
   });
 });

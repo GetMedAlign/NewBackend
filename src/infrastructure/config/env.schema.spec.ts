@@ -41,26 +41,18 @@ describe('parseEnv', () => {
   it('throws for ENCRYPTION_KEY that does not decode to 32 bytes', () => {
     // base64 of "short" (5 bytes) — not 32 bytes
     const shortKey = Buffer.from('short').toString('base64');
-    expect(() =>
-      parseEnv({ ...validFixture, ENCRYPTION_KEY: shortKey }),
-    ).toThrow(/32 bytes/);
+    expect(() => parseEnv({ ...validFixture, ENCRYPTION_KEY: shortKey })).toThrow(/32 bytes/);
   });
 
   it('throws for an invalid NODE_ENV value', () => {
-    expect(() =>
-      parseEnv({ ...validFixture, NODE_ENV: 'staging' }),
-    ).toThrow();
+    expect(() => parseEnv({ ...validFixture, NODE_ENV: 'staging' })).toThrow();
   });
 
   it('throws for an invalid email in SENDGRID_FROM_EMAIL', () => {
-    expect(() =>
-      parseEnv({ ...validFixture, SENDGRID_FROM_EMAIL: 'not-an-email' }),
-    ).toThrow();
+    expect(() => parseEnv({ ...validFixture, SENDGRID_FROM_EMAIL: 'not-an-email' })).toThrow();
   });
 
   it('throws for an invalid URL in DATABASE_URL', () => {
-    expect(() =>
-      parseEnv({ ...validFixture, DATABASE_URL: 'not-a-url' }),
-    ).toThrow();
+    expect(() => parseEnv({ ...validFixture, DATABASE_URL: 'not-a-url' })).toThrow();
   });
 });

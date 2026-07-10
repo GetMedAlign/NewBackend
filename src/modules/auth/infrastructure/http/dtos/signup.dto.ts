@@ -6,7 +6,11 @@ export class SignupDto {
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'MySecurePass1!', description: 'Password (min 8 characters)', minLength: 8 })
+  @ApiProperty({
+    example: 'MySecurePass1!',
+    description: 'Password (min 8 characters)',
+    minLength: 8,
+  })
   @IsString()
   @MinLength(8)
   password!: string;

@@ -7,8 +7,9 @@ export class PostgresAuditAdapter implements AuditPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async record(e: AuditEvent): Promise<void> {
-    await this.prisma.asSystem((client) =>
-      client.$executeRaw`
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`
         SELECT append_audit_log(
           ${e.actorUserId ?? null}::uuid,
           ${e.actorRole},

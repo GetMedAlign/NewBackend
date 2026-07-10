@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "MedAlign backend — TypeScript NestJS rebuild",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"
@@ -16,6 +17,9 @@
     "test:int": "jest --config jest.int.config.ts",
     "test:e2e": "jest --config jest.e2e.config.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "openapi": "ts-node -P tsconfig.json scripts/generate-openapi.ts",
     "prisma": "prisma",
     "prepare": "prisma generate"
@@ -57,6 +61,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.27.0",
     "jest": "^29.7.0",
+    "prettier": "^3.9.5",
     "prisma": "^7.8.0",
     "supertest": "^7.1.0",
     "ts-jest": "^29.2.5",

@@ -21,9 +21,7 @@ describe('Health (e2e)', () => {
   });
 
   it('GET /health returns 200 { status: "ok" }', async () => {
-    const response = await supertest(app.getHttpServer())
-      .get('/health')
-      .expect(200);
+    const response = await supertest(app.getHttpServer()).get('/health').expect(200);
 
     expect(response.body).toEqual({ status: 'ok' });
   });

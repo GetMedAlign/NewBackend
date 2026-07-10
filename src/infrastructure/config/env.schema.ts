@@ -1,9 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   PORT: z.coerce.number().default(3000),
 
@@ -13,12 +11,9 @@ const envSchema = z.object({
 
   JWT_EXPIRY_MINUTES: z.coerce.number().default(60),
 
-  ENCRYPTION_KEY: z
-    .string()
-    .refine(
-      (val) => Buffer.from(val, 'base64').length === 32,
-      { message: 'ENCRYPTION_KEY must base64-decode to exactly 32 bytes' },
-    ),
+  ENCRYPTION_KEY: z.string().refine((val) => Buffer.from(val, 'base64').length === 32, {
+    message: 'ENCRYPTION_KEY must base64-decode to exactly 32 bytes',
+  }),
 
   SENDGRID_API_KEY: z.string().min(1),
 

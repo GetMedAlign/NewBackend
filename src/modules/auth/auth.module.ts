@@ -33,12 +33,7 @@ import { GetMeUseCase } from './application/get-me.use-case';
 import { SignOutUseCase } from './application/sign-out.use-case';
 
 @Module({
-  imports: [
-    ConfigModule,
-    PrismaModule,
-    CryptoModule,
-    JwtModule.register({}),
-  ],
+  imports: [ConfigModule, PrismaModule, CryptoModule, JwtModule.register({})],
   controllers: [AuthController],
   providers: [
     // Application use cases
@@ -109,13 +104,6 @@ import { SignOutUseCase } from './application/sign-out.use-case';
       useClass: PostgresAuditAdapter,
     },
   ],
-  exports: [
-    PASSWORD_HASHER,
-    TOKEN_SERVICE,
-    TWO_FACTOR,
-    USER_REPOSITORY,
-    AUDIT,
-    EMAIL_SENDER,
-  ],
+  exports: [PASSWORD_HASHER, TOKEN_SERVICE, TWO_FACTOR, USER_REPOSITORY, AUDIT, EMAIL_SENDER],
 })
 export class AuthModule {}

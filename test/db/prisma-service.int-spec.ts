@@ -33,8 +33,10 @@ describe('PrismaService', () => {
         ip: TEST_IP,
       };
 
-      const rows = await service.withUserContext(ctx, (tx) =>
-        tx.$queryRaw<{ v: string }[]>`
+      const rows = await service.withUserContext(
+        ctx,
+        (tx) =>
+          tx.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_user_id', true) AS v
         `,
       );
@@ -49,8 +51,10 @@ describe('PrismaService', () => {
         ip: TEST_IP,
       };
 
-      const rows = await service.withUserContext(ctx, (tx) =>
-        tx.$queryRaw<{ v: string }[]>`
+      const rows = await service.withUserContext(
+        ctx,
+        (tx) =>
+          tx.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_user_role', true) AS v
         `,
       );
@@ -65,8 +69,10 @@ describe('PrismaService', () => {
         ip: TEST_IP,
       };
 
-      const rows = await service.withUserContext(ctx, (tx) =>
-        tx.$queryRaw<{ v: string }[]>`
+      const rows = await service.withUserContext(
+        ctx,
+        (tx) =>
+          tx.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_ip_address', true) AS v
         `,
       );
@@ -81,8 +87,10 @@ describe('PrismaService', () => {
         ip: null,
       };
 
-      const rows = await service.withUserContext(ctx, (tx) =>
-        tx.$queryRaw<{ uid: string; role: string; ip: string }[]>`
+      const rows = await service.withUserContext(
+        ctx,
+        (tx) =>
+          tx.$queryRaw<{ uid: string; role: string; ip: string }[]>`
           SELECT
             current_setting('app.current_user_id', true)   AS uid,
             current_setting('app.current_user_role', true) AS role,
@@ -104,15 +112,18 @@ describe('PrismaService', () => {
         role: TEST_ROLE,
         ip: TEST_IP,
       };
-      await service.withUserContext(ctx, (tx) =>
-        tx.$queryRaw<{ v: string }[]>`
+      await service.withUserContext(
+        ctx,
+        (tx) =>
+          tx.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_user_id', true) AS v
         `,
       );
 
       // Step (b): read the same session variable via asSystem (different pool connection)
-      const rows = await service.asSystem((client) =>
-        client.$queryRaw<{ v: string }[]>`
+      const rows = await service.asSystem(
+        (client) =>
+          client.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_user_id', true) AS v
         `,
       );

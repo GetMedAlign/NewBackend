@@ -1,13 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Email } from '../domain/value-objects/email';
-import {
-  PasswordHasherPort,
-  PASSWORD_HASHER,
-} from '../domain/ports/password-hasher.port';
-import {
-  UserRepositoryPort,
-  USER_REPOSITORY,
-} from '../domain/ports/user-repository.port';
+import { PasswordHasherPort, PASSWORD_HASHER } from '../domain/ports/password-hasher.port';
+import { UserRepositoryPort, USER_REPOSITORY } from '../domain/ports/user-repository.port';
 import { AuditPort, AUDIT } from '../domain/ports/audit.port';
 
 export interface SignUpInput {

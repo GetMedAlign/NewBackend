@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiBody,
@@ -29,10 +20,7 @@ import { SignOutUseCase } from '../../application/sign-out.use-case';
 import { Public } from '../../../../infrastructure/security/public.decorator';
 import { CurrentUser } from '../../../../infrastructure/security/current-user.decorator';
 import type { AuthenticatedUser } from '../../../../infrastructure/security/current-user.decorator';
-import {
-  setAuthCookie,
-  clearAuthCookie,
-} from '../../../../infrastructure/security/cookie';
+import { setAuthCookie, clearAuthCookie } from '../../../../infrastructure/security/cookie';
 
 import { SignupDto } from './dtos/signup.dto';
 import { SigninDto } from './dtos/signin.dto';
@@ -65,16 +53,20 @@ export class AuthController {
   @Throttle(AUTH_THROTTLE)
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user', description: 'Creates a new user account and triggers a 2FA email.' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Creates a new user account and triggers a 2FA email.',
+  })
   @ApiHeader(CSRF_HEADER)
   @ApiBody({ type: SignupDto })
-  @ApiResponse({ status: 201, description: 'User created', schema: { example: { userId: 'uuid-here' } } })
+  @ApiResponse({
+    status: 201,
+    description: 'User created',
+    schema: { example: { userId: 'uuid-here' } },
+  })
   @ApiResponse({ status: 409, description: 'Email already registered' })
   @ApiResponse({ status: 422, description: 'Validation error' })
-  async signup(
-    @Body() dto: SignupDto,
-    @Req() req: Request,
-  ): Promise<{ userId: string }> {
+  async signup(@Body() dto: SignupDto, @Req() req: Request): Promise<{ userId: string }> {
     const { userId } = await this.signUp.execute({
       email: dto.email,
       password: dto.password,
@@ -89,17 +81,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Sign in with email and password',
-    description: 'Validates credentials and triggers a 2FA email. The session is only established after POST /auth/2fa/verify.',
+    description:
+      'Validates credentials and triggers a 2FA email. The session is only established after POST /auth/2fa/verify.',
   })
   @ApiHeader(CSRF_HEADER)
   @ApiBody({ type: SigninDto })
-  @ApiResponse({ status: 200, description: '2FA code sent', schema: { example: { requiresTwoFactor: true } } })
+  @ApiResponse({
+    status: 200,
+    description: '2FA code sent',
+    schema: { example: { requiresTwoFactor: true } },
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 403, description: 'Account locked' })
-  async signin(
-    @Body() dto: SigninDto,
-    @Req() req: Request,
-  ): Promise<{ requiresTwoFactor: true }> {
+  async signin(@Body() dto: SigninDto, @Req() req: Request): Promise<{ requiresTwoFactor: true }> {
     return this.signIn.execute({
       email: dto.email,
       password: dto.password,
@@ -113,7 +107,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Verify 2FA code and obtain session',
-    description: 'Validates the OTP emailed after sign-in. On success, sets an HttpOnly `access_token` cookie that authenticates subsequent requests.',
+    description:
+      'Validates the OTP emailed after sign-in. On success, sets an HttpOnly `access_token` cookie that authenticates subsequent requests.',
   })
   @ApiHeader(CSRF_HEADER)
   @ApiBody({ type: Verify2faDto })
@@ -155,7 +150,10 @@ export class AuthController {
   @Post('signout')
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth('access_token')
-  @ApiOperation({ summary: 'Sign out', description: 'Invalidates the current session and clears the access_token cookie.' })
+  @ApiOperation({
+    summary: 'Sign out',
+    description: 'Invalidates the current session and clears the access_token cookie.',
+  })
   @ApiHeader(CSRF_HEADER)
   @ApiResponse({ status: 200, description: 'Signed out', schema: { example: { ok: true } } })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
@@ -171,7 +169,10 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth('access_token')
-  @ApiOperation({ summary: 'Get current user', description: 'Returns the authenticated user\'s profile. Requires a valid access_token cookie.' })
+  @ApiOperation({
+    summary: 'Get current user',
+    description: "Returns the authenticated user's profile. Requires a valid access_token cookie.",
+  })
   @ApiResponse({
     status: 200,
     description: 'Current user info',

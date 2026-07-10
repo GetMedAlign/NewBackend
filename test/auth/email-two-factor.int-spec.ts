@@ -19,17 +19,15 @@ beforeAll(async () => {
 
   // Create a test user
   await prisma.asSystem((c) => c.$executeRaw`TRUNCATE users RESTART IDENTITY CASCADE`);
-  const rows = await prisma.asSystem((c) =>
-    c.$queryRaw<{ id: string }[]>`SELECT create_user('2fa@example.com'::citext, 'h') AS id`,
+  const rows = await prisma.asSystem(
+    (c) => c.$queryRaw<{ id: string }[]>`SELECT create_user('2fa@example.com'::citext, 'h') AS id`,
   );
   testUserId = rows[0]!.id;
 });
 
 beforeEach(async () => {
   // Clean 2FA codes between tests
-  await prisma.asSystem((c) =>
-    c.$executeRaw`TRUNCATE two_factor_codes RESTART IDENTITY CASCADE`,
-  );
+  await prisma.asSystem((c) => c.$executeRaw`TRUNCATE two_factor_codes RESTART IDENTITY CASCADE`);
 
   mockEmailSender = {
     send: jest.fn().mockResolvedValue(undefined),
@@ -49,8 +47,9 @@ describe('EmailTwoFactor', () => {
     it('stores a hashed code in two_factor_codes (not plaintext)', async () => {
       await emailTwoFactor.issueCode(testUserId);
 
-      const rows = await prisma.asSystem((c) =>
-        c.$queryRaw<{ code_hash: string; user_id: string }[]>`
+      const rows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ code_hash: string; user_id: string }[]>`
           SELECT code_hash, user_id FROM two_factor_codes WHERE user_id = ${testUserId}::uuid
         `,
       );
@@ -66,8 +65,9 @@ describe('EmailTwoFactor', () => {
     it('consumes prior live code when a new code is issued (at most one active code per user)', async () => {
       // Issue first code — must be live after issuance
       await emailTwoFactor.issueCode(testUserId);
-      const afterFirst = await prisma.asSystem((c) =>
-        c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
+      const afterFirst = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
           SELECT id, consumed_at FROM two_factor_codes
           WHERE user_id = ${testUserId}::uuid
           ORDER BY expires_at ASC
@@ -79,8 +79,9 @@ describe('EmailTwoFactor', () => {
 
       // Issue second code — prior code must now be consumed
       await emailTwoFactor.issueCode(testUserId);
-      const afterSecond = await prisma.asSystem((c) =>
-        c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
+      const afterSecond = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ id: string; consumed_at: Date | null }[]>`
           SELECT id, consumed_at FROM two_factor_codes
           WHERE user_id = ${testUserId}::uuid
           ORDER BY expires_at ASC
@@ -90,14 +91,15 @@ describe('EmailTwoFactor', () => {
       const first = afterSecond.find((r) => r.id === firstId)!;
       const second = afterSecond.find((r) => r.id !== firstId)!;
       expect(first.consumed_at).not.toBeNull(); // first code consumed
-      expect(second.consumed_at).toBeNull();    // only the new code is live
+      expect(second.consumed_at).toBeNull(); // only the new code is live
     });
 
     it('sets expires_at to roughly now + 10 min', async () => {
       await emailTwoFactor.issueCode(testUserId);
 
-      const rows = await prisma.asSystem((c) =>
-        c.$queryRaw<{ expires_at: Date }[]>`
+      const rows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ expires_at: Date }[]>`
           SELECT expires_at FROM two_factor_codes WHERE user_id = ${testUserId}::uuid
         `,
       );
@@ -154,8 +156,9 @@ describe('EmailTwoFactor', () => {
       const codeHash = await hasher.hash('123456');
       const pastExpiry = new Date(Date.now() - 1000); // 1 second ago
 
-      await prisma.asSystem((c) =>
-        c.$executeRaw`
+      await prisma.asSystem(
+        (c) =>
+          c.$executeRaw`
           INSERT INTO two_factor_codes (user_id, code_hash, expires_at, attempts)
           VALUES (${testUserId}::uuid, ${codeHash}, ${pastExpiry}, 0)
         `,

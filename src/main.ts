@@ -29,8 +29,8 @@ async function bootstrap(): Promise<void> {
     .setVersion('0.1.0')
     .setDescription(
       'MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie ' +
-      'set on POST /auth/2fa/verify. All non-GET requests require an ' +
-      '`x-csrf-token` header matching the value returned by the CSRF middleware.',
+        'set on POST /auth/2fa/verify. All non-GET requests require an ' +
+        '`x-csrf-token` header matching the value returned by the CSRF middleware.',
     )
     .addCookieAuth('access_token')
     .build();

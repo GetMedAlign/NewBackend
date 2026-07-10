@@ -79,12 +79,13 @@ describe('PrismaUserRepository', () => {
     it('returns superadmin when a user holds both admin and superadmin roles', async () => {
       const id = await repo.create('superadmin@example.com', 'h');
       // Assign admin role
-      await prisma.asSystem((c) =>
-        c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'admin')`,
+      await prisma.asSystem(
+        (c) => c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'admin')`,
       );
       // Assign superadmin role
-      await prisma.asSystem((c) =>
-        c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'superadmin')`,
+      await prisma.asSystem(
+        (c) =>
+          c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'superadmin')`,
       );
       const role = await repo.getPrimaryRole(id);
       expect(role).toBe('superadmin');
@@ -92,11 +93,11 @@ describe('PrismaUserRepository', () => {
 
     it('returns admin when a user holds admin and clinic roles', async () => {
       const id = await repo.create('admin@example.com', 'h');
-      await prisma.asSystem((c) =>
-        c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'admin')`,
+      await prisma.asSystem(
+        (c) => c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'admin')`,
       );
-      await prisma.asSystem((c) =>
-        c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'clinic')`,
+      await prisma.asSystem(
+        (c) => c.$executeRaw`INSERT INTO user_roles (user_id, role) VALUES (${id}::uuid, 'clinic')`,
       );
       const role = await repo.getPrimaryRole(id);
       expect(role).toBe('admin');

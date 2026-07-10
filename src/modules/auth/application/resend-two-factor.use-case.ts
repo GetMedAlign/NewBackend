@@ -1,9 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { TwoFactorPort, TWO_FACTOR } from '../domain/ports/two-factor.port';
-import {
-  UserRepositoryPort,
-  USER_REPOSITORY,
-} from '../domain/ports/user-repository.port';
+import { UserRepositoryPort, USER_REPOSITORY } from '../domain/ports/user-repository.port';
 
 export interface ResendTwoFactorInput {
   email: string;

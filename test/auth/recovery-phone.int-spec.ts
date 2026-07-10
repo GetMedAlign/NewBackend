@@ -54,8 +54,9 @@ describe('Recovery phone — encrypted column (§8/§12.3)', () => {
 
     // (a) Read the RAW column directly — must not equal plaintext and must be
     //     non-empty base64, proving at-rest ciphertext (§12.3).
-    const rawRows = await prisma.asSystem((client) =>
-      client.$queryRaw<{ recovery_phone_encrypted: string | null }[]>`
+    const rawRows = await prisma.asSystem(
+      (client) =>
+        client.$queryRaw<{ recovery_phone_encrypted: string | null }[]>`
         SELECT recovery_phone_encrypted FROM users WHERE id = ${userId}::uuid LIMIT 1
       `,
     );

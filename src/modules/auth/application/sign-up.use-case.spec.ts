@@ -83,8 +83,8 @@ describe('SignUpUseCase', () => {
   });
 
   it('throws InvalidEmailError on invalid email format', async () => {
-    await expect(
-      useCase.execute({ email: 'not-an-email', password: 'pw' }),
-    ).rejects.toBeInstanceOf(InvalidEmailError);
+    await expect(useCase.execute({ email: 'not-an-email', password: 'pw' })).rejects.toBeInstanceOf(
+      InvalidEmailError,
+    );
   });
 });
