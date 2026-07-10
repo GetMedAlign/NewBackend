@@ -16,13 +16,7 @@ const envSchema = z.object({
   ENCRYPTION_KEY: z
     .string()
     .refine(
-      (val) => {
-        try {
-          return Buffer.from(val, 'base64').length === 32;
-        } catch {
-          return false;
-        }
-      },
+      (val) => Buffer.from(val, 'base64').length === 32,
       { message: 'ENCRYPTION_KEY must base64-decode to exactly 32 bytes' },
     ),
 

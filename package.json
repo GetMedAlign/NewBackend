@@ -11,6 +11,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
+    "test": "jest",
     "jest": "jest",
     "test:e2e": "jest --config jest.e2e.config.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'"
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
+    "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.4.15",
     "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",

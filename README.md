@@ -23,7 +23,7 @@ pnpm dev                          # http://localhost:3000
 ## Testing
 
 ```bash
-pnpm jest         # unit
+pnpm test         # unit
 pnpm test:e2e     # integration/e2e against local Supabase Postgres
 ```
 

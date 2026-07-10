@@ -11,5 +11,5 @@ for (const line of lines) {
   if (eqIdx === -1) continue;
   const key = trimmed.slice(0, eqIdx).trim();
   const val = trimmed.slice(eqIdx + 1).trim();
-  process.env[key] = val;
+  process.env[key] ??= val;
 }

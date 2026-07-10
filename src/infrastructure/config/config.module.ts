@@ -6,7 +6,7 @@ import { parseEnv } from './env.schema';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate: (config: Record<string, unknown>) => parseEnv(config),
+      validate: parseEnv,
     }),
   ],
 })
