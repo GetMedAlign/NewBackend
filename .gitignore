@@ -32,3 +32,4 @@ coverage/
 
 # SDD scratch (progress notes only; specs/plans are tracked)
 .superpowers
+/generated/prisma
