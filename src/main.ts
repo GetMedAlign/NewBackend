@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import cookieParser = require('cookie-parser');
 import helmet from 'helmet';
@@ -21,6 +22,21 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+
+  // OpenAPI / Swagger UI at /docs
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('MedAlign Backend API')
+    .setVersion('0.1.0')
+    .setDescription(
+      'MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie ' +
+      'set on POST /auth/2fa/verify. All non-GET requests require an ' +
+      '`x-csrf-token` header matching the value returned by the CSRF middleware.',
+    )
+    .addCookieAuth('access_token')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
 
   const config = app.get(ConfigService<Env, true>);
   const port = config.get('PORT', { infer: true });

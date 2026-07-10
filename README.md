@@ -24,10 +24,21 @@ pnpm dev                          # http://localhost:3000
 
 ```bash
 pnpm test         # unit
-pnpm test:e2e     # integration/e2e against local Supabase Postgres
+pnpm test:int     # integration against local Supabase Postgres
+pnpm test:e2e     # e2e against local Supabase Postgres
 ```
 
 Integration tests run against a real local Postgres and verify RLS isolation, audit writes, encryption round-trips, and the full auth flow.
+
+## API docs
+
+- **Swagger UI**: `http://localhost:3000/docs` — served automatically when the server is running.
+- **`openapi.json`**: committed to the repo root. Import directly into Postman via *File → Import → select `openapi.json`*.
+- **Regenerate** (offline, no DB required):
+  ```bash
+  pnpm openapi
+  ```
+  This runs `scripts/generate-openapi.ts` with stub providers — no database connection needed.
 
 ## Auth API (Foundation slice)
 
