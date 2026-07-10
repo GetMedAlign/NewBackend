@@ -17,14 +17,13 @@ $$;
 -- The connection role (postgres, NOSUPERUSER + BYPASSRLS on Supabase) must be
 -- a member of app_authenticated in order to `SET LOCAL ROLE app_authenticated`.
 -- After the switch the active role has no BYPASSRLS, so RLS is enforced.
-GRANT app_authenticated TO postgres;
+GRANT app_authenticated TO postgres; -- NOTE: wires the local Supabase connection role; in production, grant app_authenticated membership to whatever role the app connects as.
 
 GRANT USAGE ON SCHEMA public TO app_authenticated;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON users            TO app_authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON user_roles       TO app_authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON two_factor_codes TO app_authenticated;
-GRANT SELECT                         ON audit_log        TO app_authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON users      TO app_authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_roles TO app_authenticated;
+GRANT SELECT                         ON audit_log  TO app_authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Role helper — used inside RLS policies (SECURITY DEFINER to read user_roles
@@ -51,6 +50,11 @@ ALTER TABLE users            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_roles       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE two_factor_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log        ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE users            FORCE ROW LEVEL SECURITY;
+ALTER TABLE user_roles       FORCE ROW LEVEL SECURITY;
+ALTER TABLE two_factor_codes FORCE ROW LEVEL SECURITY;
+ALTER TABLE audit_log        FORCE ROW LEVEL SECURITY;
 
 -- users: a user may read/update their own row -------------------------------
 CREATE POLICY users_self_select ON users
@@ -134,8 +138,6 @@ BEGIN
   RETURN new_id;
 END;
 $$;
-
-GRANT EXECUTE ON FUNCTION create_user(citext, text) TO app_authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Audit-append function — the single writer to audit_log. Only trigger
