@@ -28,15 +28,20 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Opens an interactive transaction, sets the three RLS session variables
-   * as transaction-local (set_config(..., true)), then calls fn with the
-   * transaction client. The session vars are never visible outside this TX.
+   * Opens an interactive transaction, switches the transaction to the
+   * RLS-subject role (app_authenticated) so Row-Level Security is enforced
+   * (the connection role, postgres, is a superuser and would otherwise bypass
+   * RLS), sets the three RLS session variables as transaction-local
+   * (set_config(..., true)), then calls fn with the transaction client. Both
+   * the role switch and the session vars are reverted at the end of the TX.
    */
   async withUserContext<T>(
     ctx: RequestContext,
     fn: (tx: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.client.$transaction(async (tx) => {
+      // Fixed literal — no interpolation — so $executeRawUnsafe is safe here.
+      await tx.$executeRawUnsafe('SET LOCAL ROLE app_authenticated');
       await tx.$executeRaw`SELECT set_config('app.current_user_id',   ${ctx.userId ?? ''},  true)`;
       await tx.$executeRaw`SELECT set_config('app.current_user_role',  ${ctx.role ?? ''},   true)`;
       await tx.$executeRaw`SELECT set_config('app.current_ip_address', ${ctx.ip ?? ''},     true)`;
