@@ -8,7 +8,7 @@ import type { RequestContext } from './request-context';
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly pool: Pool;
-  readonly client: PrismaClient;
+  private readonly client: PrismaClient;
 
   constructor() {
     this.pool = new Pool({

@@ -15,8 +15,9 @@ const TEST_IP = '127.0.0.1';
 
 let service: PrismaService;
 
-beforeAll(() => {
+beforeAll(async () => {
   service = new PrismaService();
+  await service.onModuleInit();
 });
 
 afterAll(async () => {
@@ -96,18 +97,28 @@ describe('PrismaService', () => {
   });
 
   describe('asSystem', () => {
-    it('runs the callback without setting any session context', async () => {
-      // First set context in a withUserContext block to prove asSystem is clean
-      const rows = await service.asSystem((client) =>
-        client.$queryRaw<{ v: string | null }[]>`
+    it('transaction-local var does not leak to subsequent pool connections', async () => {
+      // Step (a): set the session variable inside a withUserContext transaction
+      const ctx: RequestContext = {
+        userId: TEST_USER_ID,
+        role: TEST_ROLE,
+        ip: TEST_IP,
+      };
+      await service.withUserContext(ctx, (tx) =>
+        tx.$queryRaw<{ v: string }[]>`
           SELECT current_setting('app.current_user_id', true) AS v
         `,
       );
 
-      // current_setting with missing_ok=true returns NULL or empty string if never set
-      // Outside a withUserContext transaction, the session variable should not be set to our UUID
-      const val = rows[0]?.v ?? '';
-      expect(val).not.toBe(TEST_USER_ID);
+      // Step (b): read the same session variable via asSystem (different pool connection)
+      const rows = await service.asSystem((client) =>
+        client.$queryRaw<{ v: string }[]>`
+          SELECT current_setting('app.current_user_id', true) AS v
+        `,
+      );
+
+      // Step (c): assert the UUID from step (a) did NOT leak — the value must be empty
+      expect(rows[0]?.v ?? '').toBe('');
     });
   });
 });
