@@ -40,6 +40,8 @@ Integration tests run against a real local Postgres and verify RLS isolation, au
   ```
   This runs `scripts/generate-openapi.ts` with stub providers — no database connection needed.
 
+> **CSRF & local testing:** the API uses double-submit CSRF (an `x-csrf-token` header must match the `csrf_token` cookie on non-GET requests). Enforcement is **skipped when `NODE_ENV=development`**, so Postman/curl can hit POST routes directly during local dev. CSRF is fully enforced in `test` and `production`.
+
 ## Auth API (Foundation slice)
 
 Contract-compatible with the existing .NET service, so the frontend is unchanged:
