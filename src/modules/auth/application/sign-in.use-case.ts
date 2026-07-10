@@ -5,10 +5,6 @@ import {
   PasswordHasherPort,
   PASSWORD_HASHER,
 } from '../domain/ports/password-hasher.port';
-import {
-  TokenServicePort,
-  TOKEN_SERVICE,
-} from '../domain/ports/token-service.port';
 import { TwoFactorPort, TWO_FACTOR } from '../domain/ports/two-factor.port';
 import {
   UserRepositoryPort,
@@ -22,6 +18,12 @@ import { AuditPort, AUDIT } from '../domain/ports/audit.port';
  */
 const DUMMY_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaasfNfOptZe7aOnXc';
+
+/**
+ * The user's role is not yet confirmed at this stage — identity is only
+ * established once the 2FA step succeeds.
+ */
+const PRE_AUTH_ROLE = 'pre_auth';
 
 export interface SignInInput {
   email: string;
@@ -37,7 +39,6 @@ export interface SignInOutput {
 export class SignInUseCase {
   constructor(
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasherPort,
-    @Inject(TOKEN_SERVICE) private readonly tokens: TokenServicePort,
     @Inject(TWO_FACTOR) private readonly twoFactor: TwoFactorPort,
     @Inject(USER_REPOSITORY) private readonly repo: UserRepositoryPort,
     @Inject(AUDIT) private readonly audit: AuditPort,
@@ -66,7 +67,7 @@ export class SignInUseCase {
 
     await this.audit.record({
       actorUserId: user.id,
-      actorRole: 'unknown',
+      actorRole: PRE_AUTH_ROLE,
       ip: input.ip ?? null,
       actionType: 'signin_2fa_issued',
     });

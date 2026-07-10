@@ -1,7 +1,6 @@
 import { SignInUseCase } from './sign-in.use-case';
 import { User } from '../domain/entities/user.entity';
 import type { PasswordHasherPort } from '../domain/ports/password-hasher.port';
-import type { TokenServicePort } from '../domain/ports/token-service.port';
 import type { TwoFactorPort } from '../domain/ports/two-factor.port';
 import type { UserRepositoryPort } from '../domain/ports/user-repository.port';
 import type { AuditPort } from '../domain/ports/audit.port';
@@ -22,11 +21,6 @@ const makeUser = (overrides?: Partial<ConstructorParameters<typeof User>[0]>): U
 const makeHasher = (): jest.Mocked<PasswordHasherPort> => ({
   hash: jest.fn(),
   verify: jest.fn().mockResolvedValue(true),
-});
-
-const makeTokens = (): jest.Mocked<TokenServicePort> => ({
-  issue: jest.fn().mockReturnValue('jwt-token'),
-  verify: jest.fn(),
 });
 
 const makeTwoFactor = (): jest.Mocked<TwoFactorPort> => ({
@@ -50,18 +44,16 @@ const makeAudit = (): jest.Mocked<AuditPort> => ({
 describe('SignInUseCase', () => {
   let useCase: SignInUseCase;
   let hasher: jest.Mocked<PasswordHasherPort>;
-  let tokens: jest.Mocked<TokenServicePort>;
   let twoFactor: jest.Mocked<TwoFactorPort>;
   let repo: jest.Mocked<UserRepositoryPort>;
   let audit: jest.Mocked<AuditPort>;
 
   beforeEach(() => {
     hasher = makeHasher();
-    tokens = makeTokens();
     twoFactor = makeTwoFactor();
     repo = makeRepo();
     audit = makeAudit();
-    useCase = new SignInUseCase(hasher, tokens, twoFactor, repo, audit);
+    useCase = new SignInUseCase(hasher, twoFactor, repo, audit);
   });
 
   describe('unknown email', () => {
@@ -131,16 +123,11 @@ describe('SignInUseCase', () => {
       expect(twoFactor.issueCode).toHaveBeenCalledWith('user-id');
     });
 
-    it('returns { requiresTwoFactor: true }', async () => {
+    it('result is exactly { requiresTwoFactor: true } with no token field', async () => {
       const result = await useCase.execute({ email: 'user@example.com', password: 'correct' });
 
       expect(result).toEqual({ requiresTwoFactor: true });
-    });
-
-    it('does NOT issue a JWT token', async () => {
-      await useCase.execute({ email: 'user@example.com', password: 'correct' });
-
-      expect(tokens.issue).not.toHaveBeenCalled();
+      expect(result).not.toHaveProperty('token');
     });
 
     it('records a signin_2fa_issued audit event', async () => {

@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Email } from '../domain/value-objects/email';
-import { EmailAlreadyExistsError } from '../domain/errors/email-already-exists.error';
 import {
   PasswordHasherPort,
   PASSWORD_HASHER,
@@ -33,13 +32,7 @@ export class SignUpUseCase {
     const email = Email.create(input.email);
     const passwordHash = await this.hasher.hash(input.password);
 
-    let userId: string;
-    try {
-      userId = await this.repo.create(email.toString(), passwordHash);
-    } catch (err) {
-      if (err instanceof EmailAlreadyExistsError) throw err;
-      throw err;
-    }
+    const userId = await this.repo.create(email.toString(), passwordHash);
 
     await this.audit.record({
       actorUserId: userId,

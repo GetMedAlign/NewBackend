@@ -3,6 +3,7 @@ import type { PasswordHasherPort } from '../domain/ports/password-hasher.port';
 import type { UserRepositoryPort } from '../domain/ports/user-repository.port';
 import type { AuditPort } from '../domain/ports/audit.port';
 import { EmailAlreadyExistsError } from '../domain/errors/email-already-exists.error';
+import { InvalidEmailError } from '../domain/value-objects/email';
 
 const makeHasher = (): jest.Mocked<PasswordHasherPort> => ({
   hash: jest.fn().mockResolvedValue('hashed-pw'),
@@ -79,9 +80,9 @@ describe('SignUpUseCase', () => {
     ).rejects.toBeInstanceOf(EmailAlreadyExistsError);
   });
 
-  it('throws on invalid email format', async () => {
+  it('throws InvalidEmailError on invalid email format', async () => {
     await expect(
       useCase.execute({ email: 'not-an-email', password: 'pw' }),
-    ).rejects.toThrow();
+    ).rejects.toBeInstanceOf(InvalidEmailError);
   });
 });
