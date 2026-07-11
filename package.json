@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/main",
+    "start": "node dist/src/main",
     "test": "jest",
     "jest": "jest",
     "test:int": "jest --config jest.int.config.ts",
