@@ -1,11 +1,11 @@
 # MedAlign Backend Rebuild — Patient Journey Slice Design Spec
 
-|            |                                                     |
-| ---------- | --------------------------------------------------- |
-| **Author** | Brian (with Claude)                                 |
-| **Date**   | 2026-07-13                                           |
-| **Status** | Approved design, ready for planning                 |
-| **Slice**  | Phase 1, sub-project 2 of 6: Patient journey        |
+|            |                                              |
+| ---------- | -------------------------------------------- |
+| **Author** | Brian (with Claude)                          |
+| **Date**   | 2026-07-13                                   |
+| **Status** | Approved design, ready for planning          |
+| **Slice**  | Phase 1, sub-project 2 of 6: Patient journey |
 
 Builds on the Foundation slice (`2026-07-10-backend-foundation-design.md`): NestJS + hexagonal, Prisma 7 + Supabase Postgres, `withUserContext`/`asSystem`, RLS + audit triggers, `EncryptionPort` (AES-256-GCM), app-managed JWT-cookie auth. This slice reuses all of that.
 

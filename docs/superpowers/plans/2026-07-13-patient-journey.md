@@ -27,6 +27,7 @@
 **Files:** Create `src/infrastructure/config/env.schema.ts` (modify: add `CLAIM_TOKEN_SECRET` min 32), `src/modules/assessments/domain/claim-token.service.ts`, `.spec.ts`. Modify `test/.env.test`, `.env.example`.
 
 **Interfaces:**
+
 - Produces: `ClaimTokenService { issue(sessionId: string): string; verify(sessionId: string, token: string): boolean }` (token `CLAIM_TOKEN_SERVICE` or inject the class). `token = base64url(HMAC-SHA256(sessionId, CLAIM_TOKEN_SECRET))`; `verify` uses `crypto.timingSafeEqual`.
 
 - [ ] **Step 1 (test):** `issue(sid)` is stable for the same sid+secret; `verify(sid, issue(sid))` true; `verify(sid, tampered)` false; `verify(otherSid, issue(sid))` false; empty/short token false (no throw).
@@ -64,7 +65,7 @@
   - `patient_assessments` (+ child tables): `USING (patient_id IN (SELECT id FROM patients WHERE user_id = current_setting('app.current_user_id', true)::uuid))`; admin all. (Child tables policy via their `assessment_id -> patient_assessments`.)
   - `leads`: patient select where `patient_id IN (…caller's patient…)`; admin all.
   - `clinics`/`clinic_categories`/`clinic_services`/`zip_codes`: `USING (true)` for select to `app_authenticated` (public reference data; no PHI).
-  Add audit trigger functions `audit_patients()`, `audit_patient_assessments()`, `audit_leads()` (mirror the Foundation `audit_users`: read session vars, coalesce role to `'system'`, strip encrypted/PHI free-text columns from the jsonb — do not copy `allergy_details`/`other_medications`/`patient_phone` into audit values), calling `append_audit_log`.
+    Add audit trigger functions `audit_patients()`, `audit_patient_assessments()`, `audit_leads()` (mirror the Foundation `audit_users`: read session vars, coalesce role to `'system'`, strip encrypted/PHI free-text columns from the jsonb — do not copy `allergy_details`/`other_medications`/`patient_phone` into audit values), calling `append_audit_log`.
 - [ ] **Step 4:** run reset + deploy; both int tests green; full suite green.
 - [ ] **Step 5:** commit `feat(db): add RLS policies and audit triggers for patient-journey tables`.
 
@@ -89,6 +90,7 @@
 **Files:** Create `src/infrastructure/geo/zip-geocoder.ts` (+ `.int-spec.ts`), `src/infrastructure/geo/distance.ts` (+ `.spec.ts`), `src/modules/recommendations/domain/service-mapping.ts` (+ `.spec.ts`).
 
 **Interfaces:**
+
 - `distanceMiles(aLat:number,aLng:number,bLat:number,bLng:number): number` (Haversine, R=3958.8).
 - `ZipGeocoder { lookup(zip: string): Promise<{ lat:number; lng:number; state:string } | null> }` (reads `zip_codes` via `asSystem`).
 - `impliedServices(goalCodes:string[], symptomCodes:string[]): Set<string>` from the goal/symptom maps ported verbatim from `MedAlign-Backend/.../Services/ServiceMapping.cs`.
@@ -106,6 +108,7 @@
 **Files:** Create `src/modules/clinics/domain/clinic.entity.ts`, `ports/clinic-repository.port.ts`, `src/modules/clinics/infrastructure/prisma-clinic.repository.ts`, `clinics.module.ts`; test `test/clinics/clinic-repository.int-spec.ts`.
 
 **Interfaces:**
+
 - `ClinicReadModel` (all matchable fields incl. `categories:string[]`, `services:string[]`, `latitude/longitude/state`, bands, `rating`, `reviewCount`, `financingAvailable`, `acceptsInsurance`, `telehealthAvailable`, `newPatientWait`, `status`, `billingStatus`, `slug/name/about/providerName/websiteUrl/city/state`, `businessEmail`, `webhookUrl`, `notifyOnLead`, `webhookSecretEncrypted`).
 - `ClinicRepositoryPort { findMatchable(category: string): Promise<ClinicReadModel[]>; findById(id: string): Promise<ClinicReadModel | null>; findBySlug(slug: string): Promise<ClinicReadModel | null> }` (token `CLINIC_REPOSITORY`). `findMatchable` applies the hard filter: `status='active'` AND `billing_status NOT IN ('no_card','overdue')` AND a `clinic_categories` row = category. Runs via `asSystem` (reference data; recommendations is anonymous).
 
@@ -122,6 +125,7 @@
 **Files:** `src/modules/assessments/domain/` (entity, ports `assessment-repository.port.ts`), `application/submit-assessment.use-case.ts`, `get-latest-assessment.use-case.ts`, `infrastructure/prisma-assessment.repository.ts`, `http/assessments.controller.ts` + DTOs, `assessments.module.ts`; unit specs + `test/assessments/*.int-spec.ts` + e2e additions.
 
 **Interfaces:**
+
 - `AssessmentRepositoryPort { create(data): Promise<{ id:string; sessionId:string }>; findBySessionId(sid): Promise<Assessment|null>; findLatestByPatient(userId): Promise<Assessment|null>; linkToPatient(sessionId, userId): Promise<void> }`. Writes encrypt PHI columns via `EncryptionPort`; reads decrypt. Anonymous create + `findBySessionId` via `asSystem`; authenticated create/latest via `withUserContext`.
 - `SubmitAssessmentUseCase.execute(input, actor: { userId?: string })`: validate consent (`consentGiven` true else `ConsentRequiredError`; `consentVersion` in allowlist `['1.0']` else `InvalidConsentVersionError`); generate `session_<hex>`; set `patient_id` if `actor.userId` (ensure a `patients` row exists, create if missing); persist assessment + children; issue `claimToken`; return `{ sessionId, claimToken }`.
 - `GetLatestAssessmentUseCase.execute({ userId, sessionId?, claimToken? })`: return the caller's latest; if none and `sessionId`+valid `claimToken` for an unclaimed assessment, link it (`linkToPatient`) then return it; else 204.
@@ -139,6 +143,7 @@
 **Files:** `src/modules/recommendations/domain/recommendation.service.ts` (pure scoring), `application/get-recommendations.use-case.ts`, `http/recommendations.controller.ts` + `ClinicMatchDto`, `recommendations.module.ts`; `recommendation.service.spec.ts` (heavy) + `test/recommendations/*.e2e-spec.ts`.
 
 **Interfaces:**
+
 - `RecommendationService.score(assessment, clinic, geo): number` and `rank(assessment, clinics, patientGeo): ClinicMatchDto[]` (top 10, sort score desc then rating desc then id asc). Implements spec §5 exactly (7 components with the precise point values). `distanceMiles` from geo; patient geo from `ZipGeocoder.lookup(assessment.zipCode)`.
 - `GetRecommendationsUseCase.execute(sessionId)`: 404 if session format invalid or assessment not found; else load matchable clinics for the category, geocode patient zip, rank, return `ClinicMatchDto[]`.
 - Controller: `GET /recommendations/:sessionId` (`@Public`).
@@ -156,6 +161,7 @@
 **Files:** `src/modules/leads/domain/` (entity, ports `lead-repository.port.ts`, `webhook-sender.port.ts`), `application/submit-lead.use-case.ts`, `infrastructure/prisma-lead.repository.ts`, `infrastructure/ssrf-webhook-sender.ts`, `http/leads.controller.ts` + DTO, `leads.module.ts`; unit specs + `test/leads/*.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - `LeadRepositoryPort { create(data): Promise<{ leadId:string }>; recordDelivery(leadId, {url,status,responseCode?,error?}): Promise<void>; setDeliveryStatus(leadId, status, deliveredAt?): Promise<void>; findByPatient(userId): Promise<LeadView[]> }`.
 - `WebhookSenderPort { send(url:string, payload:object, secret:string): Promise<{ ok:boolean; status?:number; error?:string }> }`; `SsrfWebhookSender` implements the guard (spec §4): require absolute `https:`; DNS-resolve host, reject loopback/private/link-local/ULA/`169.254`/`fd00`/RFC1918; connect pinned to the resolved IP; no redirects; 10s timeout; `X-MedAlign-Signature: sha256=<HMAC(payload, secret)>`.
 - `SubmitLeadUseCase.execute(input, actor)`: `ClinicNotFoundError` if clinic missing; resolve first name (input → JWT name → email prefix); link assessment/patient (authenticated → JWT patient; else `sessionId`+valid `claimToken` → assessment's patient, and if unclaimed + actor.userId back-fill); create lead (`delivery_status='pending'`, `clinic_status='new'`, `lead_source='assessment'`, encrypt `patient_phone` if present); if `clinic.notifyOnLead` and active: send email (decrypt not needed; SendGrid, HTML-escape values) if `businessEmail`, and `WebhookSender.send` if `webhookUrl` (decrypt `webhookSecret` via `EncryptionPort`); `recordDelivery` + `setDeliveryStatus` to `emailed`/`sent_to_crm`/`failed`. Controller `POST /leads` (`@Public`).
@@ -173,6 +179,7 @@
 **Files:** `src/modules/patients/domain/` (entity, `patient-repository.port.ts`), `application/{get-profile,update-profile,get-my-leads}.use-case.ts`, `infrastructure/prisma-patient.repository.ts`, `http/patients.controller.ts` + DTOs, `patients.module.ts`; unit + `test/patients/*.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - `PatientRepositoryPort { findByUserId(userId): Promise<Patient|null>; upsertProfile(userId, {name,dob?,zipCode?}): Promise<void> }` (name lives on the user; profile update sets user display name + patient dob/zip). `GetMyLeadsUseCase` consumes `LeadRepositoryPort.findByPatient` (Task 9). All via `withUserContext`.
 - Controller (authenticated, not `@Public`): `GET /patients/me` → `{name,email,dob?,zipCode?}`; `PUT /patients/me` (`{name (≤200), dob?}`) → `{success:true}`; `GET /patients/me/leads` → `PatientLeadDto[]` (fields per spec/extraction, sorted by receivedAt desc).
 
