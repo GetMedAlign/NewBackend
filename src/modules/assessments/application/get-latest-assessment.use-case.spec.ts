@@ -49,7 +49,7 @@ describe('GetLatestAssessmentUseCase', () => {
       create: jest.fn(),
       findBySessionId: jest.fn(),
       findLatestByPatientUser: jest.fn(),
-      linkToPatient: jest.fn(),
+      linkToPatient: jest.fn<Promise<{ count: number }>, [string, string]>(),
     };
 
     mockClaimTokenService = {
@@ -90,14 +90,13 @@ describe('GetLatestAssessmentUseCase', () => {
     expect(mockClaimTokenService.verify).not.toHaveBeenCalled();
   });
 
-  it('links anonymous assessment when claimToken verifies and assessment is unclaimed', async () => {
+  it('links anonymous assessment when claimToken verifies and claim succeeds (count=1)', async () => {
     const linkedAssessment = { ...mockAssessment, patientId: 'patient-123' };
     mockRepo.findLatestByPatientUser
       .mockResolvedValueOnce(null) // before link
       .mockResolvedValueOnce(linkedAssessment); // after link
-    mockRepo.findBySessionId.mockResolvedValue(mockAssessment); // patientId: null
     mockClaimTokenService.verify.mockReturnValue(true);
-    mockRepo.linkToPatient.mockResolvedValue(undefined);
+    mockRepo.linkToPatient.mockResolvedValue({ count: 1 });
 
     const result = await useCase.execute({
       userId: 'user-123',
@@ -107,6 +106,7 @@ describe('GetLatestAssessmentUseCase', () => {
 
     expect(mockClaimTokenService.verify).toHaveBeenCalledWith('session_abc123', 'valid-token');
     expect(mockRepo.linkToPatient).toHaveBeenCalledWith('session_abc123', 'user-123');
+    expect(mockRepo.findBySessionId).not.toHaveBeenCalled();
     expect(result).toBe(linkedAssessment);
   });
 
@@ -125,10 +125,10 @@ describe('GetLatestAssessmentUseCase', () => {
     expect(mockRepo.findBySessionId).not.toHaveBeenCalled();
   });
 
-  it('does NOT link when assessment is already claimed (patientId not null)', async () => {
+  it('returns null when assessment is already claimed (linkToPatient returns count=0)', async () => {
     mockRepo.findLatestByPatientUser.mockResolvedValue(null);
     mockClaimTokenService.verify.mockReturnValue(true);
-    mockRepo.findBySessionId.mockResolvedValue({ ...mockAssessment, patientId: 'other-patient' });
+    mockRepo.linkToPatient.mockResolvedValue({ count: 0 });
 
     const result = await useCase.execute({
       userId: 'user-123',
@@ -137,6 +137,7 @@ describe('GetLatestAssessmentUseCase', () => {
     });
 
     expect(result).toBeNull();
-    expect(mockRepo.linkToPatient).not.toHaveBeenCalled();
+    expect(mockRepo.linkToPatient).toHaveBeenCalledWith('session_abc123', 'user-123');
+    expect(mockRepo.findBySessionId).not.toHaveBeenCalled();
   });
 });

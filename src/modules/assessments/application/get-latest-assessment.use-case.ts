@@ -33,14 +33,15 @@ export class GetLatestAssessmentUseCase {
         return null;
       }
 
-      const assessment = await this.assessmentRepository.findBySessionId(input.sessionId);
-      if (!assessment || assessment.patientId !== null) {
-        // Either not found or already claimed by another patient
+      // Attempt the atomic conditional claim (only links if patientId IS NULL).
+      // If count === 0, the row was already claimed by someone else — return null.
+      const { count } = await this.assessmentRepository.linkToPatient(
+        input.sessionId,
+        input.userId,
+      );
+      if (count === 0) {
         return null;
       }
-
-      // Link the anonymous assessment to this patient
-      await this.assessmentRepository.linkToPatient(input.sessionId, input.userId);
 
       // Re-fetch from patient's context now that it's linked
       return this.assessmentRepository.findLatestByPatientUser(input.userId);

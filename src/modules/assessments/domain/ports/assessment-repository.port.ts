@@ -39,7 +39,7 @@ export interface AssessmentRepositoryPort {
   ): Promise<{ id: string; sessionId: string }>;
   findBySessionId(sessionId: string): Promise<Assessment | null>;
   findLatestByPatientUser(userId: string): Promise<Assessment | null>;
-  linkToPatient(sessionId: string, userId: string): Promise<void>;
+  linkToPatient(sessionId: string, userId: string): Promise<{ count: number }>;
 }
 
 export const ASSESSMENT_REPOSITORY = Symbol('AssessmentRepositoryPort');

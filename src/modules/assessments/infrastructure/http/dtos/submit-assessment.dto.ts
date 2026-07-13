@@ -11,6 +11,7 @@ import {
   ValidateIf,
   registerDecorator,
   ValidationOptions,
+  ValidationArguments,
 } from 'class-validator';
 
 export enum TreatmentCategoryEnum {
@@ -58,6 +59,40 @@ function IsSymptomSeverities(validationOptions?: ValidationOptions) {
   };
 }
 
+/**
+ * Cross-field validator: every symptom code in `selectedSymptoms` must have
+ * a corresponding severity (1-5) in `symptomSeverities`.
+ */
+function EachSymptomHasSeverity(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string): void {
+    registerDecorator({
+      name: 'eachSymptomHasSeverity',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: unknown, args: ValidationArguments): boolean {
+          if (!Array.isArray(value)) return true; // let @IsArray handle it
+          const dto = args.object as SubmitAssessmentDto;
+          const severities = dto.symptomSeverities;
+          if (typeof severities !== 'object' || severities === null) return false;
+          return (value as string[]).every(
+            (code) =>
+              Object.prototype.hasOwnProperty.call(severities, code) &&
+              typeof severities[code] === 'number' &&
+              Number.isInteger(severities[code]) &&
+              severities[code] >= 1 &&
+              severities[code] <= 5,
+          );
+        },
+        defaultMessage(): string {
+          return 'every entry in selectedSymptoms must have a corresponding severity (1-5) in symptomSeverities';
+        },
+      },
+    });
+  };
+}
+
 export class SubmitAssessmentDto {
   @IsEnum(TreatmentCategoryEnum)
   treatmentCategory!: string;
@@ -70,6 +105,7 @@ export class SubmitAssessmentDto {
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
+  @EachSymptomHasSeverity()
   selectedSymptoms!: string[];
 
   @IsObject()

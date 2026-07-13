@@ -117,7 +117,7 @@ export class PrismaAssessmentRepository implements AssessmentRepositoryPort {
             symptoms: {
               create: data.selectedSymptoms.map((s) => ({
                 symptomCode: s,
-                severity: data.symptomSeverities[s] ?? 1,
+                severity: data.symptomSeverities[s] as number,
               })),
             },
             chronicConditions: {
@@ -173,7 +173,7 @@ export class PrismaAssessmentRepository implements AssessmentRepositoryPort {
           symptoms: {
             create: data.selectedSymptoms.map((s) => ({
               symptomCode: s,
-              severity: data.symptomSeverities[s] ?? 1,
+              severity: data.symptomSeverities[s] as number,
             })),
           },
           chronicConditions: {
@@ -234,10 +234,10 @@ export class PrismaAssessmentRepository implements AssessmentRepositoryPort {
     return this.toEntity(row as DbAssessmentRow);
   }
 
-  async linkToPatient(sessionId: string, userId: string): Promise<void> {
+  async linkToPatient(sessionId: string, userId: string): Promise<{ count: number }> {
     const now = new Date();
-    await this.prisma.asSystem(async (client) => {
-      // Upsert patient
+    return this.prisma.asSystem(async (client) => {
+      // Upsert patient row (no changes to timestamps yet)
       const patient = await client.patient.upsert({
         where: { userId },
         create: { userId },
@@ -245,17 +245,22 @@ export class PrismaAssessmentRepository implements AssessmentRepositoryPort {
         select: { id: true },
       });
 
-      // Update assessment's patientId
-      await client.patientAssessment.update({
-        where: { sessionId },
-        data: { patientId: patient.id },
-      });
+      const patientId = patient.id;
 
-      // Update patient.lastAssessmentAt
-      await client.patient.update({
-        where: { id: patient.id },
-        data: { lastAssessmentAt: now },
-      });
+      // Atomic conditional claim: only update the row if it is still unclaimed.
+      // If another concurrent request already claimed it, count will be 0.
+      const [claimResult] = await client.$transaction([
+        client.patientAssessment.updateMany({
+          where: { sessionId, patientId: null },
+          data: { patientId },
+        }),
+        client.patient.update({
+          where: { id: patientId },
+          data: { lastAssessmentAt: now },
+        }),
+      ]);
+
+      return { count: claimResult.count };
     });
   }
 
@@ -273,40 +278,36 @@ export class PrismaAssessmentRepository implements AssessmentRepositoryPort {
       selectedGoals: row.goals.map((g) => g.goalCode),
       selectedSymptoms: row.symptoms.map((s) => s.symptomCode),
       symptomSeverities,
-      symptomDuration: row.symptomDuration ? this.safeDecrypt(row.symptomDuration) : null,
+      symptomDuration: row.symptomDuration ? this.encryption.decrypt(row.symptomDuration) : null,
       hasPriorTreatment: row.hasPriorTreatment,
-      exerciseFrequency: row.exerciseFrequency ? this.safeDecrypt(row.exerciseFrequency) : null,
-      diet: row.diet ? this.safeDecrypt(row.diet) : null,
-      sleepHours: row.sleepHours ? this.safeDecrypt(row.sleepHours) : null,
-      stressLevel: row.stressLevel ? this.safeDecrypt(row.stressLevel) : null,
-      alcoholUse: row.alcoholUse ? this.safeDecrypt(row.alcoholUse) : null,
+      exerciseFrequency: row.exerciseFrequency
+        ? this.encryption.decrypt(row.exerciseFrequency)
+        : null,
+      diet: row.diet ? this.encryption.decrypt(row.diet) : null,
+      sleepHours: row.sleepHours ? this.encryption.decrypt(row.sleepHours) : null,
+      stressLevel: row.stressLevel ? this.encryption.decrypt(row.stressLevel) : null,
+      alcoholUse: row.alcoholUse ? this.encryption.decrypt(row.alcoholUse) : null,
       willingLabWork: row.willingLabWork,
       willingStructuredProgram: row.willingStructuredProgram,
       appointmentPreference: row.appointmentPreference
-        ? this.safeDecrypt(row.appointmentPreference)
+        ? this.encryption.decrypt(row.appointmentPreference)
         : null,
       startTimeline: row.startTimeline,
       budgetBand: row.budgetBand,
       telehealthPreference: row.telehealthPreference,
-      biologicalSex: row.biologicalSex ? this.safeDecrypt(row.biologicalSex) : null,
+      biologicalSex: row.biologicalSex ? this.encryption.decrypt(row.biologicalSex) : null,
       pregnantOrPlanning: row.pregnantOrPlanning,
       takingPrescriptions: row.takingPrescriptions,
       hadPriorTherapy: row.hadPriorTherapy,
       medicationAllergies: row.medicationAllergies,
-      allergyDetails: row.allergyDetails ? this.safeDecrypt(row.allergyDetails) : null,
-      chronicConditions: row.chronicConditions.map((c) => this.safeDecrypt(c.conditionCode)),
-      currentPrescriptions: row.prescriptions.map((p) => this.safeDecrypt(p.prescriptionCode)),
-      otherMedications: row.otherMedications ? this.safeDecrypt(row.otherMedications) : null,
+      allergyDetails: row.allergyDetails ? this.encryption.decrypt(row.allergyDetails) : null,
+      chronicConditions: row.chronicConditions.map((c) => this.encryption.decrypt(c.conditionCode)),
+      currentPrescriptions: row.prescriptions.map((p) =>
+        this.encryption.decrypt(p.prescriptionCode),
+      ),
+      otherMedications: row.otherMedications ? this.encryption.decrypt(row.otherMedications) : null,
       zipCode: row.zipCode,
       submittedAt: row.submittedAt,
     };
-  }
-
-  private safeDecrypt(ciphertext: string): string {
-    try {
-      return this.encryption.decrypt(ciphertext);
-    } catch {
-      return ciphertext;
-    }
   }
 }
