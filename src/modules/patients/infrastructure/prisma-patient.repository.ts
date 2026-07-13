@@ -59,6 +59,24 @@ export class PrismaPatientRepository implements PatientRepositoryPort {
     };
   }
 
+  async findPatientIdByUserId(userId: string): Promise<string | null> {
+    // RLS-scoped read: under withUserContext the caller can only ever read
+    // their own patient row, so this always resolves the authenticated user's
+    // patient id (matching the .NET Patients.FirstOrDefault(p => p.UserId)).
+    const rows = await this.prisma.withUserContext(
+      { userId, role: 'patient', ip: null },
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`
+          SELECT id
+          FROM patients
+          WHERE user_id = ${userId}::uuid
+            AND is_deleted = false
+          LIMIT 1
+        `,
+    );
+    return rows[0]?.id ?? null;
+  }
+
   async updateProfile(userId: string, data: { name: string; dob?: string }): Promise<void> {
     // Update user name via withUserContext so RLS (users_self_update policy) is enforced
     // in addition to the explicit WHERE clause.  asSystem is reserved for auth-identity

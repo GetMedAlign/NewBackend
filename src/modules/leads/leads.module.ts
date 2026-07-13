@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { CryptoModule } from '../../infrastructure/crypto/crypto.module';
 import { AuthModule } from '../auth/auth.module';
 import { ClinicsModule } from '../clinics/clinics.module';
 import { AssessmentsModule } from '../assessments/assessments.module';
+import { PatientsModule } from '../patients/patients.module';
 
 import { LEAD_REPOSITORY } from './domain/ports/lead-repository.port';
 import { WEBHOOK_SENDER } from './domain/ports/webhook-sender.port';
@@ -14,7 +15,14 @@ import { SubmitLeadUseCase } from './application/submit-lead.use-case';
 import { LeadsController } from './infrastructure/http/leads.controller';
 
 @Module({
-  imports: [PrismaModule, CryptoModule, AuthModule, ClinicsModule, AssessmentsModule],
+  imports: [
+    PrismaModule,
+    CryptoModule,
+    AuthModule,
+    ClinicsModule,
+    AssessmentsModule,
+    forwardRef(() => PatientsModule),
+  ],
   controllers: [LeadsController],
   providers: [
     SubmitLeadUseCase,

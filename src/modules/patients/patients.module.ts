@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { LeadsModule } from '../leads/leads.module';
@@ -11,7 +11,7 @@ import { GetMyLeadsUseCase } from './application/get-my-leads.use-case';
 import { PatientsController } from './infrastructure/http/patients.controller';
 
 @Module({
-  imports: [PrismaModule, LeadsModule],
+  imports: [PrismaModule, forwardRef(() => LeadsModule)],
   controllers: [PatientsController],
   providers: [
     GetProfileUseCase,
@@ -22,5 +22,6 @@ import { PatientsController } from './infrastructure/http/patients.controller';
       useClass: PrismaPatientRepository,
     },
   ],
+  exports: [PATIENT_REPOSITORY],
 })
 export class PatientsModule {}

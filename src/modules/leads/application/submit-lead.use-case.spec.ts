@@ -9,6 +9,7 @@ import type { LeadRepositoryPort } from '../domain/ports/lead-repository.port';
 import type { WebhookSenderPort } from '../domain/ports/webhook-sender.port';
 import type { EmailSenderPort } from '../../auth/infrastructure/adapters/email-sender.port';
 import type { EncryptionPort } from '../../auth/domain/ports/encryption.port';
+import type { PatientRepositoryPort } from '../../patients/domain/ports/patient-repository.port';
 import { ClaimTokenService } from '../../assessments/domain/claim-token.service';
 
 function makeClinic(overrides: Partial<ClinicReadModel> = {}): ClinicReadModel {
@@ -87,6 +88,7 @@ interface Mocks {
   webhook: jest.Mocked<WebhookSenderPort>;
   email: jest.Mocked<EmailSenderPort>;
   encryption: jest.Mocked<EncryptionPort>;
+  patients: jest.Mocked<PatientRepositoryPort>;
   claimTokens: ClaimTokenService;
 }
 
@@ -119,6 +121,11 @@ function buildMocks(): Mocks {
       encrypt: jest.fn((s: string) => `enc(${s})`),
       decrypt: jest.fn((s: string) => `dec(${s})`),
     },
+    patients: {
+      findProfile: jest.fn(),
+      updateProfile: jest.fn(),
+      findPatientIdByUserId: jest.fn().mockResolvedValue(null),
+    },
     claimTokens,
   };
 }
@@ -131,6 +138,7 @@ function buildUseCase(m: Mocks): SubmitLeadUseCase {
     m.webhook,
     m.email,
     m.encryption,
+    m.patients,
     m.claimTokens,
   );
 }
@@ -255,9 +263,7 @@ describe('SubmitLeadUseCase', () => {
       const m = buildMocks();
       const sessionId = 'session_' + '0'.repeat(32);
       m.clinics.findById.mockResolvedValue(makeClinic({ notifyOnLead: false }));
-      m.assessments.findLatestByPatientUser.mockResolvedValue(
-        makeAssessment({ patientId: 'my-patient' }),
-      );
+      m.patients.findPatientIdByUserId.mockResolvedValue('my-patient');
       m.assessments.findBySessionId.mockResolvedValue(
         makeAssessment({ id: 'my-assessment', sessionId, patientId: 'my-patient' }),
       );
@@ -267,6 +273,64 @@ describe('SubmitLeadUseCase', () => {
 
       expect(m.leads.create).toHaveBeenCalledWith(
         expect.objectContaining({ assessmentId: 'my-assessment', patientId: 'my-patient' }),
+      );
+    });
+
+    it('authenticated caller with an UNclaimed assessment + bare sessionId: patient set, assessment NOT linked', async () => {
+      // The real production flow: assessment taken anonymously (patientId null,
+      // not yet claimed), user signs up, submits the lead WITHOUT a claimToken.
+      const m = buildMocks();
+      const sessionId = 'session_' + '0'.repeat(32);
+      m.clinics.findById.mockResolvedValue(makeClinic({ notifyOnLead: false }));
+      m.patients.findPatientIdByUserId.mockResolvedValue('caller-patient');
+      m.assessments.findBySessionId.mockResolvedValue(
+        makeAssessment({ id: 'unclaimed-assessment', sessionId, patientId: null }),
+      );
+      const useCase = buildUseCase(m);
+
+      await useCase.execute({ ...BASE_INPUT, sessionId }, { userId: 'u1' });
+
+      // patient resolved directly by userId (NOT null), but assessment is NOT
+      // linked because ownership is unproven and no claimToken was supplied.
+      expect(m.leads.create).toHaveBeenCalledWith(
+        expect.objectContaining({ patientId: 'caller-patient', assessmentId: null }),
+      );
+    });
+
+    it('authenticated caller with a VALID claimToken: both patient and assessment linked', async () => {
+      const m = buildMocks();
+      const sessionId = 'session_' + '0'.repeat(32);
+      const validToken = m.claimTokens.issue(sessionId);
+      m.clinics.findById.mockResolvedValue(makeClinic({ notifyOnLead: false }));
+      m.patients.findPatientIdByUserId.mockResolvedValue('caller-patient');
+      m.assessments.findBySessionId.mockResolvedValue(
+        makeAssessment({ id: 'unclaimed-assessment', sessionId, patientId: null }),
+      );
+      const useCase = buildUseCase(m);
+
+      await useCase.execute({ ...BASE_INPUT, sessionId, claimToken: validToken }, { userId: 'u1' });
+
+      expect(m.leads.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: 'caller-patient',
+          assessmentId: 'unclaimed-assessment',
+        }),
+      );
+    });
+
+    it('anonymous caller with a bare sessionId links nothing', async () => {
+      const m = buildMocks();
+      const sessionId = 'session_' + '0'.repeat(32);
+      m.clinics.findById.mockResolvedValue(makeClinic({ notifyOnLead: false }));
+      m.assessments.findBySessionId.mockResolvedValue(
+        makeAssessment({ id: 'some-assessment', sessionId, patientId: 'other' }),
+      );
+      const useCase = buildUseCase(m);
+
+      await useCase.execute({ ...BASE_INPUT, sessionId }, {});
+
+      expect(m.leads.create).toHaveBeenCalledWith(
+        expect.objectContaining({ patientId: null, assessmentId: null }),
       );
     });
   });

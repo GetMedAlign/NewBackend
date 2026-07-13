@@ -29,6 +29,7 @@ function makePatientRepo(profile: PatientProfile | null): PatientRepositoryPort 
   return {
     findProfile: jest.fn().mockResolvedValue(profile),
     updateProfile: jest.fn().mockResolvedValue(undefined),
+    findPatientIdByUserId: jest.fn().mockResolvedValue(null),
   };
 }
 

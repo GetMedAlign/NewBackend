@@ -10,6 +10,8 @@ import { ENCRYPTION_PORT } from '../../auth/domain/ports/encryption.port';
 import type { EncryptionPort } from '../../auth/domain/ports/encryption.port';
 import { EMAIL_SENDER } from '../../auth/infrastructure/adapters/email-sender.port';
 import type { EmailSenderPort } from '../../auth/infrastructure/adapters/email-sender.port';
+import { PATIENT_REPOSITORY } from '../../patients/domain/ports/patient-repository.port';
+import type { PatientRepositoryPort } from '../../patients/domain/ports/patient-repository.port';
 
 import { LEAD_REPOSITORY } from '../domain/ports/lead-repository.port';
 import type { LeadRepositoryPort, LeadDeliveryStatus } from '../domain/ports/lead-repository.port';
@@ -64,6 +66,7 @@ export class SubmitLeadUseCase {
     @Inject(WEBHOOK_SENDER) private readonly webhook: WebhookSenderPort,
     @Inject(EMAIL_SENDER) private readonly email: EmailSenderPort,
     @Inject(ENCRYPTION_PORT) private readonly encryption: EncryptionPort,
+    @Inject(PATIENT_REPOSITORY) private readonly patients: PatientRepositoryPort,
     private readonly claimTokens: ClaimTokenService,
   ) {}
 
@@ -144,8 +147,10 @@ export class SubmitLeadUseCase {
       this.claimTokens.verify(sessionId, input.claimToken);
 
     if (actor.userId) {
-      const patient = await this.assessments.findLatestByPatientUser(actor.userId);
-      const callerPatientId = patient?.patientId ?? null;
+      // Resolve the authenticated caller's own patient directly by userId
+      // (matching .NET), so the lead is attributed to them even when they have
+      // not yet claimed the assessment.
+      const callerPatientId = await this.patients.findPatientIdByUserId(actor.userId);
 
       let assessmentId: string | null = null;
       if (sessionId) {
