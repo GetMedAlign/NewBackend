@@ -78,6 +78,13 @@ describe('Auth (e2e)', () => {
   });
 
   afterAll(async () => {
+    // Signup now creates a patients row (FK child of users), so delete it first.
+    await prisma.asSystem(
+      (client) => client.$executeRaw`
+        DELETE FROM patients
+        WHERE user_id = (SELECT id FROM users WHERE email = ${email}::citext LIMIT 1)
+      `,
+    );
     // Clean up the created user (cascades roles, 2fa codes) via asSystem.
     await prisma.asSystem(
       (client) => client.$executeRaw`DELETE FROM users WHERE email = ${email}::citext`,
@@ -231,6 +238,13 @@ describe('Auth (e2e)', () => {
 
     expect([423, 429]).toContain(lastStatus);
 
+    // Signup created a patients row (FK child of users); delete it before the user.
+    await prisma.asSystem(
+      (client) => client.$executeRaw`
+        DELETE FROM patients
+        WHERE user_id = (SELECT id FROM users WHERE email = ${lockEmail}::citext LIMIT 1)
+      `,
+    );
     await prisma.asSystem(
       (client) => client.$executeRaw`DELETE FROM users WHERE email = ${lockEmail}::citext`,
     );

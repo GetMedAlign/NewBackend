@@ -11,6 +11,7 @@ const validFixture = {
   SENDGRID_API_KEY: 'SG.test',
   SENDGRID_FROM_EMAIL: 'noreply@example.com',
   APP_BASE_URL: 'http://localhost:3000',
+  CLAIM_TOKEN_SECRET: 'test-claim-token-secret-at-least-32-chars!!',
 };
 
 describe('parseEnv', () => {

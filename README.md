@@ -58,6 +58,25 @@ GET  /health             -> { status: "ok" }
 
 Roles: `patient | clinic | admin | superadmin`.
 
+## Patient Journey API
+
+The anonymous-assessment → recommendations → lead → patient dashboard flow:
+
+```
+POST /assessments                 -> { sessionId, claimToken }  (anonymous; consent required)
+GET  /assessments/latest          -> claim an assessment via ?sessionId=&claimToken= (authenticated; 204 if not yours)
+GET  /recommendations/:sessionId  -> ranked clinic matches for the session (public; no PHI)
+POST /leads                        -> { leadId }  (anonymous or authenticated; delivers to the clinic)
+GET  /patients/me                  -> current patient profile (authenticated)
+PUT  /patients/me                  -> update the patient profile (authenticated)
+GET  /patients/me/leads            -> the caller's submitted leads (authenticated)
+```
+
+The `claimToken` (returned from `POST /assessments`) is the only proof that binds an
+anonymous `sessionId` to the caller. A stolen `sessionId` without a valid `claimToken`
+cannot claim the assessment or attribute its lead — the token model is stricter than the
+.NET original by design.
+
 ## Rebuild roadmap (6 slices)
 
 1. **Foundation** (this slice) — scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.

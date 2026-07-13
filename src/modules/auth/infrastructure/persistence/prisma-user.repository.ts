@@ -55,20 +55,28 @@ export class PrismaUserRepository implements UserRepositoryPort {
   ) {}
 
   /**
-   * Calls the SECURITY DEFINER DB function create_user, which inserts the
-   * user row and assigns the default 'patient' role in a single atomic step.
+   * Calls the SECURITY DEFINER DB function create_user (inserts the user row
+   * and assigns the default 'patient' role) and, in the SAME atomic
+   * transaction, inserts the user's patients row. This mirrors the .NET
+   * reference backend, which creates the Patient row at signup, so every
+   * signed-up user has a patient row immediately (dob/zip null until set).
+   * Attributing an authenticated caller's lead by userId therefore works even
+   * before the assessment is claimed.
    */
   async create(email: string, passwordHash: string): Promise<string> {
     try {
-      const rows = await this.prisma.asSystem(
-        (client) =>
-          client.$queryRaw<{ id: string }[]>`
-          SELECT create_user(${email}::citext, ${passwordHash}) AS id
-        `,
-      );
-      const id = rows[0]?.id;
-      if (!id) throw new Error('create_user did not return an id');
-      return id;
+      return await this.prisma.asSystem(async (client) => {
+        return client.$transaction(async (tx) => {
+          const rows = await tx.$queryRaw<{ id: string }[]>`
+            SELECT create_user(${email}::citext, ${passwordHash}) AS id
+          `;
+          const id = rows[0]?.id;
+          if (!id) throw new Error('create_user did not return an id');
+          // Brand-new user: 1:1 patient row created atomically with the user.
+          await tx.patient.create({ data: { userId: id } });
+          return id;
+        });
+      });
     } catch (err: unknown) {
       if (isUniqueViolation(err)) {
         throw new EmailAlreadyExistsError(email);

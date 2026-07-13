@@ -20,6 +20,7 @@ process.env['ENCRYPTION_KEY'] ??= 'VZbmMdiVnQiIQXt1jRimhBt1UWe5anTdyMtcxJzJ6UM='
 process.env['SENDGRID_API_KEY'] ??= 'SG.placeholder';
 process.env['SENDGRID_FROM_EMAIL'] ??= 'noreply@example.com';
 process.env['APP_BASE_URL'] ??= 'http://localhost:3000';
+process.env['CLAIM_TOKEN_SECRET'] ??= 'openapi-gen-placeholder-claim-secret-32chars!';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -38,6 +39,18 @@ import { VerifyTwoFactorUseCase } from '../src/modules/auth/application/verify-t
 import { ResendTwoFactorUseCase } from '../src/modules/auth/application/resend-two-factor.use-case';
 import { GetMeUseCase } from '../src/modules/auth/application/get-me.use-case';
 import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-case';
+import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
+import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
+import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
+import { RecommendationsController } from '../src/modules/recommendations/infrastructure/http/recommendations.controller';
+import { GetRecommendationsUseCase } from '../src/modules/recommendations/application/get-recommendations.use-case';
+import { LeadsController } from '../src/modules/leads/infrastructure/http/leads.controller';
+import { SubmitLeadUseCase } from '../src/modules/leads/application/submit-lead.use-case';
+import { PatientsController } from '../src/modules/patients/infrastructure/http/patients.controller';
+import { GetProfileUseCase } from '../src/modules/patients/application/get-profile.use-case';
+import { UpdateProfileUseCase } from '../src/modules/patients/application/update-profile.use-case';
+import { GetMyLeadsUseCase } from '../src/modules/patients/application/get-my-leads.use-case';
+import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -60,7 +73,14 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ConfigModule.forRoot({ isGlobal: true, validate: parseEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],
-  controllers: [HealthController, AuthController],
+  controllers: [
+    HealthController,
+    AuthController,
+    AssessmentsController,
+    RecommendationsController,
+    LeadsController,
+    PatientsController,
+  ],
   providers: [
     // Stub every use-case the controller injects
     stubProvider(SignUpUseCase),
@@ -69,6 +89,14 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ResendTwoFactorUseCase),
     stubProvider(GetMeUseCase),
     stubProvider(SignOutUseCase),
+    stubProvider(SubmitAssessmentUseCase),
+    stubProvider(GetLatestAssessmentUseCase),
+    stubProvider(GetRecommendationsUseCase),
+    stubProvider(SubmitLeadUseCase),
+    stubProvider(GetProfileUseCase),
+    stubProvider(UpdateProfileUseCase),
+    stubProvider(GetMyLeadsUseCase),
+    stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },

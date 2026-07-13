@@ -299,6 +299,200 @@
           "Auth"
         ]
       }
+    },
+    "/assessments": {
+      "post": {
+        "operationId": "AssessmentsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAssessmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/assessments/latest": {
+      "get": {
+        "operationId": "AssessmentsController_getLatest",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "claimToken",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/recommendations/{sessionId}": {
+      "get": {
+        "operationId": "RecommendationsController_getRecommendationsForSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Assessment session ID (session_<32 hex>)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked clinic matches (no PHI)"
+          },
+          "404": {
+            "description": "Assessment not found or invalid session ID"
+          }
+        },
+        "summary": "Get clinic recommendations for a patient session",
+        "tags": [
+          "recommendations"
+        ]
+      }
+    },
+    "/leads": {
+      "post": {
+        "operationId": "LeadsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lead created; returns the lead id."
+          },
+          "404": {
+            "description": "Clinic not found."
+          }
+        },
+        "summary": "Submit a lead to a clinic (anonymous or authenticated)",
+        "tags": [
+          "leads"
+        ]
+      }
+    },
+    "/patients/me": {
+      "get": {
+        "operationId": "PatientsController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient profile",
+        "tags": [
+          "patients"
+        ]
+      },
+      "put": {
+        "operationId": "PatientsController_putMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the authenticated patient profile",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/patients/me/leads": {
+      "get": {
+        "operationId": "PatientsController_getMyLeadsHandler",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient lead history",
+        "tags": [
+          "patients"
+        ]
+      }
     }
   },
   "info": {
@@ -387,6 +581,29 @@
         },
         "required": [
           "email"
+        ]
+      },
+      "SubmitAssessmentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitLeadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "dob": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
         ]
       }
     }

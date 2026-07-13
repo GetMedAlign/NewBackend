@@ -5,6 +5,10 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppConfigModule } from './infrastructure/config/config.module';
 import { HealthController } from './infrastructure/health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { PatientsModule } from './modules/patients/patients.module';
 
 import { JwtCookieGuard } from './infrastructure/security/jwt-cookie.guard';
 import { RolesGuard } from './infrastructure/security/roles.guard';
@@ -15,6 +19,10 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
   imports: [
     AppConfigModule,
     AuthModule,
+    AssessmentsModule,
+    RecommendationsModule,
+    LeadsModule,
+    PatientsModule,
     // Global default rate limit; auth POST routes tighten it via @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],

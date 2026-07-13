@@ -7,6 +7,11 @@ import { InvalidTwoFactorCodeError } from '../../modules/auth/domain/errors/inva
 import { EmailAlreadyExistsError } from '../../modules/auth/domain/errors/email-already-exists.error';
 import { TwoFactorRequiredError } from '../../modules/auth/domain/errors/two-factor-required.error';
 import { InvalidEmailError } from '../../modules/auth/domain/value-objects/email';
+import { ConsentRequiredError } from '../../modules/assessments/domain/errors/consent-required.error';
+import { InvalidConsentVersionError } from '../../modules/assessments/domain/errors/invalid-consent-version.error';
+import { RecommendationNotFoundError } from '../../modules/recommendations/domain/errors/recommendation-not-found.error';
+import { ClinicNotFoundError } from '../../modules/leads/domain/errors/clinic-not-found.error';
+import { PatientNotFoundError } from '../../modules/patients/domain/errors/patient-not-found.error';
 
 /** HTTP 423 Locked — not present in this NestJS HttpStatus enum. */
 const HTTP_LOCKED = 423;
@@ -83,6 +88,46 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_ERROR',
         message: 'Invalid input',
+      };
+    }
+
+    if (exception instanceof RecommendationNotFoundError) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        code: 'NOT_FOUND',
+        message: 'Assessment not found',
+      };
+    }
+
+    if (exception instanceof ClinicNotFoundError) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        code: 'NOT_FOUND',
+        message: 'Clinic not found',
+      };
+    }
+
+    if (exception instanceof PatientNotFoundError) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        code: 'NOT_FOUND',
+        message: 'Account not found.',
+      };
+    }
+
+    if (exception instanceof ConsentRequiredError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'CONSENT_REQUIRED',
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof InvalidConsentVersionError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'INVALID_CONSENT_VERSION',
+        message: exception.message,
       };
     }
 

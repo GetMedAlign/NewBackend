@@ -22,6 +22,8 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().url(),
 
   COOKIE_DOMAIN: z.string().optional(),
+
+  CLAIM_TOKEN_SECRET: z.string().min(32),
 });
 
 export type Env = z.infer<typeof envSchema>;
