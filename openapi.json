@@ -382,6 +382,34 @@
           "recommendations"
         ]
       }
+    },
+    "/leads": {
+      "post": {
+        "operationId": "LeadsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lead created; returns the lead id."
+          },
+          "404": {
+            "description": "Clinic not found."
+          }
+        },
+        "summary": "Submit a lead to a clinic (anonymous or authenticated)",
+        "tags": [
+          "leads"
+        ]
+      }
     }
   },
   "info": {
@@ -473,6 +501,10 @@
         ]
       },
       "SubmitAssessmentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitLeadDto": {
         "type": "object",
         "properties": {}
       }

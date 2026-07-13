@@ -10,6 +10,7 @@ import { InvalidEmailError } from '../../modules/auth/domain/value-objects/email
 import { ConsentRequiredError } from '../../modules/assessments/domain/errors/consent-required.error';
 import { InvalidConsentVersionError } from '../../modules/assessments/domain/errors/invalid-consent-version.error';
 import { RecommendationNotFoundError } from '../../modules/recommendations/domain/errors/recommendation-not-found.error';
+import { ClinicNotFoundError } from '../../modules/leads/domain/errors/clinic-not-found.error';
 
 /** HTTP 423 Locked — not present in this NestJS HttpStatus enum. */
 const HTTP_LOCKED = 423;
@@ -94,6 +95,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.NOT_FOUND,
         code: 'NOT_FOUND',
         message: 'Assessment not found',
+      };
+    }
+
+    if (exception instanceof ClinicNotFoundError) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        code: 'NOT_FOUND',
+        message: 'Clinic not found',
       };
     }
 

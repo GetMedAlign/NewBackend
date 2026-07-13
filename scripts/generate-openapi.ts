@@ -44,6 +44,8 @@ import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
 import { RecommendationsController } from '../src/modules/recommendations/infrastructure/http/recommendations.controller';
 import { GetRecommendationsUseCase } from '../src/modules/recommendations/application/get-recommendations.use-case';
+import { LeadsController } from '../src/modules/leads/infrastructure/http/leads.controller';
+import { SubmitLeadUseCase } from '../src/modules/leads/application/submit-lead.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -67,7 +69,13 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ConfigModule.forRoot({ isGlobal: true, validate: parseEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],
-  controllers: [HealthController, AuthController, AssessmentsController, RecommendationsController],
+  controllers: [
+    HealthController,
+    AuthController,
+    AssessmentsController,
+    RecommendationsController,
+    LeadsController,
+  ],
   providers: [
     // Stub every use-case the controller injects
     stubProvider(SignUpUseCase),
@@ -79,6 +87,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
     stubProvider(GetRecommendationsUseCase),
+    stubProvider(SubmitLeadUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
