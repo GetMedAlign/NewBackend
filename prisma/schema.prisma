@@ -49,6 +49,7 @@ model User {
   recoveryPhoneEncrypted String?   @map("recovery_phone_encrypted")
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  name                   String?   @map("name")
 
   roles          UserRole[]
   twoFactorCodes TwoFactorCode[]

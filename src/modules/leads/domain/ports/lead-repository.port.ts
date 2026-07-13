@@ -33,13 +33,21 @@ export interface WebhookDeliveryRecord {
  * A patient-facing view of one of the caller's own leads. Returned by
  * `findByPatientUser`, which runs RLS-scoped via `withUserContext`.
  */
-export interface LeadView {
+export interface PatientLeadView {
   leadId: string;
   clinicId: string;
+  clinicName: string;
+  clinicSlug: string;
+  clinicCategory: string;
+  websiteUrl: string | null;
+  submittedAt: Date;
   treatmentCategory: string;
-  clinicStatus: string;
-  deliveryStatus: string;
-  receivedAt: Date;
+  topGoals: string[];
+  topSymptoms: string[];
+  budgetBand: string | null;
+  telehealthPreference: string | null;
+  startTimeline: string | null;
+  appointmentPreference: string | null;
 }
 
 export interface LeadRepositoryPort {
@@ -56,7 +64,7 @@ export interface LeadRepositoryPort {
   setDeliveryStatus(leadId: string, status: LeadDeliveryStatus, deliveredAt?: Date): Promise<void>;
 
   /** Returns the caller's own leads, RLS-scoped via `withUserContext`. */
-  findByPatientUser(userId: string): Promise<LeadView[]>;
+  findByPatientUser(userId: string): Promise<PatientLeadView[]>;
 }
 
 export const LEAD_REPOSITORY = Symbol('LeadRepositoryPort');

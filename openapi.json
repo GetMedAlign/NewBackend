@@ -410,6 +410,89 @@
           "leads"
         ]
       }
+    },
+    "/patients/me": {
+      "get": {
+        "operationId": "PatientsController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient profile",
+        "tags": [
+          "patients"
+        ]
+      },
+      "put": {
+        "operationId": "PatientsController_putMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the authenticated patient profile",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/patients/me/leads": {
+      "get": {
+        "operationId": "PatientsController_getMyLeadsHandler",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient lead history",
+        "tags": [
+          "patients"
+        ]
+      }
     }
   },
   "info": {
@@ -507,6 +590,21 @@
       "SubmitLeadDto": {
         "type": "object",
         "properties": {}
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "dob": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
       }
     }
   }
