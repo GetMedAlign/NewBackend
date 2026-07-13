@@ -9,6 +9,7 @@ import { TwoFactorRequiredError } from '../../modules/auth/domain/errors/two-fac
 import { InvalidEmailError } from '../../modules/auth/domain/value-objects/email';
 import { ConsentRequiredError } from '../../modules/assessments/domain/errors/consent-required.error';
 import { InvalidConsentVersionError } from '../../modules/assessments/domain/errors/invalid-consent-version.error';
+import { RecommendationNotFoundError } from '../../modules/recommendations/domain/errors/recommendation-not-found.error';
 
 /** HTTP 423 Locked — not present in this NestJS HttpStatus enum. */
 const HTTP_LOCKED = 423;
@@ -85,6 +86,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_ERROR',
         message: 'Invalid input',
+      };
+    }
+
+    if (exception instanceof RecommendationNotFoundError) {
+      return {
+        status: HttpStatus.NOT_FOUND,
+        code: 'NOT_FOUND',
+        message: 'Assessment not found',
       };
     }
 

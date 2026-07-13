@@ -354,6 +354,34 @@
           "Assessments"
         ]
       }
+    },
+    "/recommendations/{sessionId}": {
+      "get": {
+        "operationId": "RecommendationsController_getRecommendationsForSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Assessment session ID (session_<32 hex>)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked clinic matches (no PHI)"
+          },
+          "404": {
+            "description": "Assessment not found or invalid session ID"
+          }
+        },
+        "summary": "Get clinic recommendations for a patient session",
+        "tags": [
+          "recommendations"
+        ]
+      }
     }
   },
   "info": {

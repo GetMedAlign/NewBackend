@@ -20,6 +20,7 @@ process.env['ENCRYPTION_KEY'] ??= 'VZbmMdiVnQiIQXt1jRimhBt1UWe5anTdyMtcxJzJ6UM='
 process.env['SENDGRID_API_KEY'] ??= 'SG.placeholder';
 process.env['SENDGRID_FROM_EMAIL'] ??= 'noreply@example.com';
 process.env['APP_BASE_URL'] ??= 'http://localhost:3000';
+process.env['CLAIM_TOKEN_SECRET'] ??= 'openapi-gen-placeholder-claim-secret-32chars!';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -41,6 +42,8 @@ import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-cas
 import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
 import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
+import { RecommendationsController } from '../src/modules/recommendations/infrastructure/http/recommendations.controller';
+import { GetRecommendationsUseCase } from '../src/modules/recommendations/application/get-recommendations.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -64,7 +67,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ConfigModule.forRoot({ isGlobal: true, validate: parseEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],
-  controllers: [HealthController, AuthController, AssessmentsController],
+  controllers: [HealthController, AuthController, AssessmentsController, RecommendationsController],
   providers: [
     // Stub every use-case the controller injects
     stubProvider(SignUpUseCase),
@@ -75,6 +78,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SignOutUseCase),
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
+    stubProvider(GetRecommendationsUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
