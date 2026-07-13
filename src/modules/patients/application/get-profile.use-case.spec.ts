@@ -55,9 +55,11 @@ describe('GetProfileUseCase', () => {
     expect(result.name).toBe('Alice Smith');
   });
 
-  it('formats dob as yyyy-MM-dd', async () => {
-    // Use local-time constructor to avoid UTC/local timezone offset issues
-    const dob = new Date(1990, 4, 15); // May 15, 1990 in local time
+  it('formats dob as yyyy-MM-dd using UTC accessors (pins UTC-midnight behaviour)', async () => {
+    // Postgres DATE columns come back as UTC midnight (e.g. 1990-05-15T00:00:00Z).
+    // Using a UTC constructor here ensures the test FAILS against a local-time
+    // formatter on any UTC-negative server where local midnight != UTC midnight.
+    const dob = new Date('1990-05-15T00:00:00Z');
     const repo = makeRepo({
       name: null,
       email: 'dob@example.com',

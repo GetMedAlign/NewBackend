@@ -34,9 +34,11 @@ export class GetProfileUseCase {
   }
 
   private formatDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
+    // Use UTC accessors: Postgres DATE columns arrive as JS Date at UTC midnight,
+    // so local-time accessors would produce the wrong date on UTC-negative servers.
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(date.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
 }

@@ -192,6 +192,27 @@ describe('PrismaLeadRepository.findByPatientUser', () => {
     expect(leadIds).not.toContain(`lead_b1_${suffix}`);
   });
 
+  it('RLS isolation: user B cannot surface user A leads via cross-context raw probe', async () => {
+    // Isolation here derives from two layers:
+    //   1. The explicit WHERE p.user_id = ${userId} in findByPatientUser, AND
+    //   2. RLS on the patients table (the JOIN target) under withUserContext.
+    // This probe removes the WHERE clause and drives the query as user B looking
+    // for user A's patient row — RLS alone must return 0 patient rows, which
+    // means A's leads are unreachable regardless of the WHERE filter.
+    // If RLS on patients were dropped, this assertion would fail.
+    const rowsSeenByB = await prismaService.withUserContext(
+      { userId: userBId, role: 'patient', ip: null },
+      (tx) =>
+        tx.$queryRaw<{ lead_id: string }[]>`
+          SELECT l.lead_id
+          FROM leads l
+          JOIN patients p ON p.id = l.patient_id
+          WHERE p.id = ${patientAId}::uuid
+        `,
+    );
+    expect(rowsSeenByB).toHaveLength(0);
+  });
+
   it('each lead has clinicName and clinicSlug from the joined clinic', async () => {
     const leads = await repo.findByPatientUser(userAId);
     expect(leads.length).toBeGreaterThan(0);

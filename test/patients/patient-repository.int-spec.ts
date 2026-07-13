@@ -150,24 +150,34 @@ describe('PrismaPatientRepository (integration)', () => {
     expect(d.getUTCDate()).toBe(15);
   });
 
-  it('RLS isolation: findProfile for userA returns userA dob, not userB dob', async () => {
-    const profileA = await repo.findProfile(userAId);
-    const profileB = await repo.findProfile(userBId);
+  it('RLS isolation: withUserContext as userB cannot read userA patient row', async () => {
+    // This is the canonical RLS cross-context probe: open a withUserContext
+    // transaction under user B's identity and query for user A's patient row.
+    // The patients table has RLS enforced, so B's context must return 0 rows.
+    // If RLS were removed or misconfigured this assertion would fail.
+    const rowsSeenByB = await prisma.withUserContext(
+      { userId: userBId, role: 'patient', ip: null },
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`
+          SELECT id::text AS id
+          FROM patients
+          WHERE user_id = ${userAId}::uuid
+          LIMIT 1
+        `,
+    );
+    expect(rowsSeenByB).toHaveLength(0);
 
-    // Both should have patient rows but different DOBs
-    expect(profileA!.hasPatient).toBe(true);
-    expect(profileB!.hasPatient).toBe(true);
-
-    // After the updateProfile above, userA's dob is 1985-06-15
-    const dobA = profileA!.dob as Date;
-    const dobB = profileB!.dob as Date;
-
-    // They should be different dates
-    expect(dobA.getTime()).not.toBe(dobB.getTime());
-
-    // userB's DOB should be July 4, 1990
-    expect(dobB.getUTCFullYear()).toBe(1990);
-    expect(dobB.getUTCMonth()).toBe(6); // July is 6 in 0-indexed
-    expect(dobB.getUTCDate()).toBe(4);
+    // Sanity check: under A's own context the row IS visible.
+    const rowsSeenByA = await prisma.withUserContext(
+      { userId: userAId, role: 'patient', ip: null },
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`
+          SELECT id::text AS id
+          FROM patients
+          WHERE user_id = ${userAId}::uuid
+          LIMIT 1
+        `,
+    );
+    expect(rowsSeenByA).toHaveLength(1);
   });
 });

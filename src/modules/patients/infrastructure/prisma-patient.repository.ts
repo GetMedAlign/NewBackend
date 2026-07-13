@@ -60,10 +60,13 @@ export class PrismaPatientRepository implements PatientRepositoryPort {
   }
 
   async updateProfile(userId: string, data: { name: string; dob?: string }): Promise<void> {
-    // Update user name via asSystem (users table is auth-owned)
-    await this.prisma.asSystem(
-      (client) =>
-        client.$executeRaw`
+    // Update user name via withUserContext so RLS (users_self_update policy) is enforced
+    // in addition to the explicit WHERE clause.  asSystem is reserved for auth-identity
+    // reads (e.g. findProfile users read); business-data writes belong under user context.
+    await this.prisma.withUserContext(
+      { userId, role: 'patient', ip: null },
+      (tx) =>
+        tx.$executeRaw`
           UPDATE users
           SET name = ${data.name}
           WHERE id = ${userId}::uuid
