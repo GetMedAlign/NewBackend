@@ -38,6 +38,10 @@ import { VerifyTwoFactorUseCase } from '../src/modules/auth/application/verify-t
 import { ResendTwoFactorUseCase } from '../src/modules/auth/application/resend-two-factor.use-case';
 import { GetMeUseCase } from '../src/modules/auth/application/get-me.use-case';
 import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-case';
+import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
+import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
+import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
+import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -60,7 +64,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ConfigModule.forRoot({ isGlobal: true, validate: parseEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],
-  controllers: [HealthController, AuthController],
+  controllers: [HealthController, AuthController, AssessmentsController],
   providers: [
     // Stub every use-case the controller injects
     stubProvider(SignUpUseCase),
@@ -69,6 +73,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ResendTwoFactorUseCase),
     stubProvider(GetMeUseCase),
     stubProvider(SignOutUseCase),
+    stubProvider(SubmitAssessmentUseCase),
+    stubProvider(GetLatestAssessmentUseCase),
+    stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },

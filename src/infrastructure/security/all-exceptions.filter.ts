@@ -7,6 +7,8 @@ import { InvalidTwoFactorCodeError } from '../../modules/auth/domain/errors/inva
 import { EmailAlreadyExistsError } from '../../modules/auth/domain/errors/email-already-exists.error';
 import { TwoFactorRequiredError } from '../../modules/auth/domain/errors/two-factor-required.error';
 import { InvalidEmailError } from '../../modules/auth/domain/value-objects/email';
+import { ConsentRequiredError } from '../../modules/assessments/domain/errors/consent-required.error';
+import { InvalidConsentVersionError } from '../../modules/assessments/domain/errors/invalid-consent-version.error';
 
 /** HTTP 423 Locked — not present in this NestJS HttpStatus enum. */
 const HTTP_LOCKED = 423;
@@ -83,6 +85,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_ERROR',
         message: 'Invalid input',
+      };
+    }
+
+    if (exception instanceof ConsentRequiredError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'CONSENT_REQUIRED',
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof InvalidConsentVersionError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'INVALID_CONSENT_VERSION',
+        message: exception.message,
       };
     }
 

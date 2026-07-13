@@ -299,6 +299,61 @@
           "Auth"
         ]
       }
+    },
+    "/assessments": {
+      "post": {
+        "operationId": "AssessmentsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAssessmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/assessments/latest": {
+      "get": {
+        "operationId": "AssessmentsController_getLatest",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "claimToken",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
     }
   },
   "info": {
@@ -388,6 +443,10 @@
         "required": [
           "email"
         ]
+      },
+      "SubmitAssessmentDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }
