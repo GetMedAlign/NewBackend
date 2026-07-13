@@ -24,16 +24,24 @@ export interface PatientGeo {
 export class RecommendationService {
   /**
    * Scores a single clinic against a patient assessment.
-   * Returns the integer sum of the 7 scoring components.
+   * Accepts a pre-computed distMiles (from rank) to avoid a redundant Haversine call;
+   * when omitted the distance is computed here (used in direct unit tests).
    */
-  score(assessment: Assessment, clinic: ClinicReadModel, patientGeo: PatientGeo | null): number {
+  score(
+    assessment: Assessment,
+    clinic: ClinicReadModel,
+    patientGeo: PatientGeo | null,
+    distMiles?: number | null,
+  ): number {
     const implied = impliedServices(assessment.selectedGoals, assessment.selectedSymptoms);
 
-    // Compute distance when both sides have coordinates.
-    let distMiles: number | null = null;
-    if (patientGeo !== null && clinic.latitude !== null && clinic.longitude !== null) {
-      distMiles = distanceMiles(patientGeo.lat, patientGeo.lng, clinic.latitude, clinic.longitude);
-    }
+    // Compute distance when not provided and both sides have coordinates.
+    const dist: number | null =
+      distMiles !== undefined
+        ? distMiles
+        : patientGeo !== null && clinic.latitude !== null && clinic.longitude !== null
+          ? distanceMiles(patientGeo.lat, patientGeo.lng, clinic.latitude, clinic.longitude)
+          : null;
 
     return (
       this.scoreServiceMatch(implied, clinic.services) +
@@ -44,7 +52,7 @@ export class RecommendationService {
         clinic.acceptsInsurance,
       ) +
       this.scoreGeo(
-        distMiles,
+        dist,
         assessment.telehealthPreference,
         patientGeo?.state ?? null,
         clinic.state,
@@ -59,6 +67,8 @@ export class RecommendationService {
   /**
    * Scores all clinics, sorts by score desc → rating desc → id asc (deterministic),
    * takes top 10, and maps to ClinicMatchDto.
+   * Distance is computed once per clinic here and passed into score to avoid
+   * a redundant Haversine call.
    */
   rank(
     assessment: Assessment,
@@ -67,17 +77,13 @@ export class RecommendationService {
   ): ClinicMatchDto[] {
     return clinics
       .map((clinic) => {
-        const s = this.score(assessment, clinic, patientGeo);
+        // Compute patient↔clinic distance once; pass it into score to avoid a second Haversine call.
+        const distMiles: number | null =
+          patientGeo !== null && clinic.latitude !== null && clinic.longitude !== null
+            ? distanceMiles(patientGeo.lat, patientGeo.lng, clinic.latitude, clinic.longitude)
+            : null;
 
-        let distMiles: number | null = null;
-        if (patientGeo !== null && clinic.latitude !== null && clinic.longitude !== null) {
-          distMiles = distanceMiles(
-            patientGeo.lat,
-            patientGeo.lng,
-            clinic.latitude,
-            clinic.longitude,
-          );
-        }
+        const s = this.score(assessment, clinic, patientGeo, distMiles);
 
         return { clinic, score: s, distMiles };
       })
@@ -222,6 +228,8 @@ export class RecommendationService {
       location,
       rating: clinic.rating,
       reviewCount: clinic.reviewCount,
+      // topServices returns the clinic's full service-code list (the .NET IsTopService/DisplayOrder
+      // columns were dropped in the simplified schema); field name kept for frontend contract.
       topServices: clinic.services,
       categories: clinic.categories,
       telehealthAvailable: clinic.telehealthAvailable,

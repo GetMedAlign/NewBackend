@@ -72,7 +72,8 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     webhookSecretPlaintext: 'whsec_vitality_hormone_nyc_5f3a9c',
     notifyOnLead: true,
     categories: ['hormone', 'wellness'],
-    serviceCodes: ['trt', 'thyroid_management', 'hormone_panel'],
+    // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
+    serviceCodes: ['trt', 'thyroid_management', 'hormone_panel', 'lab_work'],
   },
   // 2. Peptide — active, current, notify+webhook, telehealth-only (no location)
   {
@@ -101,7 +102,8 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     webhookSecretPlaintext: 'whsec_apex_peptide_9b21ef4',
     notifyOnLead: true,
     categories: ['peptide'],
-    serviceCodes: ['bpc157', 'peptide_consult', 'recovery_protocol'],
+    // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
+    serviceCodes: ['bpc157', 'peptide_consult', 'recovery_protocol', 'lab_work'],
   },
   // 3. Med spa — active, current, accepts insurance, in-person only (no telehealth)
   {

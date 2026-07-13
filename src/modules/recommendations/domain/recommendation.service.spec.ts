@@ -888,6 +888,90 @@ describe('scoreLabWork (component 7)', () => {
   });
 });
 
+// ── 7b. Lab work — seed-shaped fixture (proves component fires against seeded data) ──────
+
+describe('scoreLabWork against seed-shaped clinic fixtures (component 7 — live signal)', () => {
+  /**
+   * These fixtures mirror the shape of the seeded clinics that carry 'lab_work'
+   * (vitality-hormone-nyc and apex-peptide-telehealth).  The test proves that
+   * the +5 lab-work component fires for those clinics when willingLabWork=true
+   * and does NOT fire when willingLabWork=false, confirming that adding
+   * 'lab_work' to the seed serviceCodes makes the component live against real data.
+   */
+
+  const labClinicFixture = makeClinic({
+    id: 'seed-hormone-clinic',
+    slug: 'vitality-hormone-nyc',
+    services: ['trt', 'thyroid_management', 'hormone_panel', 'lab_work'],
+    latitude: null,
+    longitude: null,
+  });
+
+  it('willingLabWork=true + seed-shaped lab clinic → +5 vs willingLabWork=false', () => {
+    const base = {
+      selectedGoals: [] as string[],
+      budgetBand: '200_500',
+      telehealthPreference: 'no',
+    } as const;
+
+    const scoreWithLab = svc.score(
+      makeAssessment({ ...base, willingLabWork: true }),
+      labClinicFixture,
+      null,
+    );
+    const scoreWithoutLab = svc.score(
+      makeAssessment({ ...base, willingLabWork: false }),
+      labClinicFixture,
+      null,
+    );
+
+    // Component 7 must contribute exactly +5 when willingLabWork=true.
+    expect(scoreWithLab - scoreWithoutLab).toBe(5);
+  });
+
+  it('willingLabWork=true + seed-shaped lab clinic scores higher than an identical clinic without lab_work', () => {
+    const assessment = makeAssessment({
+      selectedGoals: [],
+      budgetBand: '200_500',
+      telehealthPreference: 'no',
+      willingLabWork: true,
+    });
+
+    const noLabClinic = makeClinic({
+      id: 'no-lab-clinic',
+      services: ['trt', 'thyroid_management', 'hormone_panel'], // same as labClinicFixture minus lab_work
+      latitude: null,
+      longitude: null,
+    });
+
+    const scoreWithLab = svc.score(assessment, labClinicFixture, null);
+    const scoreWithoutLab = svc.score(assessment, noLabClinic, null);
+
+    expect(scoreWithLab).toBeGreaterThan(scoreWithoutLab);
+    expect(scoreWithLab - scoreWithoutLab).toBe(5);
+  });
+
+  it('rank places the lab_work clinic above an otherwise-equal clinic when willingLabWork=true', () => {
+    const assessment = makeAssessment({
+      selectedGoals: [],
+      budgetBand: '200_500',
+      telehealthPreference: 'no',
+      willingLabWork: true,
+    });
+
+    const noLabClinic = makeClinic({
+      id: 'aaaaaaaa-0000-0000-0000-000000000001', // lower id — would win tie-break
+      services: ['trt', 'thyroid_management', 'hormone_panel'],
+      latitude: null,
+      longitude: null,
+    });
+
+    const results = svc.rank(assessment, [noLabClinic, labClinicFixture], null);
+    // labClinicFixture must rank first because it scores +5 more
+    expect(results[0].clinicId).toBe('seed-hormone-clinic');
+  });
+});
+
 // ── Tie-break and ranking ─────────────────────────────────────────────────────
 
 describe('rank — tie-break and top-10', () => {
