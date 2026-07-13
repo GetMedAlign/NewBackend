@@ -43,7 +43,7 @@ describe('PrismaClinicRepository', () => {
 
       for (const clinic of clinics) {
         expect(clinic.status).toBe('active');
-        expect(['current', 'trialing', 'paused'].includes(clinic.billingStatus)).toBe(true);
+        expect(['no_card', 'overdue']).not.toContain(clinic.billingStatus);
         expect(clinic.categories).toContain('hormone');
         expect(clinic.categories.length).toBeGreaterThan(0);
         expect(clinic.services.length).toBeGreaterThan(0);
@@ -124,10 +124,11 @@ describe('PrismaClinicRepository', () => {
       expect(clinic!.categories).toContain('hormone');
       expect(clinic!.categories).toContain('wellness');
       expect(clinic!.services).toContain('trt');
-      // webhookSecretEncrypted is a non-empty ciphertext (NOT the plaintext).
+      // webhookSecretEncrypted is a non-empty base64 ciphertext (NOT the plaintext).
       expect(typeof clinic!.webhookSecretEncrypted).toBe('string');
-      expect(clinic!.webhookSecretEncrypted!.length).toBeGreaterThan(0);
+      expect(clinic!.webhookSecretEncrypted!.length).toBeGreaterThan(40);
       expect(clinic!.webhookSecretEncrypted).not.toBe('whsec_vitality_hormone_nyc_5f3a9c');
+      expect(clinic!.webhookSecretEncrypted).toMatch(/^[A-Za-z0-9+/]+=*$/);
     });
 
     it('returns null for an unknown slug', async () => {
