@@ -1,4 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import type { Response } from 'express';
 
 import { InvalidCredentialsError } from '../../modules/auth/domain/errors/invalid-credentials.error';
@@ -30,9 +37,22 @@ interface ErrorEnvelope {
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
     const { status, code, message } = this.map(exception);
+
+    // Server-side faults (5xx) are unexpected and otherwise invisible: the
+    // client only sees the generic envelope. Log the real cause (stack, no
+    // request body) so production 500s are diagnosable. Mapped 4xx domain
+    // errors are expected control flow and are not logged.
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(
+        `${code} on ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    }
 
     const body: ErrorEnvelope = { error: { code, message } };
     response.status(status).json(body);
