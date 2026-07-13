@@ -1,5 +1,6 @@
-// Prisma schema for MedAlign — Foundation slice
+// Prisma schema for MedAlign — Foundation + Patient Journey slices
 // See: docs/superpowers/specs/2026-07-10-backend-foundation-design.md §5
+//      docs/superpowers/specs/2026-07-13-patient-journey-design.md §3
 
 generator client {
   provider        = "prisma-client"
@@ -23,6 +24,15 @@ enum AppRole {
   superadmin
 
   @@map("app_role")
+}
+
+enum AssessmentCategory {
+  hormone
+  peptide
+  med_spa
+  wellness
+
+  @@map("assessment_category")
 }
 
 // ---------------------------------------------------------------------------
@@ -83,4 +93,218 @@ model AuditLog {
   notes          String?
 
   @@map("audit_log")
+}
+
+// ---------------------------------------------------------------------------
+// Patient Journey — §3 Data model
+// ---------------------------------------------------------------------------
+
+model Patient {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  zipCode          String?   @map("zip_code")
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastAssessmentAt DateTime? @map("last_assessment_at") @db.Timestamptz
+  isDeleted        Boolean   @default(false) @map("is_deleted")
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  assessments PatientAssessment[]
+  leads       Lead[]
+
+  @@map("patients")
+}
+
+model PatientAssessment {
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId                String             @unique @map("session_id")
+  patientId                String?            @map("patient_id") @db.Uuid
+  treatmentCategory        AssessmentCategory @map("treatment_category")
+  // Encrypted PHI stored as ciphertext (text)
+  symptomDuration          String?            @map("symptom_duration")
+  exerciseFrequency        String?            @map("exercise_frequency")
+  diet                     String?            @map("diet")
+  sleepHours               String?            @map("sleep_hours")
+  stressLevel              String?            @map("stress_level")
+  alcoholUse               String?            @map("alcohol_use")
+  appointmentPreference    String?            @map("appointment_preference")
+  biologicalSex            String?            @map("biological_sex")
+  allergyDetails           String?            @map("allergy_details")
+  otherMedications         String?            @map("other_medications")
+  // Plain fields
+  hasPriorTreatment        Boolean?           @map("has_prior_treatment")
+  willingLabWork           Boolean?           @map("willing_lab_work")
+  willingStructuredProgram Boolean?           @map("willing_structured_program")
+  startTimeline            String?            @map("start_timeline")
+  budgetBand               String             @map("budget_band")
+  telehealthPreference     String             @map("telehealth_preference")
+  pregnantOrPlanning       Boolean?           @map("pregnant_or_planning")
+  takingPrescriptions      Boolean?           @map("taking_prescriptions")
+  hadPriorTherapy          Boolean?           @map("had_prior_therapy")
+  medicationAllergies      Boolean?           @map("medication_allergies")
+  zipCode                  String             @map("zip_code")
+  consentGiven             Boolean            @map("consent_given")
+  consentVersion           String             @map("consent_version")
+  consentGivenAt           DateTime           @map("consent_given_at") @db.Timestamptz
+  submittedAt              DateTime           @map("submitted_at") @db.Timestamptz
+
+  patient               Patient?                      @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  goals                 AssessmentGoal[]
+  symptoms              AssessmentSymptom[]
+  chronicConditions     AssessmentChronicCondition[]
+  prescriptions         AssessmentPrescription[]
+  leads                 Lead[]
+
+  @@map("patient_assessments")
+}
+
+model AssessmentGoal {
+  assessmentId String @map("assessment_id") @db.Uuid
+  goalCode     String @map("goal_code")
+
+  assessment PatientAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@id([assessmentId, goalCode])
+  @@map("assessment_goals")
+}
+
+model AssessmentSymptom {
+  assessmentId String @map("assessment_id") @db.Uuid
+  symptomCode  String @map("symptom_code")
+  severity     Int
+
+  assessment PatientAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@id([assessmentId, symptomCode])
+  @@map("assessment_symptoms")
+}
+
+model AssessmentChronicCondition {
+  assessmentId   String @map("assessment_id") @db.Uuid
+  conditionCode  String @map("condition_code")
+
+  assessment PatientAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@id([assessmentId, conditionCode])
+  @@map("assessment_chronic_conditions")
+}
+
+model AssessmentPrescription {
+  assessmentId      String @map("assessment_id") @db.Uuid
+  prescriptionCode  String @map("prescription_code")
+
+  assessment PatientAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@id([assessmentId, prescriptionCode])
+  @@map("assessment_prescriptions")
+}
+
+model Clinic {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                 String             @unique
+  name                 String
+  about                String?
+  providerName         String?            @map("provider_name")
+  websiteUrl           String?            @map("website_url")
+  rating               Decimal            @db.Decimal(2, 1)
+  reviewCount          Int                @map("review_count")
+  latitude             Float?
+  longitude            Float?
+  city                 String?
+  stateCode            String?            @map("state_code")
+  telehealthAvailable  Boolean            @map("telehealth_available")
+  newPatientWait       String?            @map("new_patient_wait")
+  consultationFeeBand  String?            @map("consultation_fee_band")
+  monthlyProgramBand   String?            @map("monthly_program_band")
+  financingAvailable   Boolean            @map("financing_available")
+  acceptsInsurance     Boolean            @map("accepts_insurance")
+  status               String
+  billingStatus        String             @map("billing_status")
+  businessEmail        String?            @map("business_email")
+  webhookUrl           String?            @map("webhook_url")
+  webhookSecret        String?            @map("webhook_secret")
+  notifyOnLead         Boolean            @map("notify_on_lead")
+
+  categories ClinicCategory[]
+  services   ClinicService[]
+  leads      Lead[]
+
+  @@map("clinics")
+}
+
+model ClinicCategory {
+  clinicId String             @map("clinic_id") @db.Uuid
+  category AssessmentCategory
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@id([clinicId, category])
+  @@map("clinic_categories")
+}
+
+model ClinicService {
+  clinicId    String @map("clinic_id") @db.Uuid
+  serviceCode String @map("service_code")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@id([clinicId, serviceCode])
+  @@map("clinic_services")
+}
+
+model Lead {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId                String    @unique @map("lead_id")
+  clinicId              String    @map("clinic_id") @db.Uuid
+  assessmentId          String?   @map("assessment_id") @db.Uuid
+  patientId             String?   @map("patient_id") @db.Uuid
+  patientFirstName      String    @map("patient_first_name")
+  patientEmail          String    @map("patient_email")
+  patientZip            String?   @map("patient_zip")
+  treatmentCategory     String    @map("treatment_category")
+  topGoals              String?   @map("top_goals")
+  topSymptoms           String?   @map("top_symptoms")
+  budgetBand            String?   @map("budget_band")
+  telehealthPreference  String?   @map("telehealth_preference")
+  appointmentPreference String?   @map("appointment_preference")
+  startTimeline         String?   @map("start_timeline")
+  patientPhone          String?   @map("patient_phone")
+  inquiryMessage        String?   @map("inquiry_message")
+  leadSource            String    @map("lead_source")
+  deliveryStatus        String    @map("delivery_status")
+  clinicStatus          String    @map("clinic_status")
+  receivedAt            DateTime  @map("received_at") @db.Timestamptz
+  deliveredAt           DateTime? @map("delivered_at") @db.Timestamptz
+
+  clinic     Clinic             @relation(fields: [clinicId], references: [id])
+  assessment PatientAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  patient    Patient?           @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  webhookDeliveries WebhookDelivery[]
+
+  @@map("leads")
+}
+
+model WebhookDelivery {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId       String   @map("lead_id") @db.Uuid
+  url          String
+  status       String
+  responseCode Int?     @map("response_code")
+  error        String?
+  attemptedAt  DateTime @map("attempted_at") @db.Timestamptz
+
+  lead Lead @relation(fields: [leadId], references: [id])
+
+  @@map("webhook_deliveries")
+}
+
+model ZipCode {
+  zip       String  @id
+  latitude  Float
+  longitude Float
+  city      String
+  stateCode String  @map("state_code")
+
+  @@map("zip_codes")
 }
