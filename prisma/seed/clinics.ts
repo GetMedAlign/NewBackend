@@ -27,7 +27,6 @@ export type ClinicSeed = {
   longitude: number | null;
   city: string | null;
   stateCode: string | null;
-  zip: string;
   telehealthAvailable: boolean;
   newPatientWait: string;
   consultationFeeBand: string;
@@ -59,7 +58,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: -73.9967,
     city: 'New York',
     stateCode: 'NY',
-    zip: '10001',
+    // geo-anchor ZIP: 10001
     telehealthAvailable: true,
     newPatientWait: 'same_week',
     consultationFeeBand: '100_200',
@@ -88,7 +87,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: null,
     city: null,
     stateCode: null,
-    zip: '94102',
+    // geo-anchor ZIP: 94102 (San Francisco)
     telehealthAvailable: true,
     newPatientWait: '1_2_weeks',
     consultationFeeBand: '200_500',
@@ -117,7 +116,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: -80.1978,
     city: 'Miami',
     stateCode: 'FL',
-    zip: '33101',
+    // geo-anchor ZIP: 33101
     telehealthAvailable: false,
     newPatientWait: '2_4_weeks',
     consultationFeeBand: '100_200',
@@ -146,7 +145,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: -87.6181,
     city: 'Chicago',
     stateCode: 'IL',
-    zip: '60601',
+    // geo-anchor ZIP: 60601
     telehealthAvailable: true,
     newPatientWait: '1_month_plus',
     consultationFeeBand: '500_1k',
@@ -175,7 +174,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: -118.2479,
     city: 'Los Angeles',
     stateCode: 'CA',
-    zip: '90001',
+    // geo-anchor ZIP: 90001
     telehealthAvailable: true,
     newPatientWait: 'same_week',
     consultationFeeBand: '100_200',
@@ -204,7 +203,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     longitude: -122.3305,
     city: 'Seattle',
     stateCode: 'WA',
-    zip: '98101',
+    // geo-anchor ZIP: 98101
     telehealthAvailable: true,
     newPatientWait: '1_2_weeks',
     consultationFeeBand: '200_500',

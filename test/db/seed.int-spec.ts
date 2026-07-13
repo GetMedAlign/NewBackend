@@ -15,6 +15,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { createDecipheriv } from 'crypto';
 import { PrismaClient } from '../../generated/prisma/client';
 import { seedPatientJourney } from '../../prisma/seed/patient-journey.seed';
+import { CLINICS } from '../../prisma/seed/clinics';
 
 const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
 const adapter = new PrismaPg(pool);
@@ -71,11 +72,18 @@ describe('Patient-journey seed', () => {
     }
   });
 
-  it('is idempotent — a third run does not error or duplicate zips', async () => {
-    const before = await prisma.zipCode.count();
+  it('is idempotent — a third run does not error or duplicate rows', async () => {
+    const beforeZips = await prisma.zipCode.count();
+    const beforeClinics = await prisma.clinic.count();
+    const beforeCategories = await prisma.clinicCategory.count();
+    const beforeServices = await prisma.clinicService.count();
+
     await seedPatientJourney(prisma);
-    const after = await prisma.zipCode.count();
-    expect(after).toBe(before);
+
+    expect(await prisma.zipCode.count()).toBe(beforeZips);
+    expect(await prisma.clinic.count()).toBe(beforeClinics);
+    expect(await prisma.clinicCategory.count()).toBe(beforeCategories);
+    expect(await prisma.clinicService.count()).toBe(beforeServices);
   });
 
   it('has >= 1 active, billing-current clinic in EACH category', async () => {
@@ -116,8 +124,20 @@ describe('Patient-journey seed', () => {
       expect(clinic.businessEmail).toMatch(/@/);
       expect(clinic.webhookUrl).toMatch(/^https:\/\//);
       const decrypted = decrypt(clinic.webhookSecret as string, keyB64 as string);
-      expect(decrypted.length).toBeGreaterThan(0);
+      // Prove true round-trip: look up the known plaintext from the seed data.
+      const seedClinic = CLINICS.find((s) => s.slug === clinic.slug);
+      expect(seedClinic?.webhookSecretPlaintext).not.toBeNull();
+      expect(decrypted).toBe(seedClinic?.webhookSecretPlaintext);
     }
+
+    // Explicit spot-check on vitality-hormone-nyc (the primary notify+webhook clinic).
+    const vitality = await prisma.clinic.findUniqueOrThrow({
+      where: { slug: 'vitality-hormone-nyc' },
+    });
+    expect(vitality.webhookSecret).not.toBeNull();
+    expect(decrypt(vitality.webhookSecret as string, keyB64 as string)).toBe(
+      'whsec_vitality_hormone_nyc_5f3a9c',
+    );
   });
 
   it('has clinics spanning all category, budget, telehealth, and financing variety', async () => {

@@ -98,16 +98,21 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     });
 
     // Categories — delete-then-recreate keeps the join tables idempotent
-    // (composite PKs, no natural "update" surface).
-    await prisma.clinicCategory.deleteMany({ where: { clinicId: clinic.id } });
-    await prisma.clinicCategory.createMany({
-      data: c.categories.map((category) => ({ clinicId: clinic.id, category })),
-    });
+    // (composite PKs, no natural "update" surface). Wrapped in transactions so
+    // a crash cannot leave a clinic with zero categories or services.
+    await prisma.$transaction([
+      prisma.clinicCategory.deleteMany({ where: { clinicId: clinic.id } }),
+      prisma.clinicCategory.createMany({
+        data: c.categories.map((category) => ({ clinicId: clinic.id, category })),
+      }),
+    ]);
 
-    await prisma.clinicService.deleteMany({ where: { clinicId: clinic.id } });
-    await prisma.clinicService.createMany({
-      data: c.serviceCodes.map((serviceCode) => ({ clinicId: clinic.id, serviceCode })),
-    });
+    await prisma.$transaction([
+      prisma.clinicService.deleteMany({ where: { clinicId: clinic.id } }),
+      prisma.clinicService.createMany({
+        data: c.serviceCodes.map((serviceCode) => ({ clinicId: clinic.id, serviceCode })),
+      }),
+    ]);
   }
 }
 
