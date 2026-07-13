@@ -414,4 +414,71 @@ describe('SubmitLeadUseCase', () => {
       expect(m.webhook.send).not.toHaveBeenCalled();
     });
   });
+
+  describe('self-email suppression (.NET parity)', () => {
+    it('does NOT call email sender when businessEmail equals patientEmail (exact match)', async () => {
+      const m = buildMocks();
+      const selfEmail = 'patient@example.com';
+      m.clinics.findById.mockResolvedValue(
+        makeClinic({ businessEmail: selfEmail, webhookUrl: null }),
+      );
+      const useCase = buildUseCase(m);
+
+      const result = await useCase.execute({ ...BASE_INPUT, patientEmail: selfEmail }, {});
+
+      expect(m.email.send).not.toHaveBeenCalled();
+      expect(result.leadId).toBe('lead_abc');
+    });
+
+    it('does NOT call email sender when businessEmail equals patientEmail (case-insensitive)', async () => {
+      const m = buildMocks();
+      m.clinics.findById.mockResolvedValue(
+        makeClinic({ businessEmail: 'Patient@EXAMPLE.COM', webhookUrl: null }),
+      );
+      const useCase = buildUseCase(m);
+
+      const result = await useCase.execute(
+        { ...BASE_INPUT, patientEmail: '  patient@example.com  ' },
+        {},
+      );
+
+      expect(m.email.send).not.toHaveBeenCalled();
+      expect(result.leadId).toBe('lead_abc');
+    });
+
+    it('still calls webhook when email is suppressed due to self-match', async () => {
+      const m = buildMocks();
+      const selfEmail = 'patient@example.com';
+      m.clinics.findById.mockResolvedValue(makeClinic({ businessEmail: selfEmail }));
+      m.webhook.send.mockResolvedValue({ ok: true, status: 200 });
+      const useCase = buildUseCase(m);
+
+      const result = await useCase.execute({ ...BASE_INPUT, patientEmail: selfEmail }, {});
+
+      expect(m.email.send).not.toHaveBeenCalled();
+      expect(m.webhook.send).toHaveBeenCalled();
+      expect(m.leads.setDeliveryStatus).toHaveBeenCalledWith(
+        'lead_abc',
+        'sent_to_crm',
+        expect.any(Date),
+      );
+      expect(result.leadId).toBe('lead_abc');
+    });
+
+    it('DOES send email when businessEmail differs from patientEmail', async () => {
+      const m = buildMocks();
+      m.clinics.findById.mockResolvedValue(
+        makeClinic({ businessEmail: 'clinic@example.com', webhookUrl: null }),
+      );
+      const useCase = buildUseCase(m);
+
+      await useCase.execute({ ...BASE_INPUT, patientEmail: 'different@example.com' }, {});
+
+      expect(m.email.send).toHaveBeenCalledWith(
+        'clinic@example.com',
+        expect.any(String),
+        expect.any(String),
+      );
+    });
+  });
 });

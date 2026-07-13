@@ -192,8 +192,13 @@ export class SubmitLeadUseCase {
     let sentToCrm = false;
     let attempted = false;
 
-    // Email notification — fires whenever a business email is configured.
-    if (clinic.businessEmail) {
+    // Email notification — fires whenever a business email is configured AND it
+    // does not match the patient's own email (matching .NET LeadsController
+    // behaviour: a patient must not receive their own clinic notification).
+    if (
+      clinic.businessEmail &&
+      clinic.businessEmail.trim().toLowerCase() !== patientEmail.trim().toLowerCase()
+    ) {
       attempted = true;
       try {
         const subject = `New MedAlign lead: ${firstName}`;

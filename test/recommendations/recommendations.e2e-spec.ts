@@ -127,7 +127,7 @@ describe('Recommendations (e2e)', () => {
         .set('Cookie', `csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
         .send(HORMONE_ASSESSMENT)
-        .expect(201);
+        .expect(200);
 
       expect(res.body.sessionId).toMatch(/^session_[0-9a-f]{32}$/);
       sessionId = res.body.sessionId as string;

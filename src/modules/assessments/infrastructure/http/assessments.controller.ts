@@ -34,7 +34,7 @@ export class AssessmentsController {
 
   @Public()
   @Post()
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   async submit(
     @Body() dto: SubmitAssessmentDto,
     @Req() req: Request & { user?: AuthenticatedUser },

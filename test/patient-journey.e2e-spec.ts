@@ -219,7 +219,7 @@ describe('Patient journey (e2e)', () => {
       .set('Cookie', `csrf_token=${csrfToken}`)
       .set('x-csrf-token', csrfToken)
       .send(HORMONE_ASSESSMENT)
-      .expect(201);
+      .expect(200);
 
     sessionId = res.body.sessionId as string;
     claimToken = res.body.claimToken as string;

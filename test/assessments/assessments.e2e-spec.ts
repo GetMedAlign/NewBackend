@@ -102,13 +102,13 @@ describe('Assessments (e2e)', () => {
     csrfToken = token as string;
   });
 
-  it('POST /assessments anonymous succeeds with 201 and returns sessionId + claimToken', async () => {
+  it('POST /assessments anonymous succeeds with 200 and returns sessionId + claimToken', async () => {
     const res = await agent()
       .post('/assessments')
       .set('Cookie', `csrf_token=${csrfToken}`)
       .set('x-csrf-token', csrfToken)
       .send(VALID_SUBMISSION)
-      .expect(201);
+      .expect(200);
 
     expect(typeof res.body.sessionId).toBe('string');
     expect(res.body.sessionId).toMatch(/^session_[0-9a-f]{32}$/);
@@ -124,7 +124,7 @@ describe('Assessments (e2e)', () => {
       .set('Cookie', `csrf_token=${csrfToken}`)
       .set('x-csrf-token', csrfToken)
       .send(VALID_SUBMISSION)
-      .expect(201);
+      .expect(200);
 
     const sessionId = res.body.sessionId as string;
     sessionIds.push(sessionId);
@@ -212,7 +212,7 @@ describe('Assessments (e2e)', () => {
         .set('Cookie', `csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
         .send(VALID_SUBMISSION)
-        .expect(201);
+        .expect(200);
 
       sessionId = res.body.sessionId as string;
       claimToken = res.body.claimToken as string;
