@@ -81,7 +81,13 @@ describe('Patients (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Delete the created user (cascades to patients, roles, etc.)
+    // Signup now creates a patients row (FK child of users); delete it first.
+    await prisma.asSystem(
+      (client) => client.$executeRaw`
+        DELETE FROM patients
+        WHERE user_id = (SELECT id FROM users WHERE email = ${email}::citext LIMIT 1)
+      `,
+    );
     await prisma.asSystem(
       (client) => client.$executeRaw`DELETE FROM users WHERE email = ${email}::citext`,
     );

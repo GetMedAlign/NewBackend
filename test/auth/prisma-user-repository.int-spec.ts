@@ -45,6 +45,25 @@ describe('PrismaUserRepository', () => {
       expect(user?.passwordHash).toBe('hashed-pw');
     });
 
+    it('creates the patient row atomically at signup (matches .NET)', async () => {
+      const id = await repo.create('patient-row@example.com', 'hashed-pw');
+
+      const rows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ user_id: string; date_of_birth: Date | null; zip_code: string | null }[]>`
+            SELECT user_id::text AS user_id, date_of_birth, zip_code
+            FROM patients
+            WHERE user_id = ${id}::uuid
+            LIMIT 1
+          `,
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].user_id).toBe(id);
+      // dob/zip stay null until the patient sets them.
+      expect(rows[0].date_of_birth).toBeNull();
+      expect(rows[0].zip_code).toBeNull();
+    });
+
     it('findByEmail is case-insensitive (citext column)', async () => {
       const id = await repo.create('case@example.com', 'h');
       const user = await repo.findByEmail('CASE@EXAMPLE.COM');

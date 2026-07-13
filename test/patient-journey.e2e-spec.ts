@@ -1,31 +1,33 @@
 /**
  * Full patient-journey end-to-end test (spec §7 / §8).
  *
- * Exercises the REAL production flow against the seeded DB and, crucially,
- * proves the Task-11 attribution fix: an authenticated caller's lead is
- * attributed to their own patient (resolved directly by userId) and therefore
- * appears in GET /patients/me/leads.
+ * Exercises the REAL production frontend order against the seeded DB and,
+ * crucially, proves the patient-at-signup fix: the authenticated caller submits
+ * the lead BEFORE claiming the assessment, yet the lead is still attributed to
+ * their own patient (resolved directly by userId) and therefore appears in
+ * GET /patients/me/leads.
  *
  * Requires a running Postgres with the patient-journey seed applied
  * (clinics + zip codes). Reuses the same CSRF double-submit + 2FA-cookie dance
  * as test/auth.e2e-spec.ts.
  *
- * Journey:
+ * Journey (real production order):
  *   1. POST /assessments (anonymous)                → { sessionId, claimToken }
  *   2. GET  /recommendations/{sessionId} (public)   → ranked clinic matches
  *   3. signup → signin → 2FA verify                 → authenticated cookie
- *   4. GET  /assessments/latest?...&claimToken=...  → claims the assessment
- *                                                      (creates the patient row)
- *   5. POST /leads (authenticated, sessionId+token) → { leadId }, patient +
+ *   4. POST /leads (authenticated, BEFORE any claim,
+ *        sessionId + claimToken)                    → { leadId }, patient +
  *                                                      assessment both linked
- *   6. GET  /patients/me/leads (authenticated)      → the lead appears
+ *   5. GET  /patients/me/leads (authenticated)      → the lead appears
+ *   6. GET  /assessments/latest?...&claimToken=...  → returns the assessment
  *   7. SECURITY: a DIFFERENT signed-in user calling GET /assessments/latest with
  *      the same sessionId but NO / an INVALID claimToken does NOT receive it.
  *
- * Note on step ordering: the patient row is created lazily when the assessment
- * is first claimed (assessments.linkToPatient upserts it). We therefore claim
- * (step 4) before POST /leads (step 5) so the caller's patient row exists at
- * lead time — this is what the Part-A fix resolves directly by userId.
+ * Why the order matters: because signup now creates the caller's patients row
+ * (matching .NET), the patient row already exists at lead time even though the
+ * assessment has NOT been claimed yet. The assessment still links because the
+ * valid claimToken proves ownership. Step 5 is the assertion that fails without
+ * the patient-at-signup fix.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -254,16 +256,7 @@ describe('Patient journey (e2e)', () => {
     expect(accessCookie).toBeDefined();
   });
 
-  it('step 4: GET /assessments/latest with the correct claimToken claims the assessment', async () => {
-    const res = await agent()
-      .get(`/assessments/latest?sessionId=${sessionId}&claimToken=${claimToken}`)
-      .set('Cookie', `access_token=${accessCookie}; csrf_token=${csrfToken}`)
-      .expect(200);
-
-    expect(res.body.sessionId).toBe(sessionId);
-  });
-
-  it('step 5: POST /leads (authenticated) creates a lead linked to the caller', async () => {
+  it('step 4: POST /leads (authenticated, BEFORE claiming) creates a lead linked to the caller', async () => {
     const match = matches.find((m) => m.slug === NOTIFY_CLINIC_SLUG) ?? matches[0];
 
     const res = await agent()
@@ -290,14 +283,15 @@ describe('Patient journey (e2e)', () => {
     leadId = res.body.leadId as string;
   });
 
-  it('step 5b: the lead is attributed to the caller (patient_id + assessment_id set)', async () => {
+  it('step 4b: the lead is attributed to the caller (patient_id + assessment_id set)', async () => {
     const lead = await prisma.asSystem((c) =>
       c.lead.findUniqueOrThrow({
         where: { leadId },
         select: { patientId: true, assessmentId: true },
       }),
     );
-    // Part-A fix: patient resolved directly by userId.
+    // Patient-at-signup fix: the caller's patient row exists from signup, so it
+    // is resolved directly by userId even though the assessment is not yet claimed.
     expect(lead.patientId).not.toBeNull();
     // Assessment linked because a valid claimToken proved ownership.
     expect(lead.assessmentId).not.toBeNull();
@@ -318,7 +312,7 @@ describe('Patient journey (e2e)', () => {
     expect(patient.userId).toBe(user[0].id);
   });
 
-  it('step 6: GET /patients/me/leads shows the lead (this is what the Part-A fix enables)', async () => {
+  it('step 5: GET /patients/me/leads shows the lead (this is what the patient-at-signup fix enables)', async () => {
     const res = await agent()
       .get('/patients/me/leads')
       .set('Cookie', `access_token=${accessCookie}`)
@@ -331,6 +325,15 @@ describe('Patient journey (e2e)', () => {
     expect(found).toBeDefined();
     expect(typeof found?.clinicName).toBe('string');
     expect(found?.clinicSlug).toBe(NOTIFY_CLINIC_SLUG);
+  });
+
+  it('step 6: GET /assessments/latest with the correct claimToken returns the assessment', async () => {
+    const res = await agent()
+      .get(`/assessments/latest?sessionId=${sessionId}&claimToken=${claimToken}`)
+      .set('Cookie', `access_token=${accessCookie}; csrf_token=${csrfToken}`)
+      .expect(200);
+
+    expect(res.body.sessionId).toBe(sessionId);
   });
 
   describe('step 7: a stolen sessionId without the claimToken cannot claim the assessment', () => {
