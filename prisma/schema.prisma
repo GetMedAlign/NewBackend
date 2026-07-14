@@ -261,8 +261,10 @@ model ClinicCategory {
 }
 
 model ClinicService {
-  clinicId    String @map("clinic_id") @db.Uuid
-  serviceCode String @map("service_code")
+  clinicId     String  @map("clinic_id") @db.Uuid
+  serviceCode  String  @map("service_code")
+  isTopService Boolean @default(false) @map("is_top_service")
+  displayOrder Int     @default(0) @map("display_order")
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 

@@ -50,6 +50,9 @@ import { PatientsController } from '../src/modules/patients/infrastructure/http/
 import { GetProfileUseCase } from '../src/modules/patients/application/get-profile.use-case';
 import { UpdateProfileUseCase } from '../src/modules/patients/application/update-profile.use-case';
 import { GetMyLeadsUseCase } from '../src/modules/patients/application/get-my-leads.use-case';
+import { ClinicPortalController } from '../src/modules/clinic-portal/infrastructure/http/clinic-portal.controller';
+import { GetClinicProfileUseCase } from '../src/modules/clinic-portal/application/get-clinic-profile.use-case';
+import { UpdateClinicProfileUseCase } from '../src/modules/clinic-portal/application/update-clinic-profile.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -80,6 +83,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     RecommendationsController,
     LeadsController,
     PatientsController,
+    ClinicPortalController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -96,6 +100,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetProfileUseCase),
     stubProvider(UpdateProfileUseCase),
     stubProvider(GetMyLeadsUseCase),
+    stubProvider(GetClinicProfileUseCase),
+    stubProvider(UpdateClinicProfileUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

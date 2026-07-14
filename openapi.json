@@ -493,6 +493,54 @@
           "patients"
         ]
       }
+    },
+    "/clinic/portal/profile": {
+      "get": {
+        "operationId": "ClinicPortalController_getClinicProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic profile",
+        "tags": [
+          "Clinic Portal"
+        ]
+      },
+      "put": {
+        "operationId": "ClinicPortalController_updateClinicProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicPortalProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the authenticated clinic profile",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
     }
   },
   "info": {
@@ -605,6 +653,99 @@
         "required": [
           "name"
         ]
+      },
+      "UpdateClinicPortalProfileRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "about": {
+            "type": "string"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "websiteUrl": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "businessEmail": {
+            "type": "string"
+          },
+          "webhookUrl": {
+            "type": "object",
+            "nullable": true,
+            "description": "Set to null to clear the webhook URL"
+          },
+          "notifyOnLead": {
+            "type": "boolean"
+          },
+          "differentiators": {
+            "type": "string"
+          },
+          "offersLabWork": {
+            "type": "boolean"
+          },
+          "insuranceNotes": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "string"
+          },
+          "npiNumber": {
+            "type": "string"
+          },
+          "stateLicenseNumber": {
+            "type": "string"
+          },
+          "weeklySummary": {
+            "type": "boolean"
+          },
+          "telehealthAvailable": {
+            "type": "boolean"
+          },
+          "newPatientWait": {
+            "type": "string"
+          },
+          "consultationFeeBand": {
+            "type": "string"
+          },
+          "monthlyProgramBand": {
+            "type": "string"
+          },
+          "financingAvailable": {
+            "type": "boolean"
+          },
+          "acceptsInsurance": {
+            "type": "boolean"
+          },
+          "treatmentCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topServices": {
+            "description": "Service codes to mark as top/featured",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allServices": {
+            "description": "Complete list of service codes",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   }
