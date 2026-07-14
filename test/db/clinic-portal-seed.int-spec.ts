@@ -64,11 +64,11 @@ describe('Clinic-portal seed', () => {
       expect(clinicRows.length).toBe(1);
       expect(clinicRows[0]!.slug).toBe(u.clinicSlug);
 
-      // The user must have role=clinic in user_roles
+      // The user must have EXACTLY the 'clinic' role in user_roles (no leftover 'patient')
       const roleRows = await prisma.$queryRaw<{ role: string }[]>`
-        SELECT role FROM user_roles WHERE user_id = ${user.id}::uuid AND role = 'clinic'
+        SELECT role FROM user_roles WHERE user_id = ${user.id}::uuid ORDER BY role
       `;
-      expect(roleRows.length).toBe(1);
+      expect(roleRows.map((r) => r.role)).toEqual(['clinic']);
 
       // has_role helper must return true
       const hasRoleRows = await prisma.$queryRaw<{ result: boolean }[]>`
@@ -115,7 +115,7 @@ describe('Clinic-portal seed', () => {
       if (c.slug === 'vitality-hormone-nyc' || c.slug === 'apex-peptide-telehealth') {
         expect(c.offers_lab_work).toBe(true);
       } else {
-        expect(typeof c.offers_lab_work).toBe('boolean');
+        expect(c.offers_lab_work).toBe(false);
       }
     }
   });

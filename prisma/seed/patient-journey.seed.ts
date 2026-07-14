@@ -194,11 +194,16 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
       userId = existing[0]!.id;
     }
 
-    // Ensure the user has a 'clinic' role (upsert to handle re-runs).
+    // Ensure the user has exactly the 'clinic' role.
+    // Insert-then-delete: avoids a unique-violation an UPDATE would cause when a
+    // clinic row already exists, and is fully idempotent across any number of runs.
     await prisma.$executeRaw`
       INSERT INTO user_roles (user_id, role)
       VALUES (${userId}::uuid, 'clinic')
       ON CONFLICT (user_id, role) DO NOTHING
+    `;
+    await prisma.$executeRaw`
+      DELETE FROM user_roles WHERE user_id = ${userId}::uuid AND role = 'patient'
     `;
 
     // Ensure clinic_id is set on the user row.
