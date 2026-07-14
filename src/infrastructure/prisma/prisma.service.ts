@@ -42,9 +42,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.$transaction(async (tx) => {
       // Fixed literal — no interpolation — so $executeRawUnsafe is safe here.
       await tx.$executeRawUnsafe('SET LOCAL ROLE app_authenticated');
-      await tx.$executeRaw`SELECT set_config('app.current_user_id',   ${ctx.userId ?? ''},  true)`;
-      await tx.$executeRaw`SELECT set_config('app.current_user_role',  ${ctx.role ?? ''},   true)`;
-      await tx.$executeRaw`SELECT set_config('app.current_ip_address', ${ctx.ip ?? ''},     true)`;
+      await tx.$executeRaw`SELECT set_config('app.current_user_id',   ${ctx.userId ?? ''},     true)`;
+      await tx.$executeRaw`SELECT set_config('app.current_user_role',  ${ctx.role ?? ''},     true)`;
+      await tx.$executeRaw`SELECT set_config('app.current_ip_address', ${ctx.ip ?? ''},       true)`;
+      await tx.$executeRaw`SELECT set_config('app.current_clinic_id',  ${ctx.clinicId ?? ''}, true)`;
       return fn(tx);
     });
   }
