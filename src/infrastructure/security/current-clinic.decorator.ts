@@ -11,6 +11,7 @@ import type { AuthenticatedUser } from './current-user.decorator';
 export const CurrentClinic = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
+    /* invariant: ClinicGuard has already asserted a non-empty clinicId on this route */
     return request.user!.clinicId as string;
   },
 );
