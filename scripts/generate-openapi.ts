@@ -63,6 +63,9 @@ import { TestWebhookUseCase } from '../src/modules/clinic-portal/application/tes
 import { ClinicMediaController } from '../src/modules/clinic-media/infrastructure/http/clinic-media.controller';
 import { SignLogoUploadUseCase } from '../src/modules/clinic-media/application/sign-logo-upload.use-case';
 import { SignPhotoUploadsUseCase } from '../src/modules/clinic-media/application/sign-photo-uploads.use-case';
+import { ConfirmLogoUseCase } from '../src/modules/clinic-media/application/confirm-logo.use-case';
+import { ConfirmPhotosUseCase } from '../src/modules/clinic-media/application/confirm-photos.use-case';
+import { ListPhotosUseCase } from '../src/modules/clinic-media/application/list-photos.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -122,6 +125,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(TestWebhookUseCase),
     stubProvider(SignLogoUploadUseCase),
     stubProvider(SignPhotoUploadsUseCase),
+    stubProvider(ConfirmLogoUseCase),
+    stubProvider(ConfirmPhotosUseCase),
+    stubProvider(ListPhotosUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

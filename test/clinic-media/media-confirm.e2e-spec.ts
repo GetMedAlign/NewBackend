@@ -1,8 +1,6 @@
 /**
- * E2E tests for POST /clinic/portal/media/logo/sign and /clinic/portal/media/photos/sign.
- *
- * Boots the full AppModule with the STORAGE_PORT overridden to a stub that
- * never hits real Supabase.
+ * E2E tests for POST /clinic/portal/media/logo, POST /clinic/portal/media/photos,
+ * and GET /clinic/portal/media/photos.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -57,7 +55,10 @@ const mockStorage: StoragePort = {
   }),
   publicUrl: (path: string) => `https://storage.test/${path}`,
   remove: async () => {},
-  pathFromPublicUrl: () => null,
+  pathFromPublicUrl: (url: string) => {
+    const m = /^https:\/\/storage\.test\/(.+)$/.exec(url);
+    return m ? m[1]! : null;
+  },
 };
 
 function cookieValue(setCookie: string[] | undefined, name: string): string | undefined {
@@ -72,12 +73,13 @@ function cookieValue(setCookie: string[] | undefined, name: string): string | un
   return undefined;
 }
 
-describe('Clinic Media (e2e)', () => {
+describe('Clinic Media Confirm (e2e)', () => {
   let app: INestApplication;
   let csrfToken: string;
   let clinicCookie: string;
   let patientCookie: string;
-  let clinicId: string;
+  let clinicAId: string;
+  let clinicBId: string;
 
   const emailSender = new CapturingEmailSender();
   const clinicUser = SEEDED_CLINIC_USERS[0]!;
@@ -106,12 +108,19 @@ describe('Clinic Media (e2e)', () => {
     app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
 
-    // Resolve clinicId from slug
-    const clinic = await seedPrisma.clinic.findUniqueOrThrow({
+    // Resolve clinicA id from slug
+    const clinicA = await seedPrisma.clinic.findUniqueOrThrow({
       where: { slug: clinicUser.clinicSlug },
       select: { id: true },
     });
-    clinicId = clinic.id;
+    clinicAId = clinicA.id;
+
+    // Resolve clinicB id
+    const clinicB = await seedPrisma.clinic.findUniqueOrThrow({
+      where: { slug: 'apex-peptide-telehealth' },
+      select: { id: true },
+    });
+    clinicBId = clinicB.id;
 
     // Acquire CSRF token
     const csrfRes = await supertest(app.getHttpServer()).get('/health');
@@ -140,7 +149,7 @@ describe('Clinic Media (e2e)', () => {
     expect(clinicCookie).toBeTruthy();
 
     // Sign in as a patient
-    const patientEmail = `e2e-media-patient-${Date.now()}@example.com`;
+    const patientEmail = `e2e-media-confirm-patient-${Date.now()}@example.com`;
     await supertest(app.getHttpServer())
       .post('/auth/signup')
       .set('Cookie', `csrf_token=${csrfToken}`)
@@ -178,93 +187,100 @@ describe('Clinic Media (e2e)', () => {
 
   const agent = () => supertest(app.getHttpServer());
 
-  describe('POST /clinic/portal/media/logo/sign', () => {
-    it('returns 200 with { uploadUrl, token, path } for a valid clinic request', async () => {
+  describe('POST /clinic/portal/media/logo', () => {
+    it('confirms a logo and returns the public URL', async () => {
+      const path = `logos/${clinicAId}/test.png`;
       const res = await agent()
-        .post('/clinic/portal/media/logo/sign')
+        .post('/clinic/portal/media/logo')
         .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
-        .send({ contentType: 'image/png' })
+        .send({ path })
         .expect(200);
 
-      const body = res.body as Record<string, string>;
-      expect(typeof body.uploadUrl).toBe('string');
-      expect(typeof body.token).toBe('string');
-      expect(body.path.startsWith(`logos/${clinicId}/`)).toBe(true);
+      const body = res.body as { url: string };
+      expect(body.url).toBe(`https://storage.test/${path}`);
+    });
+
+    it('returns 403 for a path belonging to another clinic', async () => {
+      await agent()
+        .post('/clinic/portal/media/logo')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .set('x-csrf-token', csrfToken)
+        .send({ path: `logos/${clinicBId}/file.png` })
+        .expect(403);
     });
 
     it('returns 403 for a patient token', async () => {
       await agent()
-        .post('/clinic/portal/media/logo/sign')
+        .post('/clinic/portal/media/logo')
         .set('Cookie', `access_token=${patientCookie}; csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
-        .send({ contentType: 'image/png' })
+        .send({ path: `logos/${clinicAId}/test.png` })
+        .expect(403);
+    });
+  });
+
+  describe('POST /clinic/portal/media/photos', () => {
+    it('confirms photos and returns public URLs', async () => {
+      const paths = [`photos/${clinicAId}/a.png`, `photos/${clinicAId}/b.png`];
+      const res = await agent()
+        .post('/clinic/portal/media/photos')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .set('x-csrf-token', csrfToken)
+        .send({ paths })
+        .expect(200);
+
+      const body = res.body as { urls: string[] };
+      expect(body.urls).toHaveLength(2);
+    });
+
+    it('returns 403 for paths belonging to another clinic', async () => {
+      await agent()
+        .post('/clinic/portal/media/photos')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .set('x-csrf-token', csrfToken)
+        .send({ paths: [`photos/${clinicBId}/file.png`] })
         .expect(403);
     });
 
-    it('returns 401 when unauthenticated', async () => {
+    it('returns 400 for 9 paths', async () => {
+      const paths = Array.from({ length: 9 }, (_, i) => `photos/${clinicAId}/${i}.png`);
       await agent()
-        .post('/clinic/portal/media/logo/sign')
-        .set('Cookie', `csrf_token=${csrfToken}`)
-        .set('x-csrf-token', csrfToken)
-        .send({ contentType: 'image/png' })
-        .expect(401);
-    });
-
-    it('returns 400 for an invalid contentType', async () => {
-      await agent()
-        .post('/clinic/portal/media/logo/sign')
+        .post('/clinic/portal/media/photos')
         .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
-        .send({ contentType: 'image/gif' })
+        .send({ paths })
         .expect(400);
     });
   });
 
-  describe('POST /clinic/portal/media/photos/sign', () => {
-    it('returns 200 with { uploads: [...] } of length 3 for count=3', async () => {
-      const res = await agent()
-        .post('/clinic/portal/media/photos/sign')
+  describe('GET /clinic/portal/media/photos', () => {
+    it('returns the confirmed photos after POST photos', async () => {
+      const paths = [`photos/${clinicAId}/x.png`, `photos/${clinicAId}/y.png`];
+      await agent()
+        .post('/clinic/portal/media/photos')
         .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
-        .send({ count: 3 })
+        .send({ paths })
         .expect(200);
 
-      const body = res.body as { uploads: { uploadUrl: string; token: string; path: string }[] };
-      expect(Array.isArray(body.uploads)).toBe(true);
-      expect(body.uploads).toHaveLength(3);
-      for (const upload of body.uploads) {
-        expect(upload.path.startsWith(`photos/${clinicId}/`)).toBe(true);
-        expect(typeof upload.uploadUrl).toBe('string');
-        expect(typeof upload.token).toBe('string');
-      }
+      const res = await agent()
+        .get('/clinic/portal/media/photos')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .set('x-csrf-token', csrfToken)
+        .expect(200);
+
+      const body = res.body as string[];
+      expect(Array.isArray(body)).toBe(true);
+      expect(body).toHaveLength(2);
     });
 
     it('returns 403 for a patient token', async () => {
       await agent()
-        .post('/clinic/portal/media/photos/sign')
+        .get('/clinic/portal/media/photos')
         .set('Cookie', `access_token=${patientCookie}; csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
-        .send({ count: 1 })
         .expect(403);
-    });
-
-    it('returns 400 when count < 1', async () => {
-      await agent()
-        .post('/clinic/portal/media/photos/sign')
-        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
-        .set('x-csrf-token', csrfToken)
-        .send({ count: 0 })
-        .expect(400);
-    });
-
-    it('returns 400 when count > 8', async () => {
-      await agent()
-        .post('/clinic/portal/media/photos/sign')
-        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
-        .set('x-csrf-token', csrfToken)
-        .send({ count: 9 })
-        .expect(400);
     });
   });
 });

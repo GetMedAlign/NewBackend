@@ -788,6 +788,84 @@
           "Clinic Media"
         ]
       }
+    },
+    "/clinic/portal/media/logo": {
+      "post": {
+        "operationId": "ClinicMediaController_confirmLogoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLogoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Confirm a clinic logo after upload",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/photos": {
+      "post": {
+        "operationId": "ClinicMediaController_confirmPhotosUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Confirm clinic photos after upload",
+        "tags": [
+          "Clinic Media"
+        ]
+      },
+      "get": {
+        "operationId": "ClinicMediaController_getPhotos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List clinic photos",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
     }
   },
   "info": {
@@ -1007,6 +1085,14 @@
         "properties": {}
       },
       "SignPhotoUploadsDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ConfirmLogoDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ConfirmPhotosDto": {
         "type": "object",
         "properties": {}
       }

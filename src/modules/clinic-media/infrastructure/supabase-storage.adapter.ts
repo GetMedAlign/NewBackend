@@ -22,11 +22,15 @@ export interface StorageBucketSeam {
 export class SupabaseStorageAdapter implements StoragePort {
   private readonly logger = new Logger(SupabaseStorageAdapter.name);
   private readonly bucket: StorageBucketSeam;
+  private readonly baseUrl: string;
+  private readonly bucketName: string;
 
   constructor(
     config: { url: string; serviceRoleKey: string; bucket: string },
     bucketOverride?: StorageBucketSeam,
   ) {
+    this.baseUrl = config.url;
+    this.bucketName = config.bucket;
     if (bucketOverride) {
       this.bucket = bucketOverride;
     } else {
@@ -54,5 +58,13 @@ export class SupabaseStorageAdapter implements StoragePort {
       this.logger.error('remove failed', error.message);
       throw new InternalServerErrorException('Storage remove failed');
     }
+  }
+
+  pathFromPublicUrl(url: string): string | null {
+    const prefix = `${this.baseUrl}/storage/v1/object/public/${this.bucketName}/`;
+    if (!url.startsWith(prefix)) {
+      return null;
+    }
+    return url.slice(prefix.length);
   }
 }

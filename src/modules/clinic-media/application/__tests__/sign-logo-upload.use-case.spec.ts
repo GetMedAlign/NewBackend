@@ -18,6 +18,7 @@ describe('SignLogoUploadUseCase', () => {
       }),
       publicUrl: jest.fn().mockReturnValue('https://storage.test/public'),
       remove: jest.fn().mockResolvedValue(undefined),
+      pathFromPublicUrl: jest.fn().mockReturnValue(null),
     };
 
     const module = await Test.createTestingModule({
