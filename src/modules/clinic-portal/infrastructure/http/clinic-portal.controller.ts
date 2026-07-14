@@ -2,7 +2,10 @@ import {
   Controller,
   Get,
   Put,
+  Patch,
+  Post,
   Body,
+  Param,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -14,8 +17,13 @@ import { ClinicGuard } from '../../../../infrastructure/security/clinic.guard';
 import { CurrentClinic } from '../../../../infrastructure/security/current-clinic.decorator';
 import { GetClinicProfileUseCase } from '../../application/get-clinic-profile.use-case';
 import { UpdateClinicProfileUseCase } from '../../application/update-clinic-profile.use-case';
+import { ListClinicLeadsUseCase } from '../../application/list-clinic-leads.use-case';
+import { GetClinicLeadUseCase } from '../../application/get-clinic-lead.use-case';
+import { UpdateLeadStatusUseCase } from '../../application/update-lead-status.use-case';
+import { RequestPatientContactUseCase } from '../../application/request-patient-contact.use-case';
 import { ClinicPortalProfileDto, ServiceDto } from './dtos/clinic-portal-profile.dto';
 import { UpdateClinicPortalProfileRequest } from './dtos/update-clinic-portal-profile.dto';
+import { ClinicLeadDto, UpdateLeadStatusDto, toClinicLeadDto } from './dtos/clinic-lead.dto';
 import type {
   ClinicProfileView,
   ClinicServiceView,
@@ -55,6 +63,10 @@ export class ClinicPortalController {
   constructor(
     private readonly getProfileUseCase: GetClinicProfileUseCase,
     private readonly updateProfileUseCase: UpdateClinicProfileUseCase,
+    private readonly listLeadsUseCase: ListClinicLeadsUseCase,
+    private readonly getLeadUseCase: GetClinicLeadUseCase,
+    private readonly updateLeadStatusUseCase: UpdateLeadStatusUseCase,
+    private readonly requestPatientContactUseCase: RequestPatientContactUseCase,
   ) {}
 
   @Get('profile')
@@ -151,6 +163,53 @@ export class ClinicPortalController {
       topServices: dto.topServices,
       allServices: dto.allServices,
     });
+    return { success: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // Lead endpoints
+  // -------------------------------------------------------------------------
+
+  @Get('leads')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all leads for the authenticated clinic' })
+  async listLeads(@CurrentClinic() clinicId: string): Promise<ClinicLeadDto[]> {
+    const leads = await this.listLeadsUseCase.execute(clinicId);
+    return leads.map(toClinicLeadDto);
+  }
+
+  @Get('leads/:leadId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get a single lead for the authenticated clinic' })
+  async getLead(
+    @CurrentClinic() clinicId: string,
+    @Param('leadId') leadId: string,
+  ): Promise<ClinicLeadDto> {
+    const lead = await this.getLeadUseCase.execute(clinicId, leadId);
+    return toClinicLeadDto(lead);
+  }
+
+  @Patch('leads/:leadId/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update the clinic_status of a lead' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+  async updateLeadStatus(
+    @CurrentClinic() clinicId: string,
+    @Param('leadId') leadId: string,
+    @Body() dto: UpdateLeadStatusDto,
+  ): Promise<{ success: boolean }> {
+    await this.updateLeadStatusUseCase.execute(clinicId, leadId, dto.status);
+    return { success: true };
+  }
+
+  @Post('leads/:leadId/contact-request')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a contact-request email to the patient on behalf of the clinic' })
+  async requestPatientContact(
+    @CurrentClinic() clinicId: string,
+    @Param('leadId') leadId: string,
+  ): Promise<{ success: boolean }> {
+    await this.requestPatientContactUseCase.execute(clinicId, leadId);
     return { success: true };
   }
 }

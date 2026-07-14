@@ -541,6 +541,123 @@
           "Clinic Portal"
         ]
       }
+    },
+    "/clinic/portal/leads": {
+      "get": {
+        "operationId": "ClinicPortalController_listLeads",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all leads for the authenticated clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}": {
+      "get": {
+        "operationId": "ClinicPortalController_getLead",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single lead for the authenticated clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}/status": {
+      "patch": {
+        "operationId": "ClinicPortalController_updateLeadStatus",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the clinic_status of a lead",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}/contact-request": {
+      "post": {
+        "operationId": "ClinicPortalController_requestPatientContact",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send a contact-request email to the patient on behalf of the clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
     }
   },
   "info": {
@@ -746,6 +863,10 @@
             }
           }
         }
+      },
+      "UpdateLeadStatusDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }
