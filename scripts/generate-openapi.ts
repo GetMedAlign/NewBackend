@@ -147,7 +147,17 @@ async function generate(): Promise<void> {
     .setDescription(
       'MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie ' +
         'set on POST /auth/2fa/verify. All non-GET requests require an ' +
-        '`x-csrf-token` header matching the value returned by the CSRF middleware.',
+        '`x-csrf-token` header matching the value returned by the CSRF middleware ' +
+        '(CSRF is skipped when NODE_ENV=development).\n\n' +
+        '## Local test seed data (run `pnpm seed:pj` against your local DB)\n\n' +
+        '**Clinic portal logins** (password `SeedClinic1!` for both):\n' +
+        '- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n' +
+        '- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n' +
+        '**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server ' +
+        'logs (LoggingEmailSender) instead of being emailed. Read it from the console ' +
+        'and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\n' +
+        'For patient-flow testing, sign up a new user via POST /auth/signup, then ' +
+        'submit an assessment (POST /assessments) to get a `sessionId` + `claimToken`.',
     )
     .addCookieAuth('access_token')
     .build();
