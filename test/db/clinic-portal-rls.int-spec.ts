@@ -179,7 +179,7 @@ describe('clinic-portal RLS enforcement', () => {
     expect(rows[0]?.id).toBe(clinicAId);
   });
 
-  it('clinic A context cannot read clinic B row via self-select policy (but public-read still applies)', async () => {
+  it('clinic B row is still readable from clinic A via the retained public-read policy', async () => {
     // The clinics_public_select policy allows reading all clinics.
     // The clinic_self_select policy is in addition. Both clinics are visible
     // to any authenticated app_authenticated caller via the public read policy.
@@ -370,5 +370,41 @@ describe('clinic-portal RLS enforcement', () => {
       (tx) => tx.$executeRaw`UPDATE clinics SET location = 'Nowhere' WHERE id = ${clinicAId}::uuid`,
     );
     expect(Number(affected)).toBe(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // Regression: Foundation policies (users, user_roles, audit_log) must not
+  // throw "invalid input syntax for type uuid: ''" under clinic context.
+  // Before the nullif hardening (Fix 1), Postgres evaluated these policies for
+  // every app_authenticated query — including clinic-context ones where
+  // app.current_user_id is '' — and the bare ::uuid cast would throw.
+  // After hardening, nullif(current_setting(...), '')::uuid yields NULL and the
+  // USING clause simply matches no rows (returns 0), not an error.
+  // -------------------------------------------------------------------------
+  it('clinic context querying users does not throw (Foundation policy nullif hardening)', async () => {
+    await expect(
+      service.withUserContext(
+        { userId: null, role: 'clinic', ip: null, clinicId: clinicAId },
+        (tx) => tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM users`,
+      ),
+    ).resolves.not.toThrow();
+  });
+
+  it('clinic context querying user_roles does not throw (Foundation policy nullif hardening)', async () => {
+    await expect(
+      service.withUserContext(
+        { userId: null, role: 'clinic', ip: null, clinicId: clinicAId },
+        (tx) => tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM user_roles`,
+      ),
+    ).resolves.not.toThrow();
+  });
+
+  it('clinic context querying audit_log does not throw (Foundation policy nullif hardening)', async () => {
+    await expect(
+      service.withUserContext(
+        { userId: null, role: 'clinic', ip: null, clinicId: clinicAId },
+        (tx) => tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM audit_log`,
+      ),
+    ).resolves.not.toThrow();
   });
 });

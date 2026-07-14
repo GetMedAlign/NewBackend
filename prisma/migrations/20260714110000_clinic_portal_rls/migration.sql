@@ -263,10 +263,12 @@ CREATE POLICY leads_admin_all ON leads
 -- clinics — clinic may read and update only its own row.
 -- The existing clinics_public_select policy remains; these are additive.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS clinic_self_select ON clinics;
 CREATE POLICY clinic_self_select ON clinics
   FOR SELECT TO app_authenticated
   USING (id = nullif(current_setting('app.current_clinic_id', true), '')::uuid);
 
+DROP POLICY IF EXISTS clinic_self_update ON clinics;
 CREATE POLICY clinic_self_update ON clinics
   FOR UPDATE TO app_authenticated
   USING     (id = nullif(current_setting('app.current_clinic_id', true), '')::uuid)
@@ -275,10 +277,12 @@ CREATE POLICY clinic_self_update ON clinics
 -- ---------------------------------------------------------------------------
 -- leads — a clinic may select and update (clinic_status only) its own leads.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS leads_clinic_select ON leads;
 CREATE POLICY leads_clinic_select ON leads
   FOR SELECT TO app_authenticated
   USING (clinic_id = nullif(current_setting('app.current_clinic_id', true), '')::uuid);
 
+DROP POLICY IF EXISTS leads_clinic_update ON leads;
 CREATE POLICY leads_clinic_update ON leads
   FOR UPDATE TO app_authenticated
   USING     (clinic_id = nullif(current_setting('app.current_clinic_id', true), '')::uuid)
@@ -288,6 +292,7 @@ CREATE POLICY leads_clinic_update ON leads
 -- webhook_deliveries — a clinic may select deliveries for its own leads.
 -- No insert/update/delete policy; writes remain asSystem-only.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS webhook_deliveries_clinic_select ON webhook_deliveries;
 CREATE POLICY webhook_deliveries_clinic_select ON webhook_deliveries
   FOR SELECT TO app_authenticated
   USING (
@@ -300,7 +305,84 @@ CREATE POLICY webhook_deliveries_clinic_select ON webhook_deliveries
 -- ---------------------------------------------------------------------------
 -- clinic_photos — a clinic may manage only its own photos.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS clinic_photos_self_all ON clinic_photos;
 CREATE POLICY clinic_photos_self_all ON clinic_photos
   FOR ALL TO app_authenticated
   USING     (clinic_id = nullif(current_setting('app.current_clinic_id', true), '')::uuid)
   WITH CHECK (clinic_id = nullif(current_setting('app.current_clinic_id', true), '')::uuid);
+
+-- ---------------------------------------------------------------------------
+-- Harden Foundation policies on users, user_roles, audit_log with nullif.
+-- The original policies (from 20260710010000_rls_audit) cast
+-- current_setting('app.current_user_id', true)::uuid directly. When a
+-- clinic-context caller runs (app.current_user_id = ''), Postgres evaluates
+-- ALL permissive policies on the table, hitting this cast and throwing
+-- "invalid input syntax for type uuid: """. The fix is identical to the
+-- patient-journey hardening above: wrap with nullif(..., '') so that an empty
+-- string yields NULL instead of a cast error. Semantically identical for real
+-- (non-empty) user IDs — nullif is a no-op on non-empty input.
+-- two_factor_codes has no app_authenticated policy, so it is not touched.
+-- ---------------------------------------------------------------------------
+
+-- users: self-select
+DROP POLICY IF EXISTS users_self_select ON users;
+CREATE POLICY users_self_select ON users
+  FOR SELECT TO app_authenticated
+  USING (id = nullif(current_setting('app.current_user_id', true), '')::uuid);
+
+-- users: self-update
+DROP POLICY IF EXISTS users_self_update ON users;
+CREATE POLICY users_self_update ON users
+  FOR UPDATE TO app_authenticated
+  USING     (id = nullif(current_setting('app.current_user_id', true), '')::uuid)
+  WITH CHECK (id = nullif(current_setting('app.current_user_id', true), '')::uuid);
+
+-- users: admin-select
+DROP POLICY IF EXISTS users_admin_select ON users;
+CREATE POLICY users_admin_select ON users
+  FOR SELECT TO app_authenticated
+  USING (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  );
+
+-- users: admin-all
+DROP POLICY IF EXISTS users_admin_all ON users;
+CREATE POLICY users_admin_all ON users
+  FOR ALL TO app_authenticated
+  USING (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  )
+  WITH CHECK (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  );
+
+-- user_roles: self-select
+DROP POLICY IF EXISTS user_roles_self_select ON user_roles;
+CREATE POLICY user_roles_self_select ON user_roles
+  FOR SELECT TO app_authenticated
+  USING (user_id = nullif(current_setting('app.current_user_id', true), '')::uuid);
+
+-- user_roles: admin-all
+DROP POLICY IF EXISTS user_roles_admin_all ON user_roles;
+CREATE POLICY user_roles_admin_all ON user_roles
+  FOR ALL TO app_authenticated
+  USING (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  )
+  WITH CHECK (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  );
+
+-- audit_log: admin-select
+DROP POLICY IF EXISTS audit_log_admin_select ON audit_log;
+CREATE POLICY audit_log_admin_select ON audit_log
+  FOR SELECT TO app_authenticated
+  USING (
+    has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'admin')
+    OR has_role(nullif(current_setting('app.current_user_id', true), '')::uuid, 'superadmin')
+  );
