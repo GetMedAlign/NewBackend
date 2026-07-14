@@ -21,13 +21,18 @@ import { ListClinicLeadsUseCase } from '../../application/list-clinic-leads.use-
 import { GetClinicLeadUseCase } from '../../application/get-clinic-lead.use-case';
 import { UpdateLeadStatusUseCase } from '../../application/update-lead-status.use-case';
 import { RequestPatientContactUseCase } from '../../application/request-patient-contact.use-case';
+import { ListWebhookDeliveriesUseCase } from '../../application/list-webhook-deliveries.use-case';
+import { RotateWebhookSecretUseCase } from '../../application/rotate-webhook-secret.use-case';
+import { TestWebhookUseCase } from '../../application/test-webhook.use-case';
 import { ClinicPortalProfileDto, ServiceDto } from './dtos/clinic-portal-profile.dto';
 import { UpdateClinicPortalProfileRequest } from './dtos/update-clinic-portal-profile.dto';
 import { ClinicLeadDto, UpdateLeadStatusDto, toClinicLeadDto } from './dtos/clinic-lead.dto';
+import { TestWebhookDto } from './dtos/test-webhook.dto';
 import type {
   ClinicProfileView,
   ClinicServiceView,
 } from '../../domain/ports/clinic-write-repository.port';
+import type { WebhookDeliveryDto } from '../../domain/ports/clinic-webhook-repository.port';
 
 const SPECIALTY_MAP: Record<string, string> = {
   hormone: 'Hormone Therapy',
@@ -67,6 +72,9 @@ export class ClinicPortalController {
     private readonly getLeadUseCase: GetClinicLeadUseCase,
     private readonly updateLeadStatusUseCase: UpdateLeadStatusUseCase,
     private readonly requestPatientContactUseCase: RequestPatientContactUseCase,
+    private readonly listWebhookDeliveriesUseCase: ListWebhookDeliveriesUseCase,
+    private readonly rotateWebhookSecretUseCase: RotateWebhookSecretUseCase,
+    private readonly testWebhookUseCase: TestWebhookUseCase,
   ) {}
 
   @Get('profile')
@@ -211,5 +219,36 @@ export class ClinicPortalController {
   ): Promise<{ success: boolean }> {
     await this.requestPatientContactUseCase.execute(clinicId, leadId);
     return { success: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // Webhook endpoints
+  // -------------------------------------------------------------------------
+
+  @Get('webhook-deliveries')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'List webhook deliveries for the authenticated clinic (newest first, capped at 50)',
+  })
+  async listWebhookDeliveries(@CurrentClinic() clinicId: string): Promise<WebhookDeliveryDto[]> {
+    return this.listWebhookDeliveriesUseCase.execute(clinicId);
+  }
+
+  @Post('webhook/rotate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rotate the webhook secret and return the new plaintext once' })
+  async rotateWebhookSecret(@CurrentClinic() clinicId: string): Promise<{ webhookSecret: string }> {
+    return this.rotateWebhookSecretUseCase.execute(clinicId);
+  }
+
+  @Post('test-webhook')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a signed test webhook payload to the clinic webhook URL' })
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+  async testWebhook(
+    @CurrentClinic() clinicId: string,
+    @Body() dto: TestWebhookDto,
+  ): Promise<WebhookDeliveryDto> {
+    return this.testWebhookUseCase.execute(clinicId, dto.webhookUrl);
   }
 }

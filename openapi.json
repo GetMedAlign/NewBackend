@@ -658,6 +658,76 @@
           "Clinic Portal"
         ]
       }
+    },
+    "/clinic/portal/webhook-deliveries": {
+      "get": {
+        "operationId": "ClinicPortalController_listWebhookDeliveries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List webhook deliveries for the authenticated clinic (newest first, capped at 50)",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/webhook/rotate": {
+      "post": {
+        "operationId": "ClinicPortalController_rotateWebhookSecret",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Rotate the webhook secret and return the new plaintext once",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/test-webhook": {
+      "post": {
+        "operationId": "ClinicPortalController_testWebhook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestWebhookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send a signed test webhook payload to the clinic webhook URL",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
     }
   },
   "info": {
@@ -865,6 +935,10 @@
         }
       },
       "UpdateLeadStatusDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "TestWebhookDto": {
         "type": "object",
         "properties": {}
       }

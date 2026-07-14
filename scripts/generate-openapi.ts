@@ -57,6 +57,9 @@ import { ListClinicLeadsUseCase } from '../src/modules/clinic-portal/application
 import { GetClinicLeadUseCase } from '../src/modules/clinic-portal/application/get-clinic-lead.use-case';
 import { UpdateLeadStatusUseCase } from '../src/modules/clinic-portal/application/update-lead-status.use-case';
 import { RequestPatientContactUseCase } from '../src/modules/clinic-portal/application/request-patient-contact.use-case';
+import { ListWebhookDeliveriesUseCase } from '../src/modules/clinic-portal/application/list-webhook-deliveries.use-case';
+import { RotateWebhookSecretUseCase } from '../src/modules/clinic-portal/application/rotate-webhook-secret.use-case';
+import { TestWebhookUseCase } from '../src/modules/clinic-portal/application/test-webhook.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -110,6 +113,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetClinicLeadUseCase),
     stubProvider(UpdateLeadStatusUseCase),
     stubProvider(RequestPatientContactUseCase),
+    stubProvider(ListWebhookDeliveriesUseCase),
+    stubProvider(RotateWebhookSecretUseCase),
+    stubProvider(TestWebhookUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

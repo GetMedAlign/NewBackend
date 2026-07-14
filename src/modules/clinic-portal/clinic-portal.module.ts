@@ -1,20 +1,28 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
+import { CryptoModule } from '../../infrastructure/crypto/crypto.module';
 import { CLINIC_WRITE_REPOSITORY } from './domain/ports/clinic-write-repository.port';
 import { CLINIC_LEAD_REPOSITORY } from './domain/ports/clinic-lead-repository.port';
+import { CLINIC_WEBHOOK_REPOSITORY } from './domain/ports/clinic-webhook-repository.port';
+import { WEBHOOK_SENDER } from '../leads/domain/ports/webhook-sender.port';
 import { PrismaClinicWriteRepository } from './infrastructure/prisma-clinic-write.repository';
 import { PrismaClinicLeadRepository } from './infrastructure/prisma-clinic-lead.repository';
+import { PrismaClinicWebhookRepository } from './infrastructure/prisma-clinic-webhook.repository';
+import { SsrfWebhookSender } from '../leads/infrastructure/ssrf-webhook-sender';
 import { GetClinicProfileUseCase } from './application/get-clinic-profile.use-case';
 import { UpdateClinicProfileUseCase } from './application/update-clinic-profile.use-case';
 import { ListClinicLeadsUseCase } from './application/list-clinic-leads.use-case';
 import { GetClinicLeadUseCase } from './application/get-clinic-lead.use-case';
 import { UpdateLeadStatusUseCase } from './application/update-lead-status.use-case';
 import { RequestPatientContactUseCase } from './application/request-patient-contact.use-case';
+import { ListWebhookDeliveriesUseCase } from './application/list-webhook-deliveries.use-case';
+import { RotateWebhookSecretUseCase } from './application/rotate-webhook-secret.use-case';
+import { TestWebhookUseCase } from './application/test-webhook.use-case';
 import { ClinicPortalController } from './infrastructure/http/clinic-portal.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, CryptoModule],
   controllers: [ClinicPortalController],
   providers: [
     GetClinicProfileUseCase,
@@ -23,6 +31,9 @@ import { ClinicPortalController } from './infrastructure/http/clinic-portal.cont
     GetClinicLeadUseCase,
     UpdateLeadStatusUseCase,
     RequestPatientContactUseCase,
+    ListWebhookDeliveriesUseCase,
+    RotateWebhookSecretUseCase,
+    TestWebhookUseCase,
     {
       provide: CLINIC_WRITE_REPOSITORY,
       useClass: PrismaClinicWriteRepository,
@@ -30,6 +41,14 @@ import { ClinicPortalController } from './infrastructure/http/clinic-portal.cont
     {
       provide: CLINIC_LEAD_REPOSITORY,
       useClass: PrismaClinicLeadRepository,
+    },
+    {
+      provide: CLINIC_WEBHOOK_REPOSITORY,
+      useClass: PrismaClinicWebhookRepository,
+    },
+    {
+      provide: WEBHOOK_SENDER,
+      useFactory: () => new SsrfWebhookSender(),
     },
   ],
 })
