@@ -73,9 +73,13 @@ clinic_status }`. `topGoals`/`topSymptoms` split the lead's comma strings.
   AES-256-GCM encrypted, returns `{ webhookSecret }` in **plaintext once**.
 - `POST /clinic/portal/test-webhook` (`{ webhookUrl }`) → sends a signed test
   payload to `webhookUrl` through the Slice 2 SSRF guard (HTTPS-only, IP-pinned,
-  no redirects, timeout), records a `webhook_deliveries` row, and returns the
-  delivery outcome `{ status, http_status_code?, error_message? }`. `webhookUrl`
-  must be absolute HTTPS (else 400).
+  no redirects, timeout) and returns the delivery outcome as a
+  `WebhookDeliveryDto` (`lead_id: "test_<ms>"`, `attempted_at`, `status`,
+  `http_status_code?`, `error_message?`). It does NOT persist a
+  `webhook_deliveries` row (that table requires a real lead; matches .NET).
+  `webhookUrl` must be absolute HTTPS (else 400); if the clinic has no
+  configured webhook secret, returns 400 (we always sign, so a secret is
+  required).
 
 **Media** (see §5)
 
