@@ -728,6 +728,66 @@
           "Clinic Portal"
         ]
       }
+    },
+    "/clinic/portal/media/logo/sign": {
+      "post": {
+        "operationId": "ClinicMediaController_signLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignLogoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get a signed upload URL for a clinic logo",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/photos/sign": {
+      "post": {
+        "operationId": "ClinicMediaController_signPhotos",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignPhotoUploadsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get signed upload URLs for clinic photos",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
     }
   },
   "info": {
@@ -939,6 +999,14 @@
         "properties": {}
       },
       "TestWebhookDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SignLogoUploadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SignPhotoUploadsDto": {
         "type": "object",
         "properties": {}
       }
