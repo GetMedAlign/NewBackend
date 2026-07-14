@@ -67,6 +67,7 @@ export const VALID_CLINIC_STATUSES = [
 export type ClinicLeadStatus = (typeof VALID_CLINIC_STATUSES)[number];
 
 export class UpdateLeadStatusDto {
+  @ApiProperty({ enum: VALID_CLINIC_STATUSES })
   @IsString()
   @IsIn(VALID_CLINIC_STATUSES, {
     message: `status must be one of: ${VALID_CLINIC_STATUSES.join(', ')}`,

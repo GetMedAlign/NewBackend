@@ -1074,27 +1074,93 @@
       },
       "UpdateLeadStatusDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "contacted",
+              "booked",
+              "converted",
+              "not_interested"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "TestWebhookDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "webhookUrl": {
+            "type": "string",
+            "description": "The HTTPS URL to test the webhook delivery against"
+          }
+        },
+        "required": [
+          "webhookUrl"
+        ]
       },
       "SignLogoUploadDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "description": "MIME type of the logo image"
+          }
+        },
+        "required": [
+          "contentType"
+        ]
       },
       "SignPhotoUploadsDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "count": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Number of photo upload URLs to generate"
+          }
+        },
+        "required": [
+          "count"
+        ]
       },
       "ConfirmLogoDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Storage path returned by the sign endpoint, e.g. logos/<clinicId>/file.png"
+          }
+        },
+        "required": [
+          "path"
+        ]
       },
       "ConfirmPhotosDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "paths": {
+            "minItems": 1,
+            "maxItems": 8,
+            "description": "Storage paths returned by the sign endpoint",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "paths"
+        ]
       }
     }
   }

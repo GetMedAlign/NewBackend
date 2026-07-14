@@ -77,6 +77,41 @@ anonymous `sessionId` to the caller. A stolen `sessionId` without a valid `claim
 cannot claim the assessment or attribute its lead — the token model is stricter than the
 .NET original by design.
 
+## Clinic Portal API
+
+The clinic-facing portal — clinic staff log in with the same `/auth/*` flow and receive a JWT that carries `clinicId` (role `clinic`).
+
+```
+GET  /clinic/portal/profile                              -> clinic profile (name, about, services, logoUrl, etc.)
+PUT  /clinic/portal/profile                              -> partial update (name, about, webhookUrl, services, …)
+GET  /clinic/portal/leads                                -> paginated lead list for the clinic
+GET  /clinic/portal/leads/:leadId                        -> lead detail
+PATCH /clinic/portal/leads/:leadId/status               -> update clinic_status (new|contacted|booked|converted|not_interested)
+POST  /clinic/portal/leads/:leadId/contact-request      -> send an outreach email to the patient
+
+POST /clinic/portal/webhook/rotate                       -> generate & store a new webhook secret → { webhookSecret }
+GET  /clinic/portal/webhook-deliveries                  -> delivery history (last 50)
+POST /clinic/portal/test-webhook                         -> fire a test payload to the given URL → WebhookDeliveryDto
+
+POST /clinic/portal/media/logo/sign                      -> get a pre-signed upload URL for the clinic logo → { uploadUrl, token, path }
+POST /clinic/portal/media/logo                           -> confirm logo upload (write path to DB) → { url }
+POST /clinic/portal/media/photos/sign                    -> get pre-signed upload URLs for gallery photos → { uploads: [...] }
+POST /clinic/portal/media/photos                         -> confirm photo uploads → { urls: [...] }
+GET  /clinic/portal/media/photos                         -> list current gallery photo URLs → string[]
+```
+
+All `/clinic/portal/*` routes require role `clinic`. A `patient` JWT returns 403. A path under another clinic's storage prefix returns 403.
+
+### New environment variables (Supabase Storage)
+
+| Variable                    | Description                                                        |
+| --------------------------- | ------------------------------------------------------------------ |
+| `SUPABASE_URL`              | Supabase project URL (e.g. `https://<project>.supabase.co`)        |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key (bypasses RLS for signed URL generation) |
+| `SUPABASE_STORAGE_BUCKET`   | Storage bucket name for clinic media (e.g. `clinic-media`)         |
+
+Placeholder values are provided in `.env` and `test/.env.test` for local development.
+
 ## Rebuild roadmap (6 slices)
 
 1. **Foundation** (this slice) — scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
