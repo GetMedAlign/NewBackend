@@ -10,8 +10,20 @@
  * The clinic `webhook_secret` column is ENCRYPTED. We encrypt here with the exact
  * same AES-256-GCM scheme (nonce(12)||ciphertext||tag(16), base64) that
  * AesGcmEncryptionService uses, so the leads slice can decrypt round-trip.
+ *
+ * Clinic-portal additions (Task 3):
+ *   - New clinic columns (differentiators, offersLabWork, etc.) are populated
+ *     via the existing upsert.
+ *   - Two clinic-role users are seeded (one per notify-enabled clinic) so e2e
+ *     tests can log in as a clinic without additional setup.
+ *
+ * Seeded clinic user credentials:
+ *   Email: clinic-vitality@medalign-seed.example.com  Password: SeedClinic1!
+ *   Email: clinic-apex@medalign-seed.example.com      Password: SeedClinic1!
+ *   (Both use the same shared password for test convenience.)
  */
 import { createCipheriv, randomBytes } from 'crypto';
+import * as argon2 from 'argon2';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
@@ -19,6 +31,31 @@ import { ZIP_CODES } from './zip-codes';
 import { CLINICS } from './clinics';
 
 const NONCE_BYTES = 12;
+
+/**
+ * Fixed credentials for seeded clinic users.
+ * Import this constant in e2e tests to log in as a clinic.
+ *
+ * Credentials:
+ *   clinic-vitality@medalign-seed.example.com  /  SeedClinic1!  (vitality-hormone-nyc)
+ *   clinic-apex@medalign-seed.example.com      /  SeedClinic1!  (apex-peptide-telehealth)
+ */
+export const SEEDED_CLINIC_USERS: ReadonlyArray<{
+  email: string;
+  password: string;
+  clinicSlug: string;
+}> = [
+  {
+    email: 'clinic-vitality@medalign-seed.example.com',
+    password: 'SeedClinic1!',
+    clinicSlug: 'vitality-hormone-nyc',
+  },
+  {
+    email: 'clinic-apex@medalign-seed.example.com',
+    password: 'SeedClinic1!',
+    clinicSlug: 'apex-peptide-telehealth',
+  },
+];
 
 /**
  * Encrypts plaintext with AES-256-GCM using the nonce(12)||ciphertext||tag(16)
@@ -89,6 +126,19 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
       webhookUrl: c.webhookUrl,
       webhookSecret,
       notifyOnLead: c.notifyOnLead,
+      // Clinic-portal columns (Task 3)
+      differentiators: c.differentiators,
+      offersLabWork: c.offersLabWork,
+      insuranceNotes: c.insuranceNotes,
+      credentials: c.credentials,
+      npiNumber: c.npiNumber,
+      stateLicenseNumber: c.stateLicenseNumber,
+      logoUrl: c.logoUrl,
+      photoCount: c.photoCount,
+      weeklySummary: c.weeklySummary,
+      location: c.location,
+      webhookHealth: c.webhookHealth,
+      suspensionReason: c.suspensionReason,
     };
 
     const clinic = await prisma.clinic.upsert({
@@ -113,6 +163,48 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
         data: c.serviceCodes.map((serviceCode) => ({ clinicId: clinic.id, serviceCode })),
       }),
     ]);
+  }
+
+  // --- Clinic users --------------------------------------------------------
+  // Seed clinic-role users for the two notify-enabled clinics so e2e tests
+  // can log in as a clinic. Idempotent: skips creation if the email already
+  // exists, then ensures role=clinic and clinic_id are set regardless.
+  for (const seedUser of SEEDED_CLINIC_USERS) {
+    const clinic = await prisma.clinic.findUniqueOrThrow({
+      where: { slug: seedUser.clinicSlug },
+      select: { id: true },
+    });
+
+    // Check if the user already exists to avoid calling create_user twice.
+    const existing = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM users WHERE email = ${seedUser.email}::citext
+    `;
+
+    let userId: string;
+    if (existing.length === 0) {
+      // Hash the password using argon2id (matches Foundation Argon2PasswordHasher).
+      const passwordHash = await argon2.hash(seedUser.password, { type: argon2.argon2id });
+
+      // create_user inserts the user row + a default 'patient' user_roles row.
+      const rows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT create_user(${seedUser.email}::citext, ${passwordHash}) AS id
+      `;
+      userId = rows[0]!.id;
+    } else {
+      userId = existing[0]!.id;
+    }
+
+    // Ensure the user has a 'clinic' role (upsert to handle re-runs).
+    await prisma.$executeRaw`
+      INSERT INTO user_roles (user_id, role)
+      VALUES (${userId}::uuid, 'clinic')
+      ON CONFLICT (user_id, role) DO NOTHING
+    `;
+
+    // Ensure clinic_id is set on the user row.
+    await prisma.$executeRaw`
+      UPDATE users SET clinic_id = ${clinic.id}::uuid WHERE id = ${userId}::uuid
+    `;
   }
 }
 

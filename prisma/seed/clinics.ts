@@ -42,6 +42,34 @@ export type ClinicSeed = {
   notifyOnLead: boolean;
   categories: AssessmentCategory[];
   serviceCodes: string[];
+  // Clinic-portal additions (Task 3)
+  /** Short text highlighting what sets this clinic apart. */
+  differentiators: string | null;
+  /** Whether the clinic provides in-house lab work. */
+  offersLabWork: boolean;
+  /** Notes about insurance coverage, or null. */
+  insuranceNotes: string | null;
+  /** Provider credentials text, or null. */
+  credentials: string | null;
+  /** NPI number, or null. */
+  npiNumber: string | null;
+  /** State license number, or null. */
+  stateLicenseNumber: string | null;
+  /** Logo URL — null until uploaded. */
+  logoUrl: null;
+  /** Photo count — always 0 at seed time. */
+  photoCount: 0;
+  /** Whether to send weekly summary emails to the clinic. */
+  weeklySummary: boolean;
+  /**
+   * Human-readable city/state location string, e.g. "New York, NY".
+   * Null for telehealth-only clinics without a physical location.
+   */
+  location: string | null;
+  /** Webhook health status — always 'unknown' at seed time. */
+  webhookHealth: 'unknown';
+  /** Suspension reason — null at seed time. */
+  suspensionReason: null;
 };
 
 export const CLINICS: ReadonlyArray<ClinicSeed> = [
@@ -74,6 +102,18 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     categories: ['hormone', 'wellness'],
     // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
     serviceCodes: ['trt', 'thyroid_management', 'hormone_panel', 'lab_work'],
+    differentiators: 'Board-certified hormone specialists; same-week appointments; in-house lab.',
+    offersLabWork: true,
+    insuranceNotes: null,
+    credentials: 'MD, Board Certified in Internal Medicine',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: true,
+    location: 'New York, NY',
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
   // 2. Peptide — active, current, notify+webhook, telehealth-only (no location)
   {
@@ -104,6 +144,18 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     categories: ['peptide'],
     // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
     serviceCodes: ['bpc157', 'peptide_consult', 'recovery_protocol', 'lab_work'],
+    differentiators: 'Nationwide telehealth; cutting-edge peptide protocols; DO-led team.',
+    offersLabWork: true,
+    insuranceNotes: null,
+    credentials: 'DO, Osteopathic Medicine',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: true,
+    location: null,
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
   // 3. Med spa — active, current, accepts insurance, in-person only (no telehealth)
   {
@@ -133,6 +185,18 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['med_spa'],
     serviceCodes: ['botox', 'dermal_fillers', 'body_contouring'],
+    differentiators: 'Top-rated aesthetic med spa; accepts most insurance; 300+ five-star reviews.',
+    offersLabWork: false,
+    insuranceNotes: 'Accepts PPO and most major carriers; prior authorization may be required.',
+    credentials: 'MD, Board Certified in Dermatology',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: false,
+    location: 'Miami, FL',
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
   // 4. Wellness — active, current, in-person, higher budget band
   {
@@ -162,6 +226,18 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['wellness', 'med_spa'],
     serviceCodes: ['iv_therapy', 'longevity_program', 'nutrition_coaching'],
+    differentiators: 'Integrative MD-led team; custom longevity programs; IV therapy lounge.',
+    offersLabWork: false,
+    insuranceNotes: 'Accepts some PPO plans for select services; contact for details.',
+    credentials: 'MD, Integrative Medicine Fellowship',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: false,
+    location: 'Chicago, IL',
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
   // 5. Hormone/wellness — OVERDUE billing (must be excluded by matchable filter)
   {
@@ -191,6 +267,18 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['hormone', 'wellness'],
     serviceCodes: ['trt', 'hormone_panel'],
+    differentiators: 'Affordable hormone replacement; same-week availability in LA.',
+    offersLabWork: false,
+    insuranceNotes: null,
+    credentials: 'MD, Board Certified in Endocrinology',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: false,
+    location: 'Los Angeles, CA',
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
   // 6. Peptide — NON-ACTIVE status (must be excluded by matchable filter)
   {
@@ -220,5 +308,17 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['peptide'],
     serviceCodes: ['peptide_consult'],
+    differentiators: 'New clinic onboarding; innovative peptide therapy in the Pacific Northwest.',
+    offersLabWork: false,
+    insuranceNotes: null,
+    credentials: 'DO, Osteopathic Medicine',
+    npiNumber: null,
+    stateLicenseNumber: null,
+    logoUrl: null,
+    photoCount: 0,
+    weeklySummary: false,
+    location: 'Seattle, WA',
+    webhookHealth: 'unknown',
+    suspensionReason: null,
   },
 ];
