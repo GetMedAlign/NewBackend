@@ -5,6 +5,7 @@ export interface UserRepositoryPort {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   getPrimaryRole(userId: string): Promise<string>;
+  getClinicId(userId: string): Promise<string | null>;
   recordFailedLogin(id: string): Promise<void>;
   resetFailedLogin(id: string): Promise<void>;
   setRecoveryPhone(userId: string, phone: string): Promise<void>;

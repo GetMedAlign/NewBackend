@@ -1,6 +1,7 @@
 export interface TokenClaims {
   sub: string;
   role: string;
+  clinicId?: string | null;
 }
 
 export interface TokenServicePort {

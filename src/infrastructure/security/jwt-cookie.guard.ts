@@ -45,7 +45,7 @@ export class JwtCookieGuard implements CanActivate {
       if (token) {
         try {
           const claims = this.tokens.verify(token);
-          request.user = { sub: claims.sub, role: claims.role };
+          request.user = { sub: claims.sub, role: claims.role, clinicId: claims.clinicId ?? null };
         } catch {
           // ignore — public route
         }
@@ -64,7 +64,7 @@ export class JwtCookieGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    request.user = { sub: claims.sub, role: claims.role };
+    request.user = { sub: claims.sub, role: claims.role, clinicId: claims.clinicId ?? null };
     return true;
   }
 }

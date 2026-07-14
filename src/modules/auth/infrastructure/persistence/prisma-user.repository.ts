@@ -38,6 +38,10 @@ interface RecoveryPhoneRow {
   recovery_phone_encrypted: string | null;
 }
 
+interface ClinicIdRow {
+  clinic_id: string | null;
+}
+
 /** Returns true when a Postgres error looks like a unique-violation (code 23505). */
 function isUniqueViolation(err: unknown): boolean {
   if (err === null || typeof err !== 'object') return false;
@@ -134,6 +138,23 @@ export class PrismaUserRepository implements UserRepositoryPort {
       const rowPriority = ROLE_PRIORITY[row.role] ?? 0;
       return rowPriority > bestPriority ? row.role : best;
     }, 'patient');
+  }
+
+  /**
+   * Returns the clinic_id associated with the user row, or null when the user
+   * is not a clinic user (patients, admins, etc. have clinic_id = NULL).
+   */
+  async getClinicId(userId: string): Promise<string | null> {
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<ClinicIdRow[]>`
+        SELECT clinic_id
+        FROM users
+        WHERE id = ${userId}::uuid
+        LIMIT 1
+      `,
+    );
+    return rows[0]?.clinic_id ?? null;
   }
 
   /**

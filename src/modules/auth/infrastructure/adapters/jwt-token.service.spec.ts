@@ -49,4 +49,23 @@ describe('JwtTokenService', () => {
     const token = svc.issue({ sub: 'user-123', role: 'patient' });
     expect(() => svc.verify(token)).toThrow();
   });
+
+  describe('clinicId claim', () => {
+    it('issue with clinicId round-trips it through verify', () => {
+      const svc = makeService();
+      const clinicId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+      const token = svc.issue({ sub: 'clinic-user-1', role: 'clinic', clinicId });
+      const claims = svc.verify(token);
+      expect(claims.clinicId).toBe(clinicId);
+      expect(claims.sub).toBe('clinic-user-1');
+      expect(claims.role).toBe('clinic');
+    });
+
+    it('issue without clinicId (patient) yields verify returning clinicId null or undefined', () => {
+      const svc = makeService();
+      const token = svc.issue({ sub: 'patient-1', role: 'patient' });
+      const claims = svc.verify(token);
+      expect(claims.clinicId == null).toBe(true);
+    });
+  });
 });
