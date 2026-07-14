@@ -32,13 +32,13 @@ Integration tests run against a real local Postgres and verify RLS isolation, au
 
 ## API docs
 
-- **Swagger UI**: `http://localhost:3000/docs` — served automatically when the server is running.
+- **Swagger UI**: `http://localhost:3000/docs` (served automatically when the server is running).
 - **`openapi.json`**: committed to the repo root. Import directly into Postman via _File → Import → select `openapi.json`_.
 - **Regenerate** (offline, no DB required):
   ```bash
   pnpm openapi
   ```
-  This runs `scripts/generate-openapi.ts` with stub providers — no database connection needed.
+  This runs `scripts/generate-openapi.ts` with stub providers, so no database connection is needed.
 
 > **CSRF & local testing:** the API uses double-submit CSRF (an `x-csrf-token` header must match the `csrf_token` cookie on non-GET requests). Enforcement is **skipped when `NODE_ENV=development`**, so Postman/curl can hit POST routes directly during local dev. CSRF is fully enforced in `test` and `production`.
 
@@ -74,7 +74,7 @@ GET  /patients/me/leads            -> the caller's submitted leads (authenticate
 
 The `claimToken` (returned from `POST /assessments`) is the only proof that binds an
 anonymous `sessionId` to the caller. A stolen `sessionId` without a valid `claimToken`
-cannot claim the assessment or attribute its lead — the token model is stricter than the
+cannot claim the assessment or attribute its lead; the token model is stricter than the
 .NET original by design.
 
 ## Clinic Portal API
@@ -114,9 +114,9 @@ Placeholder values are provided in `.env` and `test/.env.test` for local develop
 
 ## Rebuild roadmap (6 slices)
 
-1. **Foundation** (this slice) — scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
-2. Patient journey — assessments, matching, leads.
+1. **Foundation**: scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
+2. Patient journey: assessments, matching, leads.
 3. Clinics & clinic portal.
 4. Admin & superadmin.
 5. Billing, background jobs, email.
-6. Cutover — data migration from SQL Server, go-live.
+6. Cutover: data migration from SQL Server, go-live.
