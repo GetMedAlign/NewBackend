@@ -6,7 +6,7 @@
  *  - findProfile returns all expected fields for a seeded clinic
  *  - updateProfile correctly patches scalar fields, recomputes location, and
  *    replaces categories and services
- *  - RLS enforcement: a different clinic cannot see another clinic's data
+ *  - RLS enforcement: a different clinic cannot read another clinic's leads
  */
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -23,6 +23,9 @@ let prismaService: PrismaService;
 let repo: PrismaClinicWriteRepository;
 let clinicId: string;
 let otherClinicId: string;
+
+// Lead seeded for otherClinic (clinic B) — used by the cross-context RLS probe.
+let otherClinicLeadId: string;
 
 beforeAll(async () => {
   await seedPatientJourney(seedPrisma);
@@ -42,9 +45,32 @@ beforeAll(async () => {
   prismaService = new PrismaService();
   await prismaService.onModuleInit();
   repo = new PrismaClinicWriteRepository(prismaService);
+
+  // Seed a lead for clinic B (apex) so the cross-context probe has a row to try to read.
+  // asSystem bypasses RLS — this is intentional for test setup only.
+  const leadRows = await prismaService.asSystem(
+    (client) => client.$queryRaw<{ id: string }[]>`
+      INSERT INTO leads (
+        lead_id, clinic_id, patient_first_name, patient_email,
+        treatment_category, lead_source, delivery_status, clinic_status, received_at
+      )
+      VALUES (
+        'profile-spec-rls-probe-00000000000000000000000000',
+        ${otherClinicId}::uuid,
+        'RLSProbe', 'rls-probe@example.com',
+        'hormone', 'assessment', 'pending', 'new', CURRENT_TIMESTAMP
+      )
+      RETURNING id
+    `,
+  );
+  otherClinicLeadId = leadRows[0]!.id;
 });
 
 afterAll(async () => {
+  // Remove the probe lead so the DB is clean for other suites.
+  await prismaService.asSystem(
+    (client) => client.$executeRaw`DELETE FROM leads WHERE id = ${otherClinicLeadId}::uuid`,
+  );
   // Restore seeds so other suites start clean
   await seedPatientJourney(seedPrisma);
   await prismaService.onModuleDestroy();
@@ -132,14 +158,41 @@ describe('PrismaClinicWriteRepository.updateProfile', () => {
     expect(after!.name).toBe(before!.name);
   });
 
-  it('cannot update a different clinic (RLS blocks the write silently)', async () => {
+  it("updating clinic A's own profile does not change clinic B's profile", async () => {
     const profileBefore = await repo.findProfile(otherClinicId);
 
-    // Run update in vitality's context -- RLS should block writes to apex row
-    await repo.updateProfile(clinicId, { about: 'should not affect other clinic' });
+    // Update vitality (clinic A) in its own context — this never targets apex (clinic B).
+    await repo.updateProfile(clinicId, { about: 'vitality only — should not affect apex' });
 
-    // Read other clinic using its own context -- profile should be unchanged
+    // Read apex using apex's own context — its profile must be unchanged.
     const profileAfter = await repo.findProfile(otherClinicId);
     expect(profileAfter!.about).toBe(profileBefore!.about);
+  });
+});
+
+describe('RLS cross-context isolation', () => {
+  /**
+   * Genuine cross-context probe: runs under clinic A's (vitality) RLS context
+   * and attempts to read a lead that belongs to clinic B (apex). The leads table
+   * has only a clinic-scoped read policy (no public-read policy), so clinic A's
+   * context must return 0 rows. This test would FAIL if the leads RLS policy
+   * were removed, making it a true isolation guard.
+   *
+   * We use prismaService.withUserContext directly (not the repository) so the
+   * context is explicitly set to clinic A while the WHERE clause targets clinic
+   * B's lead — a cross-context read that bypasses the repository's own
+   * clinicId scoping.
+   */
+  it('clinic A context cannot read a lead owned by clinic B (leads RLS blocks cross-context read)', async () => {
+    const rows = await prismaService.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId },
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM leads WHERE id = ${otherClinicLeadId}::uuid
+        `,
+    );
+
+    // RLS filters the row out: clinic A's context only sees its own leads.
+    expect(rows).toHaveLength(0);
   });
 });
