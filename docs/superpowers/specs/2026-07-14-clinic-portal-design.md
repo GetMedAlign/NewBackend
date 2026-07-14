@@ -31,6 +31,7 @@ claim (a global `ClinicGuard`/`@CurrentClinic()` yields the clinic id; a patient
 or a clinic-less token → **403**). Base path `/clinic/portal`.
 
 **Profile**
+
 - `GET /clinic/portal/profile` → `ClinicPortalProfileDto` (camelCase). Includes
   `leadCount`, `lastLeadAt` (yyyy-MM-dd or null), `webhookSecretConfigured`
   (bool, never the secret), and read-only `billingStatus` / `webhookHealth` /
@@ -47,11 +48,12 @@ or a clinic-less token → **403**). Base path `/clinic/portal`.
   input order; the remaining `allServices` (minus top) get `is_top_service=false`.
 
 **Leads** (snake_case JSON)
+
 - `GET /clinic/portal/leads` → `ClinicLeadDto[]`, `received_at` desc. Each:
   `{ lead_id, received_at (ISO-8601), lead_source, patient: { first_name, email,
-  zip_code }, assessment_summary: { treatmentCategory, topGoals[], topSymptoms[],
-  budgetBand, telehealthPreference, startTimeline }, delivery_status,
-  clinic_status }`. `topGoals`/`topSymptoms` split the lead's comma strings.
+zip_code }, assessment_summary: { treatmentCategory, topGoals[], topSymptoms[],
+budgetBand, telehealthPreference, startTimeline }, delivery_status,
+clinic_status }`. `topGoals`/`topSymptoms` split the lead's comma strings.
 - `GET /clinic/portal/leads/:leadId` → one `ClinicLeadDto` (same shape). Not the
   caller's clinic / not found → 404.
 - `PATCH /clinic/portal/leads/:leadId/status` (`{ status }`) → `{ success: true }`.
@@ -63,6 +65,7 @@ or a clinic-less token → **403**). Base path `/clinic/portal`.
   → `{ success: true }`.
 
 **Webhook management**
+
 - `GET /clinic/portal/webhook-deliveries` → `WebhookDeliveryDto[]` (snake_case)
   for the caller clinic's leads, most-recent first, capped at 50:
   `{ lead_id, attempted_at, status, http_status_code, error_message }`.
@@ -75,6 +78,7 @@ or a clinic-less token → **403**). Base path `/clinic/portal`.
   must be absolute HTTPS (else 400).
 
 **Media** (see §5)
+
 - `POST /clinic/portal/media/logo/sign` → `{ uploadUrl, token, path }`.
 - `POST /clinic/portal/media/logo` (`{ path }`) → `{ url }`.
 - `POST /clinic/portal/media/photos/sign` (`{ count }`) → `{ uploads: [{ uploadUrl, token, path }] }`.
@@ -98,14 +102,14 @@ or a clinic-less token → **403**). Base path `/clinic/portal`.
 - **`users`**: add `clinic_id uuid null` FK → `clinics(id)` `ON DELETE SET NULL`.
   A `clinic`-role user carries a non-null `clinic_id`.
 - **`clinics`** add columns: `differentiators text null`, `offers_lab_work bool
-  not null default false`, `insurance_notes text null`, `credentials text null`,
+not null default false`, `insurance_notes text null`, `credentials text null`,
   `npi_number text null`, `state_license_number text null`, `logo_url text null`,
   `photo_count int not null default 0`, `weekly_summary bool not null default
-  false`, `location text null`, `webhook_health text not null default 'unknown'`
+false`, `location text null`, `webhook_health text not null default 'unknown'`
   (`unknown|healthy|degraded|failing`), `suspension_reason text null`,
   `created_at timestamptz not null default now()`.
 - **`clinic_photos`** (new): `id uuid pk`, `clinic_id uuid fk clinics ON DELETE
-  CASCADE`, `url text not null`, `display_order int not null`. RLS + FORCE.
+CASCADE`, `url text not null`, `display_order int not null`. RLS + FORCE.
 - **`webhook_deliveries`** (exists): read by the owning clinic; add a
   clinic-scoped select policy.
 - Seeds: link 1-2 seed clinics to new `clinic`-role users (known password for

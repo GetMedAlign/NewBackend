@@ -21,11 +21,13 @@
 ### Task 1: Schema + migration (users.clinic_id, clinic columns, clinic_photos)
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (User, Clinic models; new ClinicPhoto model)
 - Create: `prisma/migrations/20260714100000_clinic_portal/migration.sql`
 - Test: `test/db/clinic-portal-schema.int-spec.ts`
 
 **Interfaces produced:**
+
 - `users.clinic_id uuid null` FK → `clinics(id)` `ON DELETE SET NULL`.
 - `clinics` + `differentiators text?`, `offers_lab_work bool not null default false`, `insurance_notes text?`, `credentials text?`, `npi_number text?`, `state_license_number text?`, `logo_url text?`, `photo_count int not null default 0`, `weekly_summary bool not null default false`, `location text?`, `webhook_health text not null default 'unknown'`, `suspension_reason text?`, `created_at timestamptz not null default now()`.
 - `clinic_photos`: `id uuid pk default gen_random_uuid()`, `clinic_id uuid not null` FK → clinics `ON DELETE CASCADE`, `url text not null`, `display_order int not null`. Prisma model `ClinicPhoto` (`@@map("clinic_photos")`), relation on Clinic `photos ClinicPhoto[]`; `User.clinicId String? @map("clinic_id") @db.Uuid` with relation to Clinic.
@@ -41,15 +43,18 @@
 ### Task 2: RLS + clinic-scoped policies
 
 **Files:**
+
 - Create: `prisma/migrations/20260714110000_clinic_portal_rls/migration.sql`
 - Modify: `src/infrastructure/prisma/request-context.ts` (add `clinicId?: string | null`), `src/infrastructure/prisma/prisma.service.ts` (set `app.current_clinic_id`)
 - Test: `test/db/clinic-portal-rls.int-spec.ts`
 
 **Interfaces:**
+
 - Consumes: `withUserContext(ctx, fn)`; `RequestContext { userId?; role?; ip?; clinicId? }`.
 - Produces: RLS so a `clinic`-context caller (role `app_authenticated`, `app.current_clinic_id` set) sees only its own rows.
 
 **Policies (all keyed on `current_setting('app.current_clinic_id', true)::uuid`), with `GRANT` to `app_authenticated` + `ENABLE`/`FORCE RLS`:**
+
 - `clinics`: `clinic_self_select` (`id = current_clinic_id`), `clinic_self_update` (`id = current_clinic_id`). Keep existing public-read policy.
 - `leads`: `leads_clinic_select` (`clinic_id = current_clinic_id`); `leads_clinic_update` (`clinic_id = current_clinic_id`) — column privilege: `GRANT UPDATE (clinic_status) ON leads TO app_authenticated` (clinic may change only `clinic_status`).
 - `webhook_deliveries`: `webhook_deliveries_clinic_select` for rows whose `lead_id` belongs to a lead with `clinic_id = current_clinic_id`.
@@ -66,10 +71,12 @@
 ### Task 3: Seeds (clinic users + new columns)
 
 **Files:**
+
 - Modify: `prisma/seed/clinics.ts` (populate new columns), `prisma/seed/patient-journey.seed.ts` (or a new `clinic-portal.seed.ts`) to create clinic users
 - Test: `test/db/clinic-portal-seed.int-spec.ts`
 
 **Interfaces:**
+
 - Produces: for ≥2 seed clinics, a `clinic`-role user with `clinic_id` set and a known password (argon2-hashed via the Foundation hasher) for e2e login. New clinic columns populated (logo_url null, photo_count 0, webhook_health 'unknown', etc.).
 
 - [ ] **Step 1 (test):** integration: after seeding, assert a `clinic`-role user exists with a non-null `clinic_id`, and `has_role(user_id, 'clinic')` is true; the linked clinic has the new columns populated.
@@ -83,11 +90,13 @@
 ### Task 4: Auth extension — clinicId claim end-to-end + ClinicGuard
 
 **Files:**
+
 - Modify: `src/modules/auth/domain/ports/token-service.port.ts` (`TokenClaims` + `clinicId?: string | null`), `src/modules/auth/infrastructure/adapters/jwt-token.service.ts` (carry `clinicId`), `src/infrastructure/security/current-user.decorator.ts` (`AuthenticatedUser` + `clinicId?: string | null`), `src/infrastructure/security/jwt-cookie.guard.ts` (populate `clinicId`), `src/modules/auth/application/verify-two-factor.use-case.ts` (issue `clinicId`), the user repository (`getClinicId(userId): Promise<string | null>`)
 - Create: `src/infrastructure/security/clinic.guard.ts`, `src/infrastructure/security/current-clinic.decorator.ts`
 - Test: `jwt-token.service.spec.ts` (extend), `verify-two-factor.use-case.spec.ts` (extend), `test/clinic-portal/clinic-guard.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: `TokenServicePort.issue/verify`, `getPrimaryRole`, `withUserContext`.
 - Produces: JWT `{ sub, role, clinicId? }`; `AuthenticatedUser { sub, role, clinicId? }`; `@CurrentClinic(): string` (the caller's clinic id); `ClinicGuard` — rejects (403) unless `role === 'clinic'` and `clinicId` is a non-empty string.
 
@@ -104,6 +113,7 @@
 **Files:** `src/modules/clinic-portal/` — `domain/ports/clinic-write-repository.port.ts`, `application/{get-clinic-profile,update-clinic-profile}.use-case.ts`, `infrastructure/prisma-clinic-write.repository.ts`, `infrastructure/http/clinic-portal.controller.ts` + `dtos/`, `clinic-portal.module.ts`; unit + `test/clinic-portal/profile.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - `ClinicWriteRepositoryPort` (token `CLINIC_WRITE_REPOSITORY`): `findProfile(clinicId): Promise<ClinicProfileView | null>` (joins categories/services + `leadCount`/`lastLeadAt`), `updateProfile(clinicId, patch): Promise<void>` (partial; replaces categories/services when provided). All via `withUserContext({ clinicId, role: 'clinic' })`.
 - Controller (`@Controller('clinic/portal')`, `ClinicGuard`): `GET /profile` → `ClinicPortalProfileDto` (camelCase, spec §1 full field list incl. `specialty` label map, `webhookSecretConfigured`, read-only `billingStatus`/`webhookHealth`/`suspensionReason`); `PUT /profile` (`UpdateClinicPortalProfileRequest`, all optional) → `{ success: true }`, `webhookUrl` must be HTTPS (else 400), `location` recomputed on city/state change, top/all services replace logic per spec §1.
 
@@ -120,6 +130,7 @@
 **Files:** `clinic-portal/domain/ports/clinic-lead-repository.port.ts`, `application/{list-clinic-leads,get-clinic-lead,update-lead-status,request-patient-contact}.use-case.ts`, `infrastructure/prisma-clinic-lead.repository.ts`, controller additions + snake_case DTOs; unit + `test/clinic-portal/leads.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - `ClinicLeadRepositoryPort` (token `CLINIC_LEAD_REPOSITORY`): `listByClinic(clinicId): Promise<ClinicLeadView[]>` (join assessment for goals/symptoms summary, `received_at` desc), `findByClinic(clinicId, leadId): Promise<ClinicLeadView | null>`, `updateStatus(clinicId, leadId, status): Promise<boolean>` (guarded `updateMany where lead_id & clinic_id`; false when 0 rows). All `withUserContext`.
 - DTOs snake_case per spec §1: `ClinicLeadDto { lead_id, received_at, lead_source, patient{first_name,email,zip_code}, assessment_summary{treatmentCategory,topGoals[],topSymptoms[],budgetBand,telehealthPreference,startTimeline}, delivery_status, clinic_status }`.
 - Endpoints: `GET /leads`, `GET /leads/:leadId` (404 if not caller's/absent), `PATCH /leads/:leadId/status` (`{status}` in `new|contacted|booked|converted|not_interested`, else 400 → `{success:true}`), `POST /leads/:leadId/contact-request` (emails patient via `EMAIL_SENDER`; 404 if not caller's; send failure → 500; success `{success:true}`).
@@ -137,6 +148,7 @@
 **Files:** `clinic-portal/application/{list-webhook-deliveries,rotate-webhook-secret,test-webhook}.use-case.ts`, repo method(s) on `ClinicWriteRepositoryPort` (or a small `ClinicWebhookRepositoryPort`), controller additions + DTOs; unit + `test/clinic-portal/webhook.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - Consumes: `WEBHOOK_SENDER.send(url, payload, secret)`, `ENCRYPTION_PORT`.
 - `listWebhookDeliveries(clinicId): Promise<WebhookDeliveryDto[]>` (snake_case: `{ lead_id, attempted_at, status, http_status_code, error_message }`, newest first, cap 50, RLS-scoped).
 - `rotateWebhookSecret(clinicId): Promise<{ webhookSecret: string }>` — generate a strong secret, store `EncryptionPort.encrypt(secret)` on `clinics.webhook_secret`, return plaintext once.
@@ -155,6 +167,7 @@
 **Files:** `src/modules/clinic-media/` — `domain/ports/storage.port.ts`, `application/{sign-logo-upload,sign-photo-uploads}.use-case.ts`, `infrastructure/supabase-storage.adapter.ts`, `infrastructure/http/clinic-media.controller.ts` + dtos, `clinic-media.module.ts`; env schema additions; unit + e2e (storage seam).
 
 **Interfaces:**
+
 - Env (`env.schema.ts`): `SUPABASE_URL: z.string().url()`, `SUPABASE_SERVICE_ROLE_KEY: z.string().min(1)`, `SUPABASE_STORAGE_BUCKET: z.string().default('clinic-media')`.
 - `StoragePort` (token `STORAGE_PORT`): `createSignedUploadUrl(path): Promise<{ uploadUrl: string; token: string }>`, `publicUrl(path): string`, `remove(paths: string[]): Promise<void>`. Supabase adapter uses `@supabase/supabase-js` with the service-role key; a `resolveOverride`/seam constructor arg lets tests avoid live calls.
 - Endpoints (`@Controller('clinic/portal/media')`, `ClinicGuard`): `POST /logo/sign` → `{ uploadUrl, token, path }` for `logos/<clinicId>/<uuid>.<ext>` (ext from a validated `{ contentType }` in `image/png|jpeg|webp`); `POST /photos/sign` (`{ count }` 1–8, else 400) → `{ uploads: [{ uploadUrl, token, path }] }` for `photos/<clinicId>/<uuid>`.
@@ -172,6 +185,7 @@
 **Files:** `clinic-media/application/{confirm-logo,confirm-photos,list-photos}.use-case.ts`, `infrastructure/prisma-clinic-photo.repository.ts`, controller additions + dtos; unit + `test/clinic-media/media.int-spec.ts` + e2e.
 
 **Interfaces:**
+
 - `ClinicPhotoRepositoryPort` (token `CLINIC_PHOTO_REPOSITORY`): `setLogoUrl(clinicId, url)`, `replacePhotos(clinicId, urls: string[]): Promise<void>` (delete old rows + set `photo_count`), `listPhotos(clinicId): Promise<string[]>` (by `display_order`). Via `withUserContext`.
 - Path authorization helper: reject any `path` whose prefix is not `logos/<callerClinicId>/` (logo) or `photos/<callerClinicId>/` (photos) → 403.
 - Endpoints: `POST /logo` (`{ path }`) → validate prefix, `remove` previous `logo_url` object, `setLogoUrl(publicUrl(path))`, return `{ url }`; `POST /photos` (`{ paths: string[] }`, ≤8, all prefix-checked) → `remove` prior photo objects, `replacePhotos(publicUrl(each))`, return `{ urls }`; `GET /photos` → `string[]`.
