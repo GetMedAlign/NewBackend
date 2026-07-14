@@ -43,8 +43,11 @@ describe('SupabaseStorageAdapter', () => {
       ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
 
-    it('throws InternalServerErrorException when data is null and no error', async () => {
-      seam.createSignedUploadUrl.mockResolvedValue({ data: null, error: null });
+    it('throws InternalServerErrorException when data is null', async () => {
+      seam.createSignedUploadUrl.mockResolvedValue({
+        data: null,
+        error: { message: 'no data returned' },
+      });
 
       await expect(
         adapter.createSignedUploadUrl('logos/clinic-1/photo.png'),

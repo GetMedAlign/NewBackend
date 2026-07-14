@@ -29,12 +29,13 @@ export class SignPhotoUploadsUseCase {
       throw new BadRequestException('count must be an integer between 1 and 8');
     }
 
-    const uploads: SignedPhotoUpload[] = [];
-    for (let i = 0; i < count; i++) {
-      const path = `photos/${clinicId}/${randomUUID()}`;
-      const { uploadUrl, token } = await this.storage.createSignedUploadUrl(path);
-      uploads.push({ uploadUrl, token, path });
-    }
+    const uploads: SignedPhotoUpload[] = await Promise.all(
+      Array.from({ length: count }, async () => {
+        const path = `photos/${clinicId}/${randomUUID()}`;
+        const { uploadUrl, token } = await this.storage.createSignedUploadUrl(path);
+        return { uploadUrl, token, path };
+      }),
+    );
 
     return { uploads };
   }
