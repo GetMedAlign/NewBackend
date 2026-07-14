@@ -79,7 +79,7 @@ cannot claim the assessment or attribute its lead — the token model is stricte
 
 ## Clinic Portal API
 
-The clinic-facing portal — clinic staff log in with the same `/auth/*` flow and receive a JWT that carries `clinicId` (role `clinic`).
+The clinic-facing portal lets clinic staff log in with the same `/auth/*` flow and receive a JWT that carries `clinicId` (role `clinic`).
 
 ```
 GET  /clinic/portal/profile                              -> clinic profile (name, about, services, logoUrl, etc.)
