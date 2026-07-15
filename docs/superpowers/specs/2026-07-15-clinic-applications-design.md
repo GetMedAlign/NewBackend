@@ -117,9 +117,13 @@ Application media reuses the Slice-3 Supabase Storage signed-URL adapter.
   admin `withUserContext` transaction so they are atomic and audited; `create_user`
   is `SECURITY DEFINER` (runs as owner) and is unaffected.
 - **Password reset tokens:** the raw token is a `randomBytes(32)` hex string
-  returned only in the emailed link; only its SHA-256 hash is stored. Verify with
-  a constant-time hash compare; enforce expiry + single use. `password_reset_tokens`
-  is written/read via `asSystem` (no user context at reset time).
+  returned only in the emailed link; only its SHA-256 hash is stored. Verification
+  looks the token up by its stored SHA-256 hash (indexed equality) bound to the
+  user's email, and enforces expiry + single use. A constant-time byte compare is
+  not required here: the compared value is the SHA-256 of a 256-bit random,
+  single-use, 60-minute token, so a timing side-channel on the hash reveals nothing
+  usable. `password_reset_tokens` is written/read via `asSystem` (no user context
+  at reset time).
 - **Application media:** signing issues URLs only under a server-generated
   `applications/<random>/` prefix; the path is never taken from the request, so
   an applicant cannot target another prefix. Reuses the Slice-3 signed-upload
