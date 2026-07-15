@@ -95,7 +95,8 @@ describe('Clinic-applications seed', () => {
     expect(svcRows.length).toBeGreaterThanOrEqual(2);
     for (const svc of svcRows) {
       expect(typeof svc.is_top_service).toBe('boolean');
-      expect(typeof Number(svc.display_order)).toBe('number');
+      expect(Number.isInteger(Number(svc.display_order))).toBe(true);
+      expect(Number(svc.display_order)).toBeGreaterThanOrEqual(0);
     }
   });
 

@@ -367,31 +367,37 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     }
 
     // Delete-then-recreate child rows — keeps them idempotent across re-runs.
-    await prisma.$executeRaw`
-      DELETE FROM application_categories WHERE application_id = ${applicationId}::uuid
-    `;
-    for (const category of app.categories) {
-      await prisma.$executeRaw`
-        INSERT INTO application_categories (application_id, category)
-        VALUES (${applicationId}::uuid, ${category}::assessment_category)
-        ON CONFLICT (application_id, category) DO NOTHING
+    // Wrapped in transactions so a crash cannot leave an application with zero
+    // categories or services (mirrors the clinic categories/services pattern).
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM application_categories WHERE application_id = ${applicationId}::uuid
       `;
-    }
+      for (const category of app.categories) {
+        await tx.$executeRaw`
+          INSERT INTO application_categories (application_id, category)
+          VALUES (${applicationId}::uuid, ${category}::assessment_category)
+          ON CONFLICT (application_id, category) DO NOTHING
+        `;
+      }
+    });
 
-    await prisma.$executeRaw`
-      DELETE FROM application_services WHERE application_id = ${applicationId}::uuid
-    `;
-    for (const svc of app.services) {
-      await prisma.$executeRaw`
-        INSERT INTO application_services (application_id, service_code, is_top_service, display_order)
-        VALUES (
-          ${applicationId}::uuid,
-          ${svc.serviceCode},
-          ${svc.isTopService},
-          ${svc.displayOrder}
-        )
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM application_services WHERE application_id = ${applicationId}::uuid
       `;
-    }
+      for (const svc of app.services) {
+        await tx.$executeRaw`
+          INSERT INTO application_services (application_id, service_code, is_top_service, display_order)
+          VALUES (
+            ${applicationId}::uuid,
+            ${svc.serviceCode},
+            ${svc.isTopService},
+            ${svc.displayOrder}
+          )
+        `;
+      }
+    });
   }
 }
 
