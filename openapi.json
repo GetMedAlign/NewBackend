@@ -1034,6 +1034,55 @@
           "Clinic Applications"
         ]
       }
+    },
+    "/admin/applications": {
+      "get": {
+        "operationId": "AdminApplicationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all clinic applications (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
+    },
+    "/admin/applications/{id}": {
+      "get": {
+        "operationId": "AdminApplicationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single clinic application by id (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
     }
   },
   "info": {
