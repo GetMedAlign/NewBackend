@@ -16,6 +16,8 @@ import { VerifyTwoFactorUseCase } from '../../application/verify-two-factor.use-
 import { ResendTwoFactorUseCase } from '../../application/resend-two-factor.use-case';
 import { GetMeUseCase } from '../../application/get-me.use-case';
 import { SignOutUseCase } from '../../application/sign-out.use-case';
+import { ForgotPasswordUseCase } from '../../application/forgot-password.use-case';
+import { ResetPasswordUseCase } from '../../application/reset-password.use-case';
 
 import { Public } from '../../../../infrastructure/security/public.decorator';
 import { CurrentUser } from '../../../../infrastructure/security/current-user.decorator';
@@ -26,6 +28,8 @@ import { SignupDto } from './dtos/signup.dto';
 import { SigninDto } from './dtos/signin.dto';
 import { Verify2faDto } from './dtos/verify-2fa.dto';
 import { Resend2faDto } from './dtos/resend-2fa.dto';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
 
 /** Stricter per-IP throttle for the unauthenticated auth surface. */
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
@@ -47,6 +51,8 @@ export class AuthController {
     private readonly resendTwoFactor: ResendTwoFactorUseCase,
     private readonly getMe: GetMeUseCase,
     private readonly signOut: SignOutUseCase,
+    private readonly forgotPassword_uc: ForgotPasswordUseCase,
+    private readonly resetPassword_uc: ResetPasswordUseCase,
   ) {}
 
   @Public()
@@ -183,5 +189,49 @@ export class AuthController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ userId: string; email: string; role: string }> {
     return this.getMe.execute({ userId: user.sub });
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request a password reset link',
+    description:
+      'Sends a password reset email if the address is registered. Always returns 200 to prevent user enumeration.',
+  })
+  @ApiHeader(CSRF_HEADER)
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reset link sent (or silently discarded for unknown emails)',
+    schema: { example: { success: true } },
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ success: true }> {
+    return this.forgotPassword_uc.execute({ email: dto.email });
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password using a token',
+    description: 'Consumes a single-use reset token and updates the user password.',
+  })
+  @ApiHeader(CSRF_HEADER)
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password updated successfully',
+    schema: { example: { success: true } },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired reset token' })
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: true }> {
+    return this.resetPassword_uc.execute({
+      email: dto.email,
+      token: dto.token,
+      newPassword: dto.newPassword,
+    });
   }
 }

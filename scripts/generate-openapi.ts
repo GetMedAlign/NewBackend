@@ -39,6 +39,8 @@ import { VerifyTwoFactorUseCase } from '../src/modules/auth/application/verify-t
 import { ResendTwoFactorUseCase } from '../src/modules/auth/application/resend-two-factor.use-case';
 import { GetMeUseCase } from '../src/modules/auth/application/get-me.use-case';
 import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-case';
+import { ForgotPasswordUseCase } from '../src/modules/auth/application/forgot-password.use-case';
+import { ResetPasswordUseCase } from '../src/modules/auth/application/reset-password.use-case';
 import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
 import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
@@ -107,6 +109,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ResendTwoFactorUseCase),
     stubProvider(GetMeUseCase),
     stubProvider(SignOutUseCase),
+    stubProvider(ForgotPasswordUseCase),
+    stubProvider(ResetPasswordUseCase),
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
     stubProvider(GetRecommendationsUseCase),

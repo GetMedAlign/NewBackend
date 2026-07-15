@@ -300,6 +300,99 @@
         ]
       }
     },
+    "/auth/forgot-password": {
+      "post": {
+        "description": "Sends a password reset email if the address is registered. Always returns 200 to prevent user enumeration.",
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset link sent (or silently discarded for unknown emails)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Request a password reset link",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "description": "Consumes a single-use reset token and updates the user password.",
+        "operationId": "AuthController_resetPassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired reset token"
+          }
+        },
+        "summary": "Reset password using a token",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/assessments": {
       "post": {
         "operationId": "AssessmentsController_submit",
@@ -954,6 +1047,44 @@
         },
         "required": [
           "email"
+        ]
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to send reset link to"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address of the account"
+          },
+          "token": {
+            "type": "string",
+            "example": "a3f9b2c1...",
+            "description": "Raw reset token from the email link"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MyNewSecurePass1!",
+            "description": "New password (min 8 characters)"
+          }
+        },
+        "required": [
+          "email",
+          "token",
+          "newPassword"
         ]
       },
       "SubmitAssessmentDto": {

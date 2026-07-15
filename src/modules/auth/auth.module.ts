@@ -12,6 +12,7 @@ import { TWO_FACTOR } from './domain/ports/two-factor.port';
 import { USER_REPOSITORY } from './domain/ports/user-repository.port';
 import { AUDIT } from './domain/ports/audit.port';
 import { EMAIL_SENDER } from './infrastructure/adapters/email-sender.port';
+import { PASSWORD_RESET_REPOSITORY } from './domain/ports/password-reset-repository.port';
 
 import { Argon2PasswordHasher } from './infrastructure/adapters/argon2-password-hasher';
 import { JwtTokenService } from './infrastructure/adapters/jwt-token.service';
@@ -19,6 +20,7 @@ import { EmailTwoFactor } from './infrastructure/adapters/email-two-factor';
 import { SendGridEmailSender } from './infrastructure/adapters/sendgrid-email-sender';
 import { LoggingEmailSender } from './infrastructure/adapters/logging-email-sender';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
+import { PrismaPasswordResetRepository } from './infrastructure/persistence/prisma-password-reset.repository';
 import { PostgresAuditAdapter } from './infrastructure/adapters/postgres-audit.adapter';
 import type { Env } from '../../infrastructure/config/env.schema';
 import type { PasswordHasherPort } from './domain/ports/password-hasher.port';
@@ -31,6 +33,8 @@ import { VerifyTwoFactorUseCase } from './application/verify-two-factor.use-case
 import { ResendTwoFactorUseCase } from './application/resend-two-factor.use-case';
 import { GetMeUseCase } from './application/get-me.use-case';
 import { SignOutUseCase } from './application/sign-out.use-case';
+import { ForgotPasswordUseCase } from './application/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/reset-password.use-case';
 
 @Module({
   imports: [ConfigModule, PrismaModule, CryptoModule, JwtModule.register({})],
@@ -43,6 +47,8 @@ import { SignOutUseCase } from './application/sign-out.use-case';
     ResendTwoFactorUseCase,
     GetMeUseCase,
     SignOutUseCase,
+    ForgotPasswordUseCase,
+    ResetPasswordUseCase,
 
     // Concrete email sender classes — both registered so the factory can pick
     SendGridEmailSender,
@@ -98,12 +104,27 @@ import { SignOutUseCase } from './application/sign-out.use-case';
       useClass: PrismaUserRepository,
     },
 
+    // PasswordResetRepositoryPort → PrismaPasswordResetRepository
+    PrismaPasswordResetRepository,
+    {
+      provide: PASSWORD_RESET_REPOSITORY,
+      useClass: PrismaPasswordResetRepository,
+    },
+
     // AuditPort → PostgresAuditAdapter
     {
       provide: AUDIT,
       useClass: PostgresAuditAdapter,
     },
   ],
-  exports: [PASSWORD_HASHER, TOKEN_SERVICE, TWO_FACTOR, USER_REPOSITORY, AUDIT, EMAIL_SENDER],
+  exports: [
+    PASSWORD_HASHER,
+    TOKEN_SERVICE,
+    TWO_FACTOR,
+    USER_REPOSITORY,
+    AUDIT,
+    EMAIL_SENDER,
+    PASSWORD_RESET_REPOSITORY,
+  ],
 })
 export class AuthModule {}
