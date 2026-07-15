@@ -960,6 +960,31 @@
         ]
       }
     },
+    "/clinic-applications": {
+      "post": {
+        "operationId": "ClinicApplicationsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Submit a clinic application",
+        "tags": [
+          "Clinic Applications"
+        ]
+      }
+    },
     "/clinic-applications/media/logo/sign": {
       "post": {
         "operationId": "ClinicApplicationsController_signLogo",
@@ -1341,6 +1366,174 @@
         },
         "required": [
           "paths"
+        ]
+      },
+      "SubmitApplicationServiceDto": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "type": "string",
+            "example": "testosterone-replacement",
+            "description": "Service code identifier"
+          },
+          "isTopService": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether this is a top/featured service"
+          }
+        },
+        "required": [
+          "serviceCode",
+          "isTopService"
+        ]
+      },
+      "SubmitApplicationDto": {
+        "type": "object",
+        "properties": {
+          "clinicName": {
+            "type": "string",
+            "example": "Horizon Hormone Health",
+            "description": "Clinic name"
+          },
+          "contactEmail": {
+            "type": "string",
+            "example": "apply@example.com",
+            "description": "Primary contact email"
+          },
+          "businessEmail": {
+            "type": "string",
+            "example": "billing@example.com",
+            "description": "Business billing email"
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "description": "City"
+          },
+          "stateCode": {
+            "type": "string",
+            "example": "TX",
+            "description": "Two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "78701",
+            "description": "ZIP code"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "example": "https://example.com",
+            "description": "Clinic website URL"
+          },
+          "telehealthAvailable": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether telehealth is available"
+          },
+          "offersLabWork": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether the clinic offers lab work"
+          },
+          "newPatientWait": {
+            "type": "string",
+            "example": "1-2 weeks",
+            "description": "Typical new patient wait time"
+          },
+          "npiNumber": {
+            "type": "string",
+            "example": "1234567890",
+            "description": "NPI number"
+          },
+          "stateLicenseNumber": {
+            "type": "string",
+            "example": "TX-MED-001",
+            "description": "State medical license number"
+          },
+          "consultationFeeBand": {
+            "type": "string",
+            "example": "$100-$200",
+            "description": "Consultation fee band"
+          },
+          "monthlyProgramBand": {
+            "type": "string",
+            "example": "$200-$400",
+            "description": "Monthly program fee band"
+          },
+          "financingAvailable": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether financing is available"
+          },
+          "insuranceAccepted": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether insurance is accepted"
+          },
+          "insuranceNotes": {
+            "type": "object",
+            "example": "HSA/FSA accepted.",
+            "description": "Insurance notes"
+          },
+          "about": {
+            "type": "string",
+            "example": "Specializes in bioidentical hormone replacement therapy.",
+            "description": "About the clinic"
+          },
+          "differentiators": {
+            "type": "string",
+            "example": "Board-certified endocrinologist on staff.",
+            "description": "Clinic differentiators"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "Dr. Elena Voss, MD",
+            "description": "Primary provider name"
+          },
+          "credentials": {
+            "type": "string",
+            "example": "MD, Board Certified Endocrinology",
+            "description": "Provider credentials"
+          },
+          "logoUrl": {
+            "type": "string",
+            "example": "https://storage.example.com/applications/abc/logo.png",
+            "description": "Public URL of the uploaded clinic logo"
+          },
+          "photoUrls": {
+            "example": [
+              "https://storage.example.com/applications/abc/photo-1.jpg"
+            ],
+            "description": "Public URLs of uploaded clinic photos",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categories": {
+            "example": [
+              "hormone",
+              "peptide"
+            ],
+            "description": "Assessment category codes the clinic serves",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "services": {
+            "description": "Services the clinic offers",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmitApplicationServiceDto"
+            }
+          }
+        },
+        "required": [
+          "clinicName",
+          "contactEmail",
+          "categories",
+          "services"
         ]
       },
       "SignApplicationLogoDto": {
