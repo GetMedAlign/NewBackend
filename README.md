@@ -112,11 +112,55 @@ All `/clinic/portal/*` routes require role `clinic`. A `patient` JWT returns 403
 
 Placeholder values are provided in `.env` and `test/.env.test` for local development.
 
+## Clinic Applications API (Slice 4)
+
+Prospective clinics submit an application anonymously. An admin reviews and approves or denies it. On approval, the clinic record is provisioned and the contact receives a set-password link so they can immediately log into the Clinic Portal.
+
+**Onboarding flow:** clinic submits application (anonymous) -> admin approves -> welcome email with a set-password link is sent -> clinic clicks the link, sets a password, signs in with 2FA -> `GET /clinic/portal/profile` returns the provisioned clinic.
+
+**Application media (anonymous, no account required):**
+
+```
+POST /clinic-applications/media/logo/sign    -> { uploadUrl, token, path }  (pre-signed logo upload)
+POST /clinic-applications/media/photos/sign  -> { uploads: [...] }          (pre-signed photo uploads, 1-8)
+```
+
+**Public application submit:**
+
+```
+POST /clinic-applications  -> { applicationId }  (anonymous; body: clinic + contact info, categories, services, optional logoUrl/photoUrls)
+```
+
+**Admin review (roles: admin, superadmin):**
+
+```
+GET /admin/applications          -> array of application summaries (newest first)
+GET /admin/applications/:id      -> full application detail including categories and services
+PUT /admin/applications/:id/status  -> { status: 'approved'|'denied', denyReason? }
+                                        approved: { success: true, clinicId }
+                                        denied:   { success: true }
+```
+
+Status transition rules: unknown status returns 400; already-approved application returns 409.
+
+**Local testing seed:** the database seed includes a superadmin account at `superadmin@medalign-seed.example.com`. Use `pnpm seed:pj` to populate the local DB.
+
+## Auth additions
+
+Password reset endpoints added in Slice 4 (shared infrastructure, also used by future Admin-initiated resets):
+
+```
+POST /auth/forgot-password  -> { success: true }  (always 200; account-enumeration-safe)
+POST /auth/reset-password   -> { success: true }  (body: { email, token, newPassword }; 400 on invalid/expired/consumed token)
+```
+
+Password reset tokens are single-use, expire after 60 minutes, and stored only as a SHA-256 hash.
+
 ## Rebuild roadmap (6 slices)
 
 1. **Foundation**: scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
 2. Patient journey: assessments, matching, leads.
 3. Clinics & clinic portal.
-4. Admin & superadmin.
+4. Clinic Applications and onboarding (Slice 4): application submit, admin review, approval provisioning, password reset.
 5. Billing, background jobs, email.
 6. Cutover: data migration from SQL Server, go-live.

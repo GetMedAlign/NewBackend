@@ -17,10 +17,18 @@
  *   - Two clinic-role users are seeded (one per notify-enabled clinic) so e2e
  *     tests can log in as a clinic without additional setup.
  *
+ * Clinic-applications additions (Task 3):
+ *   - A superadmin user is seeded so admin endpoints can be tested/used.
+ *   - Two sample pending clinic_applications are seeded (each with categories
+ *     and services) so the review workflow has data to operate on.
+ *
  * Seeded clinic user credentials:
  *   Email: clinic-vitality@medalign-seed.example.com  Password: SeedClinic1!
  *   Email: clinic-apex@medalign-seed.example.com      Password: SeedClinic1!
  *   (Both use the same shared password for test convenience.)
+ *
+ * Seeded superadmin credentials:
+ *   Email: superadmin@medalign-seed.example.com  Password: SeedAdmin1!
  */
 import { createCipheriv, randomBytes } from 'crypto';
 import * as argon2 from 'argon2';
@@ -31,6 +39,18 @@ import { ZIP_CODES } from './zip-codes';
 import { CLINICS } from './clinics';
 
 const NONCE_BYTES = 12;
+
+/**
+ * Fixed credentials for the seeded superadmin user.
+ * Import this constant in e2e/integration tests to authenticate as a superadmin.
+ *
+ * Credentials:
+ *   superadmin@medalign-seed.example.com  /  SeedAdmin1!
+ */
+export const SEEDED_ADMIN_USER: Readonly<{ email: string; password: string }> = {
+  email: 'superadmin@medalign-seed.example.com',
+  password: 'SeedAdmin1!',
+};
 
 /**
  * Fixed credentials for seeded clinic users.
@@ -210,6 +230,174 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     await prisma.$executeRaw`
       UPDATE users SET clinic_id = ${clinic.id}::uuid WHERE id = ${userId}::uuid
     `;
+  }
+
+  // --- Superadmin user -------------------------------------------------------
+  // Seed a superadmin-role user for testing/using admin endpoints.
+  // Idempotent: skips creation if the email already exists, then ensures
+  // role=superadmin is set and the default 'patient' role is removed.
+  {
+    const existingAdmin = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM users WHERE email = ${SEEDED_ADMIN_USER.email}::citext
+    `;
+
+    let adminUserId: string;
+    if (existingAdmin.length === 0) {
+      const passwordHash = await argon2.hash(SEEDED_ADMIN_USER.password, {
+        type: argon2.argon2id,
+      });
+      const rows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT create_user(${SEEDED_ADMIN_USER.email}::citext, ${passwordHash}) AS id
+      `;
+      adminUserId = rows[0]!.id;
+    } else {
+      adminUserId = existingAdmin[0]!.id;
+    }
+
+    // Ensure the user has exactly the 'superadmin' role.
+    await prisma.$executeRaw`
+      INSERT INTO user_roles (user_id, role)
+      VALUES (${adminUserId}::uuid, 'superadmin')
+      ON CONFLICT (user_id, role) DO NOTHING
+    `;
+    await prisma.$executeRaw`
+      DELETE FROM user_roles WHERE user_id = ${adminUserId}::uuid AND role = 'patient'
+    `;
+  }
+
+  // --- Sample pending clinic applications ------------------------------------
+  // Seeds 2 pending clinic_applications (each with categories + services) so
+  // the admin review workflow has data to operate on.
+  // Idempotent: guarded on contact_email — skip if the row already exists, then
+  // delete-and-recreate child rows so re-runs never duplicate categories/services.
+
+  const SAMPLE_APPLICATIONS = [
+    {
+      clinicName: 'Horizon Hormone Health',
+      contactEmail: 'apply@horizon-hormone-health.example.com',
+      businessEmail: 'billing@horizon-hormone-health.example.com',
+      city: 'Austin',
+      stateCode: 'TX',
+      zipCode: '78701',
+      websiteUrl: 'https://horizonhormonehealth.example.com',
+      telehealthAvailable: true,
+      offersLabWork: true,
+      newPatientWait: '1-2 weeks',
+      npiNumber: '1234567890',
+      stateLicenseNumber: 'TX-MED-001',
+      consultationFeeBand: '$100-$200',
+      monthlyProgramBand: '$200-$400',
+      financingAvailable: false,
+      insuranceAccepted: false,
+      insuranceNotes: null as string | null,
+      about:
+        'Horizon Hormone Health specializes in bioidentical hormone replacement therapy and peptide protocols for men and women seeking to optimize their vitality.',
+      differentiators: 'Board-certified endocrinologist on staff; same-week lab processing.',
+      providerName: 'Dr. Elena Voss, MD',
+      credentials: 'MD, Board Certified Endocrinology',
+      categories: ['hormone', 'peptide'] as const,
+      services: [
+        { serviceCode: 'testosterone-replacement', isTopService: true, displayOrder: 1 },
+        { serviceCode: 'peptide-therapy', isTopService: true, displayOrder: 2 },
+        { serviceCode: 'thyroid-optimization', isTopService: false, displayOrder: 3 },
+      ],
+    },
+    {
+      clinicName: 'Summit Wellness Collective',
+      contactEmail: 'apply@summit-wellness-collective.example.com',
+      businessEmail: 'admin@summit-wellness-collective.example.com',
+      city: 'Denver',
+      stateCode: 'CO',
+      zipCode: '80203',
+      websiteUrl: 'https://summitwellnesscollective.example.com',
+      telehealthAvailable: true,
+      offersLabWork: false,
+      newPatientWait: '2-3 weeks',
+      npiNumber: '0987654321',
+      stateLicenseNumber: 'CO-MED-042',
+      consultationFeeBand: '$150-$250',
+      monthlyProgramBand: '$300-$500',
+      financingAvailable: true,
+      insuranceAccepted: false,
+      insuranceNotes: 'HSA/FSA accepted.',
+      about:
+        'Summit Wellness Collective offers integrative med-spa and wellness programs including IV therapy, aesthetic treatments, and stress-reduction protocols.',
+      differentiators: 'Certified functional medicine practitioners; package pricing available.',
+      providerName: 'Dr. Marcus Chen, DO',
+      credentials: 'DO, Functional Medicine Certified',
+      categories: ['wellness', 'med_spa'] as const,
+      services: [
+        { serviceCode: 'iv-therapy', isTopService: true, displayOrder: 1 },
+        { serviceCode: 'aesthetic-treatments', isTopService: true, displayOrder: 2 },
+        { serviceCode: 'stress-reduction', isTopService: false, displayOrder: 3 },
+        { serviceCode: 'nutritional-coaching', isTopService: false, displayOrder: 4 },
+      ],
+    },
+  ] as const;
+
+  for (const app of SAMPLE_APPLICATIONS) {
+    // Check if this application already exists.
+    const existingApp = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM clinic_applications WHERE contact_email = ${app.contactEmail}
+    `;
+
+    let applicationId: string;
+    if (existingApp.length === 0) {
+      const created = await prisma.$queryRaw<{ id: string }[]>`
+        INSERT INTO clinic_applications (
+          clinic_name, contact_email, business_email, city, state_code, zip_code,
+          website_url, telehealth_available, offers_lab_work, new_patient_wait,
+          npi_number, state_license_number, consultation_fee_band, monthly_program_band,
+          financing_available, insurance_accepted, insurance_notes, about,
+          differentiators, provider_name, credentials, status
+        ) VALUES (
+          ${app.clinicName}, ${app.contactEmail}, ${app.businessEmail},
+          ${app.city}, ${app.stateCode}, ${app.zipCode}, ${app.websiteUrl},
+          ${app.telehealthAvailable}, ${app.offersLabWork}, ${app.newPatientWait},
+          ${app.npiNumber}, ${app.stateLicenseNumber}, ${app.consultationFeeBand},
+          ${app.monthlyProgramBand}, ${app.financingAvailable}, ${app.insuranceAccepted},
+          ${app.insuranceNotes}, ${app.about}, ${app.differentiators},
+          ${app.providerName}, ${app.credentials}, 'pending'
+        )
+        RETURNING id
+      `;
+      applicationId = created[0]!.id;
+    } else {
+      applicationId = existingApp[0]!.id;
+    }
+
+    // Delete-then-recreate child rows — keeps them idempotent across re-runs.
+    // Wrapped in transactions so a crash cannot leave an application with zero
+    // categories or services (mirrors the clinic categories/services pattern).
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM application_categories WHERE application_id = ${applicationId}::uuid
+      `;
+      for (const category of app.categories) {
+        await tx.$executeRaw`
+          INSERT INTO application_categories (application_id, category)
+          VALUES (${applicationId}::uuid, ${category}::assessment_category)
+          ON CONFLICT (application_id, category) DO NOTHING
+        `;
+      }
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM application_services WHERE application_id = ${applicationId}::uuid
+      `;
+      for (const svc of app.services) {
+        await tx.$executeRaw`
+          INSERT INTO application_services (application_id, service_code, is_top_service, display_order)
+          VALUES (
+            ${applicationId}::uuid,
+            ${svc.serviceCode},
+            ${svc.isTopService},
+            ${svc.displayOrder}
+          )
+        `;
+      }
+    });
   }
 }
 
