@@ -42,7 +42,8 @@ export class VerifyTwoFactorUseCase {
     await this.repo.resetFailedLogin(user.id);
 
     const role = await this.repo.getPrimaryRole(user.id);
-    const token = this.tokens.issue({ sub: user.id, role });
+    const clinicId = await this.repo.getClinicId(user.id);
+    const token = this.tokens.issue({ sub: user.id, role, clinicId });
 
     await this.audit.record({
       actorUserId: user.id,

@@ -50,9 +50,11 @@ model User {
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   name                   String?   @map("name")
+  clinicId               String?   @map("clinic_id") @db.Uuid
 
   roles          UserRole[]
   twoFactorCodes TwoFactorCode[]
+  clinic         Clinic?         @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -225,10 +227,25 @@ model Clinic {
   webhookUrl           String?            @map("webhook_url")
   webhookSecret        String?            @map("webhook_secret")
   notifyOnLead         Boolean            @map("notify_on_lead")
+  differentiators      String?
+  offersLabWork        Boolean            @default(false) @map("offers_lab_work")
+  insuranceNotes       String?            @map("insurance_notes")
+  credentials          String?
+  npiNumber            String?            @map("npi_number")
+  stateLicenseNumber   String?            @map("state_license_number")
+  logoUrl              String?            @map("logo_url")
+  photoCount           Int                @default(0) @map("photo_count")
+  weeklySummary        Boolean            @default(false) @map("weekly_summary")
+  location             String?
+  webhookHealth        String             @default("unknown") @map("webhook_health")
+  suspensionReason     String?            @map("suspension_reason")
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz
 
   categories ClinicCategory[]
   services   ClinicService[]
   leads      Lead[]
+  photos     ClinicPhoto[]
+  users      User[]          @relation("ClinicUsers")
 
   @@map("clinics")
 }
@@ -244,13 +261,26 @@ model ClinicCategory {
 }
 
 model ClinicService {
-  clinicId    String @map("clinic_id") @db.Uuid
-  serviceCode String @map("service_code")
+  clinicId     String  @map("clinic_id") @db.Uuid
+  serviceCode  String  @map("service_code")
+  isTopService Boolean @default(false) @map("is_top_service")
+  displayOrder Int     @default(0) @map("display_order")
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@id([clinicId, serviceCode])
   @@map("clinic_services")
+}
+
+model ClinicPhoto {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicId     String @map("clinic_id") @db.Uuid
+  url          String
+  displayOrder Int    @map("display_order")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@map("clinic_photos")
 }
 
 model Lead {

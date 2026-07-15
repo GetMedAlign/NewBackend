@@ -24,6 +24,12 @@ const envSchema = z.object({
   COOKIE_DOMAIN: z.string().optional(),
 
   CLAIM_TOKEN_SECRET: z.string().min(32),
+
+  SUPABASE_URL: z.string().url(),
+
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+  SUPABASE_STORAGE_BUCKET: z.string().default('clinic-media'),
 });
 
 export type Env = z.infer<typeof envSchema>;

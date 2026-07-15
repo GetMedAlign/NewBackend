@@ -9,6 +9,7 @@ const config: Config = {
   },
   testEnvironment: 'node',
   setupFiles: ['./test/setup-env.ts'],
+  maxWorkers: 1,
 };
 
 export default config;

@@ -50,6 +50,22 @@ import { PatientsController } from '../src/modules/patients/infrastructure/http/
 import { GetProfileUseCase } from '../src/modules/patients/application/get-profile.use-case';
 import { UpdateProfileUseCase } from '../src/modules/patients/application/update-profile.use-case';
 import { GetMyLeadsUseCase } from '../src/modules/patients/application/get-my-leads.use-case';
+import { ClinicPortalController } from '../src/modules/clinic-portal/infrastructure/http/clinic-portal.controller';
+import { GetClinicProfileUseCase } from '../src/modules/clinic-portal/application/get-clinic-profile.use-case';
+import { UpdateClinicProfileUseCase } from '../src/modules/clinic-portal/application/update-clinic-profile.use-case';
+import { ListClinicLeadsUseCase } from '../src/modules/clinic-portal/application/list-clinic-leads.use-case';
+import { GetClinicLeadUseCase } from '../src/modules/clinic-portal/application/get-clinic-lead.use-case';
+import { UpdateLeadStatusUseCase } from '../src/modules/clinic-portal/application/update-lead-status.use-case';
+import { RequestPatientContactUseCase } from '../src/modules/clinic-portal/application/request-patient-contact.use-case';
+import { ListWebhookDeliveriesUseCase } from '../src/modules/clinic-portal/application/list-webhook-deliveries.use-case';
+import { RotateWebhookSecretUseCase } from '../src/modules/clinic-portal/application/rotate-webhook-secret.use-case';
+import { TestWebhookUseCase } from '../src/modules/clinic-portal/application/test-webhook.use-case';
+import { ClinicMediaController } from '../src/modules/clinic-media/infrastructure/http/clinic-media.controller';
+import { SignLogoUploadUseCase } from '../src/modules/clinic-media/application/sign-logo-upload.use-case';
+import { SignPhotoUploadsUseCase } from '../src/modules/clinic-media/application/sign-photo-uploads.use-case';
+import { ConfirmLogoUseCase } from '../src/modules/clinic-media/application/confirm-logo.use-case';
+import { ConfirmPhotosUseCase } from '../src/modules/clinic-media/application/confirm-photos.use-case';
+import { ListPhotosUseCase } from '../src/modules/clinic-media/application/list-photos.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -80,6 +96,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     RecommendationsController,
     LeadsController,
     PatientsController,
+    ClinicPortalController,
+    ClinicMediaController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -96,6 +114,20 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetProfileUseCase),
     stubProvider(UpdateProfileUseCase),
     stubProvider(GetMyLeadsUseCase),
+    stubProvider(GetClinicProfileUseCase),
+    stubProvider(UpdateClinicProfileUseCase),
+    stubProvider(ListClinicLeadsUseCase),
+    stubProvider(GetClinicLeadUseCase),
+    stubProvider(UpdateLeadStatusUseCase),
+    stubProvider(RequestPatientContactUseCase),
+    stubProvider(ListWebhookDeliveriesUseCase),
+    stubProvider(RotateWebhookSecretUseCase),
+    stubProvider(TestWebhookUseCase),
+    stubProvider(SignLogoUploadUseCase),
+    stubProvider(SignPhotoUploadsUseCase),
+    stubProvider(ConfirmLogoUseCase),
+    stubProvider(ConfirmPhotosUseCase),
+    stubProvider(ListPhotosUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
@@ -115,7 +147,17 @@ async function generate(): Promise<void> {
     .setDescription(
       'MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie ' +
         'set on POST /auth/2fa/verify. All non-GET requests require an ' +
-        '`x-csrf-token` header matching the value returned by the CSRF middleware.',
+        '`x-csrf-token` header matching the value returned by the CSRF middleware ' +
+        '(CSRF is skipped when NODE_ENV=development).\n\n' +
+        '## Local test seed data (run `pnpm seed:pj` against your local DB)\n\n' +
+        '**Clinic portal logins** (password `SeedClinic1!` for both):\n' +
+        '- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n' +
+        '- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n' +
+        '**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server ' +
+        'logs (LoggingEmailSender) instead of being emailed. Read it from the console ' +
+        'and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\n' +
+        'For patient-flow testing, sign up a new user via POST /auth/signup, then ' +
+        'submit an assessment (POST /assessments) to get a `sessionId` + `claimToken`.',
     )
     .addCookieAuth('access_token')
     .build();

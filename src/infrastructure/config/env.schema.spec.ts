@@ -12,6 +12,8 @@ const validFixture = {
   SENDGRID_FROM_EMAIL: 'noreply@example.com',
   APP_BASE_URL: 'http://localhost:3000',
   CLAIM_TOKEN_SECRET: 'test-claim-token-secret-at-least-32-chars!!',
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
 };
 
 describe('parseEnv', () => {

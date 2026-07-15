@@ -4,6 +4,7 @@ import type { Request } from 'express';
 export interface AuthenticatedUser {
   sub: string;
   role: string;
+  clinicId?: string | null;
 }
 
 /**

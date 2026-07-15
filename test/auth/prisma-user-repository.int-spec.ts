@@ -123,6 +123,52 @@ describe('PrismaUserRepository', () => {
     });
   });
 
+  describe('getClinicId', () => {
+    it('returns the clinic_id for a clinic-linked user', async () => {
+      // Insert a throwaway clinic row (supply all NOT NULL columns that have no DB default)
+      const clinicRows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ id: string }[]>`
+            INSERT INTO clinics (
+              name, slug, rating, review_count,
+              telehealth_available, financing_available, accepts_insurance,
+              status, billing_status, notify_on_lead
+            )
+            VALUES (
+              'Test Clinic Int', 'test-clinic-int-getclinicid', 4.5, 0,
+              false, false, false,
+              'active', 'active', false
+            )
+            ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+            RETURNING id
+          `,
+      );
+      const clinicId = clinicRows[0]!.id;
+
+      // Create a clinic user and link it
+      const userId = await repo.create('clinic-user@int-test.example.com', 'h');
+      await prisma.asSystem(
+        (c) =>
+          c.$executeRaw`UPDATE users SET clinic_id = ${clinicId}::uuid WHERE id = ${userId}::uuid`,
+      );
+
+      const result = await repo.getClinicId(userId);
+      expect(result).toBe(clinicId);
+    });
+
+    it('returns null for a patient user (clinic_id is NULL)', async () => {
+      const userId = await repo.create('patient-user@int-test.example.com', 'h');
+      // clinic_id is NULL by default for a freshly created user
+      const result = await repo.getClinicId(userId);
+      expect(result).toBeNull();
+    });
+
+    it('returns null for a non-existent user id', async () => {
+      const result = await repo.getClinicId('00000000-0000-0000-0000-000000000099');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('recordFailedLogin + resetFailedLogin', () => {
     it('increments failed_login_count on each call', async () => {
       const id = await repo.create('fail@example.com', 'h');

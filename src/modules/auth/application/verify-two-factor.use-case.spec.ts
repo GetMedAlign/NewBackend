@@ -31,6 +31,7 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   findByEmail: jest.fn().mockResolvedValue(makeUser()),
   findById: jest.fn(),
   getPrimaryRole: jest.fn().mockResolvedValue('patient'),
+  getClinicId: jest.fn().mockResolvedValue(null),
   recordFailedLogin: jest.fn(),
   resetFailedLogin: jest.fn().mockResolvedValue(undefined),
   setRecoveryPhone: jest.fn(),
@@ -85,10 +86,34 @@ describe('VerifyTwoFactorUseCase', () => {
 
     it('issues a token with { sub: userId, role }', async () => {
       repo.getPrimaryRole.mockResolvedValue('doctor');
+      repo.getClinicId.mockResolvedValue(null);
 
       await useCase.execute({ email: 'user@example.com', code: '123456' });
 
-      expect(tokens.issue).toHaveBeenCalledWith({ sub: 'user-id', role: 'doctor' });
+      expect(tokens.issue).toHaveBeenCalledWith({ sub: 'user-id', role: 'doctor', clinicId: null });
+    });
+
+    it('issues a token with clinicId when the user is a clinic user', async () => {
+      const clinicId = 'c1d2e3f4-a5b6-7890-abcd-ef1234567890';
+      repo.getPrimaryRole.mockResolvedValue('clinic');
+      repo.getClinicId.mockResolvedValue(clinicId);
+
+      await useCase.execute({ email: 'user@example.com', code: '123456' });
+
+      expect(tokens.issue).toHaveBeenCalledWith({ sub: 'user-id', role: 'clinic', clinicId });
+    });
+
+    it('issues a token with clinicId null when the user is a patient', async () => {
+      repo.getPrimaryRole.mockResolvedValue('patient');
+      repo.getClinicId.mockResolvedValue(null);
+
+      await useCase.execute({ email: 'user@example.com', code: '123456' });
+
+      expect(tokens.issue).toHaveBeenCalledWith({
+        sub: 'user-id',
+        role: 'patient',
+        clinicId: null,
+      });
     });
 
     it('returns { token, userId, role }', async () => {

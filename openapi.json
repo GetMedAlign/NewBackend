@@ -493,11 +493,384 @@
           "patients"
         ]
       }
+    },
+    "/clinic/portal/profile": {
+      "get": {
+        "operationId": "ClinicPortalController_getClinicProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic profile",
+        "tags": [
+          "Clinic Portal"
+        ]
+      },
+      "put": {
+        "operationId": "ClinicPortalController_updateClinicProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicPortalProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the authenticated clinic profile",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads": {
+      "get": {
+        "operationId": "ClinicPortalController_listLeads",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all leads for the authenticated clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}": {
+      "get": {
+        "operationId": "ClinicPortalController_getLead",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single lead for the authenticated clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}/status": {
+      "patch": {
+        "operationId": "ClinicPortalController_updateLeadStatus",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Update the clinic_status of a lead",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/leads/{leadId}/contact-request": {
+      "post": {
+        "operationId": "ClinicPortalController_requestPatientContact",
+        "parameters": [
+          {
+            "name": "leadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send a contact-request email to the patient on behalf of the clinic",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/webhook-deliveries": {
+      "get": {
+        "operationId": "ClinicPortalController_listWebhookDeliveries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List webhook deliveries for the authenticated clinic (newest first, capped at 50)",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/webhook/rotate": {
+      "post": {
+        "operationId": "ClinicPortalController_rotateWebhookSecret",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Rotate the webhook secret and return the new plaintext once",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/test-webhook": {
+      "post": {
+        "operationId": "ClinicPortalController_testWebhook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestWebhookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Send a signed test webhook payload to the clinic webhook URL",
+        "tags": [
+          "Clinic Portal"
+        ]
+      }
+    },
+    "/clinic/portal/media/logo/sign": {
+      "post": {
+        "operationId": "ClinicMediaController_signLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignLogoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get a signed upload URL for a clinic logo",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/photos/sign": {
+      "post": {
+        "operationId": "ClinicMediaController_signPhotos",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignPhotoUploadsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get signed upload URLs for clinic photos",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/logo": {
+      "post": {
+        "operationId": "ClinicMediaController_confirmLogoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLogoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Confirm a clinic logo after upload",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/photos": {
+      "post": {
+        "operationId": "ClinicMediaController_confirmPhotosUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Confirm clinic photos after upload",
+        "tags": [
+          "Clinic Media"
+        ]
+      },
+      "get": {
+        "operationId": "ClinicMediaController_getPhotos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List clinic photos",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
     }
   },
   "info": {
     "title": "MedAlign Backend API",
-    "description": "MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie set on POST /auth/2fa/verify. All non-GET requests require an `x-csrf-token` header matching the value returned by the CSRF middleware.",
+    "description": "MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie set on POST /auth/2fa/verify. All non-GET requests require an `x-csrf-token` header matching the value returned by the CSRF middleware (CSRF is skipped when NODE_ENV=development).\n\n## Local test seed data (run `pnpm seed:pj` against your local DB)\n\n**Clinic portal logins** (password `SeedClinic1!` for both):\n- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server logs (LoggingEmailSender) instead of being emailed. Read it from the console and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\nFor patient-flow testing, sign up a new user via POST /auth/signup, then submit an assessment (POST /assessments) to get a `sessionId` + `claimToken`.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -537,13 +910,13 @@
         "properties": {
           "email": {
             "type": "string",
-            "example": "user@example.com",
-            "description": "User email address"
+            "example": "clinic-vitality@medalign-seed.example.com",
+            "description": "User email address (this example is a seeded clinic user)"
           },
           "password": {
             "type": "string",
-            "example": "MySecurePass1!",
-            "description": "User password"
+            "example": "SeedClinic1!",
+            "description": "User password (seeded clinic-user password)"
           }
         },
         "required": [
@@ -604,6 +977,189 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "UpdateClinicPortalProfileRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "about": {
+            "type": "string"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "websiteUrl": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "businessEmail": {
+            "type": "string"
+          },
+          "webhookUrl": {
+            "type": "object",
+            "nullable": true,
+            "description": "Set to null to clear the webhook URL"
+          },
+          "notifyOnLead": {
+            "type": "boolean"
+          },
+          "differentiators": {
+            "type": "string"
+          },
+          "offersLabWork": {
+            "type": "boolean"
+          },
+          "insuranceNotes": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "string"
+          },
+          "npiNumber": {
+            "type": "string"
+          },
+          "stateLicenseNumber": {
+            "type": "string"
+          },
+          "weeklySummary": {
+            "type": "boolean"
+          },
+          "telehealthAvailable": {
+            "type": "boolean"
+          },
+          "newPatientWait": {
+            "type": "string"
+          },
+          "consultationFeeBand": {
+            "type": "string"
+          },
+          "monthlyProgramBand": {
+            "type": "string"
+          },
+          "financingAvailable": {
+            "type": "boolean"
+          },
+          "acceptsInsurance": {
+            "type": "boolean"
+          },
+          "treatmentCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topServices": {
+            "description": "Service codes to mark as top/featured",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allServices": {
+            "description": "Complete list of service codes",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateLeadStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "contacted",
+              "booked",
+              "converted",
+              "not_interested"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "TestWebhookDto": {
+        "type": "object",
+        "properties": {
+          "webhookUrl": {
+            "type": "string",
+            "description": "The HTTPS URL to test the webhook delivery against"
+          }
+        },
+        "required": [
+          "webhookUrl"
+        ]
+      },
+      "SignLogoUploadDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "description": "MIME type of the logo image"
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "SignPhotoUploadsDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Number of photo upload URLs to generate"
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
+      "ConfirmLogoDto": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Storage path returned by the sign endpoint, e.g. logos/<clinicId>/file.png"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "ConfirmPhotosDto": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "minItems": 1,
+            "maxItems": 8,
+            "description": "Storage paths returned by the sign endpoint",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "paths"
         ]
       }
     }
