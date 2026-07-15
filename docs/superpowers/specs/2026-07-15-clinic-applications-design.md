@@ -61,10 +61,12 @@ Application media reuses the Slice-3 Supabase Storage signed-URL adapter.
   - **denied** → set `status='denied'`, `deny_reason`, `reviewed_at`,
     `reviewed_by_user_id`; email the applicant the denial. `{ success: true }`.
   - **approved** → in one transaction: create the clinic (slug from name, unique;
-    map all offering fields; `billing_status='no_card'`, `webhook_health='unconfigured'`,
-    `status='active'`, `notify_on_lead=true`) with its `clinic_categories`,
-    `clinic_services` (top flag + display order), and `clinic_photos`; create the
-    clinic login user (reuse `create_user`, then set role `clinic` + `clinic_id`,
+    map all offering fields; `billing_status='no_card'`, `webhook_health='unknown'`
+    (our value set is `unknown|healthy|degraded|failing`, so `'unknown'` is used
+    rather than the .NET `'unconfigured'`), `status='active'`, `notify_on_lead=true`)
+    with its `clinic_categories`, `clinic_services` (top flag + display order), and
+    `clinic_photos`; create the clinic login user (a direct admin INSERT into
+    `users`/`user_roles` under the admin RLS policies, set role `clinic` + `clinic_id`,
     mark email confirmed); set `application.status='approved'`,
     `reviewed_*`, `created_clinic_id`; generate a password-set token and email a
     welcome + set-password link. Returns `{ success: true, clinicId }`.
