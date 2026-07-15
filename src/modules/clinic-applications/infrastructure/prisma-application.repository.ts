@@ -292,11 +292,6 @@ export class PrismaApplicationRepository implements ApplicationRepositoryPort {
   }
 
   async approve(ctx: AdminReadCtx, applicationId: string): Promise<ApproveResult | ReviewFailure> {
-    // Hash a throwaway password OUTSIDE the transaction (argon2 is slow and must
-    // not hold a DB transaction open). The user sets a real password via the
-    // welcome/set-password link; this value is never used to sign in.
-    const throwawayHash = await this.hasher.hash(randomBytes(24).toString('hex'));
-
     return this.prisma.withUserContext(
       { userId: ctx.userId, role: ctx.role, ip: null },
       async (tx): Promise<ApproveResult | ReviewFailure> => {
@@ -434,28 +429,46 @@ export class PrismaApplicationRepository implements ApplicationRepositoryPort {
         `;
         let clinicUserId: string;
         if (existingUser.length > 0) {
+          // Existing-email path: associate the existing user.
           clinicUserId = existingUser[0]!.id;
+
+          // Role swap: exactly ['clinic'] + clinic_id + email confirmed.
+          await tx.$executeRaw`
+            INSERT INTO user_roles (user_id, role)
+            VALUES (${clinicUserId}::uuid, 'clinic')
+            ON CONFLICT (user_id, role) DO NOTHING
+          `;
+          await tx.$executeRaw`
+            DELETE FROM user_roles WHERE user_id = ${clinicUserId}::uuid AND role = 'patient'
+          `;
+          await tx.$executeRaw`
+            UPDATE users
+            SET clinic_id = ${clinic.id}::uuid, email_confirmed = true
+            WHERE id = ${clinicUserId}::uuid
+          `;
         } else {
+          // New-user path: direct admin INSERT (no create_user SECURITY DEFINER needed).
+          // Hash is computed here (lazy) so the existing-email path never pays the argon2 cost.
+          const throwawayHash = await this.hasher.hash(randomBytes(24).toString('hex'));
           const created = await tx.$queryRaw<{ id: string }[]>`
-            SELECT create_user(${loginEmail}::citext, ${throwawayHash}) AS id
+            INSERT INTO users (email, password_hash, updated_at, email_confirmed, clinic_id)
+            VALUES (
+              ${loginEmail}::citext,
+              ${throwawayHash},
+              now(),
+              true,
+              ${clinic.id}::uuid
+            )
+            RETURNING id
           `;
           clinicUserId = created[0]!.id;
-        }
 
-        // Role swap: exactly ['clinic'] + clinic_id + email confirmed.
-        await tx.$executeRaw`
-          INSERT INTO user_roles (user_id, role)
-          VALUES (${clinicUserId}::uuid, 'clinic')
-          ON CONFLICT (user_id, role) DO NOTHING
-        `;
-        await tx.$executeRaw`
-          DELETE FROM user_roles WHERE user_id = ${clinicUserId}::uuid AND role = 'patient'
-        `;
-        await tx.$executeRaw`
-          UPDATE users
-          SET clinic_id = ${clinic.id}::uuid, email_confirmed = true
-          WHERE id = ${clinicUserId}::uuid
-        `;
+          // Insert exactly the clinic role — no default patient role, so no delete needed.
+          await tx.$executeRaw`
+            INSERT INTO user_roles (user_id, role)
+            VALUES (${clinicUserId}::uuid, 'clinic')
+          `;
+        }
 
         // 5. Mark the application approved.
         await tx.$executeRaw`
