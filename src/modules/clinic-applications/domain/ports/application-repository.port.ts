@@ -90,6 +90,26 @@ export interface ApplicationDetail {
   services: ApplicationServiceItem[];
 }
 
+/** Result of a successful approval provisioning transaction. */
+export interface ApproveResult {
+  clinicId: string;
+  clinicUserId: string;
+  loginEmail: string;
+}
+
+/** Result of a successful denial. */
+export interface DenyResult {
+  contactEmail: string;
+  clinicName: string;
+}
+
+/**
+ * Sentinels returned by approve/deny for the not-found and already-reviewed
+ * cases. The status/existence checks run inside the provisioning transaction to
+ * avoid races, so they are surfaced as return values rather than thrown here.
+ */
+export type ReviewFailure = 'not_found' | 'already_reviewed';
+
 export interface ApplicationRepositoryPort {
   /**
    * Inserts a clinic_applications row (status='pending') and its
@@ -109,6 +129,27 @@ export interface ApplicationRepositoryPort {
    * or null if it does not exist (or is hidden by RLS).
    */
   findById(ctx: AdminReadCtx, id: string): Promise<ApplicationDetail | null>;
+
+  /**
+   * Atomically provisions a clinic (record + categories + services + photos) and
+   * its portal login user, then marks the application approved, all inside ONE
+   * admin `withUserContext` transaction. Token issuance + emails happen after
+   * this returns. Returns 'not_found'/'already_reviewed' for the guard cases
+   * (checked inside the tx to avoid races).
+   */
+  approve(ctx: AdminReadCtx, applicationId: string): Promise<ApproveResult | ReviewFailure>;
+
+  /**
+   * Marks the application denied with a reason + review metadata, inside the
+   * admin `withUserContext` transaction. Provisions nothing. Returns
+   * 'not_found'/'already_reviewed' for the guard cases.
+   */
+  deny(
+    ctx: AdminReadCtx,
+    applicationId: string,
+    denyReason: string | null,
+    adminId: string,
+  ): Promise<DenyResult | ReviewFailure>;
 }
 
 export const APPLICATION_REPOSITORY = Symbol('ApplicationRepositoryPort');

@@ -1083,6 +1083,46 @@
           "Admin — Applications"
         ]
       }
+    },
+    "/admin/applications/{id}/status": {
+      "put": {
+        "description": "Approving provisions a clinic + its portal login atomically and emails a set-password link. Denying records a reason and emails the applicant.",
+        "operationId": "AdminApplicationsController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Approve or deny a clinic application (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
     }
   },
   "info": {
@@ -1615,6 +1655,28 @@
         },
         "required": [
           "count"
+        ]
+      },
+      "ReviewApplicationDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "denied"
+            ],
+            "example": "approved",
+            "description": "Review decision for the application"
+          },
+          "denyReason": {
+            "type": "string",
+            "example": "Incomplete NPI verification",
+            "description": "Reason shown to the applicant when denying"
+          }
+        },
+        "required": [
+          "status"
         ]
       }
     }

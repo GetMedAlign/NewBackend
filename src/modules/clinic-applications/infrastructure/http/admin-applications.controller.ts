@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
   Param,
+  Put,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -14,8 +16,10 @@ import { CurrentUser } from '../../../../infrastructure/security/current-user.de
 import type { AuthenticatedUser } from '../../../../infrastructure/security/current-user.decorator';
 import { GetApplicationUseCase } from '../../application/get-application.use-case';
 import { ListApplicationsUseCase } from '../../application/list-applications.use-case';
+import { ReviewApplicationUseCase } from '../../application/review-application.use-case';
 import { ApplicationDetailDto } from './dto/application-detail.dto';
 import { ApplicationSummaryDto } from './dto/application-summary.dto';
+import { ReviewApplicationDto } from './dto/review-application.dto';
 
 @ApiTags('Admin — Applications')
 @ApiCookieAuth('access_token')
@@ -27,6 +31,7 @@ export class AdminApplicationsController {
   constructor(
     private readonly listApplications: ListApplicationsUseCase,
     private readonly getApplication: GetApplicationUseCase,
+    private readonly reviewApplication: ReviewApplicationUseCase,
   ) {}
 
   @ApiOperation({ summary: 'List all clinic applications (admin only)' })
@@ -94,5 +99,22 @@ export class AdminApplicationsController {
       displayOrder: s.displayOrder,
     }));
     return dto;
+  }
+
+  @ApiOperation({
+    summary: 'Approve or deny a clinic application (admin only)',
+    description:
+      'Approving provisions a clinic + its portal login atomically and emails a set-password link. Denying records a reason and emails the applicant.',
+  })
+  @Put(':id/status')
+  async review(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ReviewApplicationDto,
+  ): Promise<{ success: true; clinicId?: string }> {
+    return this.reviewApplication.execute({ userId: user.sub, role: user.role }, id, {
+      status: body.status,
+      denyReason: body.denyReason ?? null,
+    });
   }
 }

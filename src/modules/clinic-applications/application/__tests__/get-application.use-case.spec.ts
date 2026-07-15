@@ -52,6 +52,8 @@ describe('GetApplicationUseCase', () => {
       create: jest.fn(),
       list: jest.fn(),
       findById: jest.fn().mockResolvedValue(fakeDetail),
+      approve: jest.fn(),
+      deny: jest.fn(),
     };
 
     const module = await Test.createTestingModule({

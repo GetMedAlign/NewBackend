@@ -16,6 +16,8 @@ describe('SubmitApplicationUseCase', () => {
       create: jest.fn().mockResolvedValue({ applicationId: 'test-app-id-123' }),
       list: jest.fn(),
       findById: jest.fn(),
+      approve: jest.fn(),
+      deny: jest.fn(),
     };
 
     const module = await Test.createTestingModule({

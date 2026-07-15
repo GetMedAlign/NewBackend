@@ -40,6 +40,8 @@ describe('ListApplicationsUseCase', () => {
       create: jest.fn(),
       list: jest.fn().mockResolvedValue(fakeSummaries),
       findById: jest.fn(),
+      approve: jest.fn(),
+      deny: jest.fn(),
     };
 
     const module = await Test.createTestingModule({

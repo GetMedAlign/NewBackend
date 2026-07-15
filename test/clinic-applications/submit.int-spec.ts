@@ -11,6 +11,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
 import { PrismaService } from '../../src/infrastructure/prisma/prisma.service';
 import { PrismaApplicationRepository } from '../../src/modules/clinic-applications/infrastructure/prisma-application.repository';
+import { Argon2PasswordHasher } from '../../src/modules/auth/infrastructure/adapters/argon2-password-hasher';
 
 const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
 const adapter = new PrismaPg(pool);
@@ -24,7 +25,7 @@ const createdApplicationIds: string[] = [];
 beforeAll(async () => {
   prismaService = new PrismaService();
   await prismaService.onModuleInit();
-  repo = new PrismaApplicationRepository(prismaService);
+  repo = new PrismaApplicationRepository(prismaService, new Argon2PasswordHasher());
 });
 
 afterAll(async () => {

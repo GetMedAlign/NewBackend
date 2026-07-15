@@ -75,6 +75,7 @@ import { SignApplicationPhotosUseCase } from '../src/modules/clinic-applications
 import { SubmitApplicationUseCase } from '../src/modules/clinic-applications/application/submit-application.use-case';
 import { ListApplicationsUseCase } from '../src/modules/clinic-applications/application/list-applications.use-case';
 import { GetApplicationUseCase } from '../src/modules/clinic-applications/application/get-application.use-case';
+import { ReviewApplicationUseCase } from '../src/modules/clinic-applications/application/review-application.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -146,6 +147,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SubmitApplicationUseCase),
     stubProvider(ListApplicationsUseCase),
     stubProvider(GetApplicationUseCase),
+    stubProvider(ReviewApplicationUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
