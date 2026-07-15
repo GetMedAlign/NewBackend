@@ -68,6 +68,9 @@ import { SignPhotoUploadsUseCase } from '../src/modules/clinic-media/application
 import { ConfirmLogoUseCase } from '../src/modules/clinic-media/application/confirm-logo.use-case';
 import { ConfirmPhotosUseCase } from '../src/modules/clinic-media/application/confirm-photos.use-case';
 import { ListPhotosUseCase } from '../src/modules/clinic-media/application/list-photos.use-case';
+import { ClinicApplicationsController } from '../src/modules/clinic-applications/infrastructure/http/clinic-applications.controller';
+import { SignApplicationLogoUseCase } from '../src/modules/clinic-applications/application/sign-application-logo.use-case';
+import { SignApplicationPhotosUseCase } from '../src/modules/clinic-applications/application/sign-application-photos.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -100,6 +103,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     PatientsController,
     ClinicPortalController,
     ClinicMediaController,
+    ClinicApplicationsController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -132,6 +136,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ConfirmLogoUseCase),
     stubProvider(ConfirmPhotosUseCase),
     stubProvider(ListPhotosUseCase),
+    stubProvider(SignApplicationLogoUseCase),
+    stubProvider(SignApplicationPhotosUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
