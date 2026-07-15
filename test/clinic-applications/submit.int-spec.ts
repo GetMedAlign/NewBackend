@@ -190,4 +190,28 @@ describe('PrismaApplicationRepository', () => {
     `;
     expect(Number(rows[0]!.count)).toBe(0);
   });
+
+  it('rolls back the clinic_applications row when the category insert fails mid-transaction', async () => {
+    // Pass an invalid assessment_category value. The $executeRaw cast to
+    // ::assessment_category[] will throw a Postgres error on the SECOND write,
+    // which should roll back the FIRST write (clinic_applications insert) when
+    // the three writes execute inside a $transaction block.
+    const email = `int-test-rollback-${Date.now()}@example.com`;
+
+    await expect(
+      repo.create({
+        clinicName: 'Rollback Test Clinic',
+        contactEmail: email,
+        categories: ['not_a_valid_category'],
+        services: [],
+      }),
+    ).rejects.toThrow();
+
+    // Verify no clinic_applications row survived the failed attempt.
+    const rows = await seedPrisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*) AS count FROM clinic_applications
+      WHERE contact_email = ${email}
+    `;
+    expect(Number(rows[0]!.count)).toBe(0);
+  });
 });

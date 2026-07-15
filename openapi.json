@@ -1471,9 +1471,10 @@
             "description": "Whether insurance is accepted"
           },
           "insuranceNotes": {
-            "type": "object",
-            "example": "HSA/FSA accepted.",
-            "description": "Insurance notes"
+            "type": "string",
+            "nullable": true,
+            "description": "Insurance notes",
+            "example": "HSA/FSA accepted."
           },
           "about": {
             "type": "string",

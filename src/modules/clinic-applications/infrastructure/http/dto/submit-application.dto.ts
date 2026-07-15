@@ -91,7 +91,12 @@ export class SubmitApplicationDto {
   @IsOptional()
   insuranceAccepted?: boolean;
 
-  @ApiPropertyOptional({ example: 'HSA/FSA accepted.', description: 'Insurance notes' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Insurance notes',
+    example: 'HSA/FSA accepted.',
+  })
   @IsString()
   @IsOptional()
   insuranceNotes?: string | null;
