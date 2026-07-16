@@ -78,26 +78,27 @@ describe('Clinic-portal seed', () => {
     }
   });
 
-  it('every seeded clinic has webhook_health=unknown and photo_count=0', async () => {
+  it('every seeded clinic has webhook_health=unknown and expected photo_count', async () => {
     const clinics = await prisma.$queryRaw<
       { slug: string; webhook_health: string; photo_count: number }[]
     >`
       SELECT slug, webhook_health, photo_count FROM clinics
     `;
     expect(clinics.length).toBeGreaterThanOrEqual(6);
+    // glow-med-spa-miami receives 2 demo clinic_photos via the demo-seed additions;
+    // all other seeded clinics start at photo_count=0.
+    const photoCountBySeed: Record<string, number> = {
+      'vitality-hormone-nyc': 0,
+      'apex-peptide-telehealth': 0,
+      'glow-med-spa-miami': 2,
+      'thrive-wellness-chicago': 0,
+      'balance-hormone-la': 0,
+      'renew-peptide-seattle': 0,
+    };
     for (const c of clinics) {
-      // Only assert on our seeded clinics (others inserted by other tests may differ)
-      const seededSlugs = [
-        'vitality-hormone-nyc',
-        'apex-peptide-telehealth',
-        'glow-med-spa-miami',
-        'thrive-wellness-chicago',
-        'balance-hormone-la',
-        'renew-peptide-seattle',
-      ];
-      if (!seededSlugs.includes(c.slug)) continue;
+      if (!(c.slug in photoCountBySeed)) continue;
       expect(c.webhook_health).toBe('unknown');
-      expect(Number(c.photo_count)).toBe(0);
+      expect(Number(c.photo_count)).toBe(photoCountBySeed[c.slug]);
     }
   });
 
