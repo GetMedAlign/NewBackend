@@ -37,5 +37,6 @@ import { ClinicMediaController } from './infrastructure/http/clinic-media.contro
       useClass: PrismaClinicPhotoRepository,
     },
   ],
+  exports: [STORAGE_PORT],
 })
 export class ClinicMediaModule {}

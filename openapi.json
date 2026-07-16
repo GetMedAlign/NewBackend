@@ -300,6 +300,99 @@
         ]
       }
     },
+    "/auth/forgot-password": {
+      "post": {
+        "description": "Sends a password reset email if the address is registered. Always returns 200 to prevent user enumeration.",
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset link sent (or silently discarded for unknown emails)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Request a password reset link",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "description": "Consumes a single-use reset token and updates the user password.",
+        "operationId": "AuthController_resetPassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired reset token"
+          }
+        },
+        "summary": "Reset password using a token",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/assessments": {
       "post": {
         "operationId": "AssessmentsController_submit",
@@ -866,6 +959,170 @@
           "Clinic Media"
         ]
       }
+    },
+    "/clinic-applications": {
+      "post": {
+        "operationId": "ClinicApplicationsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Submit a clinic application",
+        "tags": [
+          "Clinic Applications"
+        ]
+      }
+    },
+    "/clinic-applications/media/logo/sign": {
+      "post": {
+        "operationId": "ClinicApplicationsController_signLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignApplicationLogoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a signed upload URL for an application logo",
+        "tags": [
+          "Clinic Applications"
+        ]
+      }
+    },
+    "/clinic-applications/media/photos/sign": {
+      "post": {
+        "operationId": "ClinicApplicationsController_signPhotos",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignApplicationPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get signed upload URLs for application photos",
+        "tags": [
+          "Clinic Applications"
+        ]
+      }
+    },
+    "/admin/applications": {
+      "get": {
+        "operationId": "AdminApplicationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all clinic applications (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
+    },
+    "/admin/applications/{id}": {
+      "get": {
+        "operationId": "AdminApplicationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single clinic application by id (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
+    },
+    "/admin/applications/{id}/status": {
+      "put": {
+        "description": "Approving provisions a clinic + its portal login atomically and emails a set-password link. Denying records a reason and emails the applicant.",
+        "operationId": "AdminApplicationsController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Approve or deny a clinic application (admin only)",
+        "tags": [
+          "Admin — Applications"
+        ]
+      }
     }
   },
   "info": {
@@ -954,6 +1211,44 @@
         },
         "required": [
           "email"
+        ]
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to send reset link to"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address of the account"
+          },
+          "token": {
+            "type": "string",
+            "example": "a3f9b2c1...",
+            "description": "Raw reset token from the email link"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MyNewSecurePass1!",
+            "description": "New password (min 8 characters)"
+          }
+        },
+        "required": [
+          "email",
+          "token",
+          "newPassword"
         ]
       },
       "SubmitAssessmentDto": {
@@ -1160,6 +1455,228 @@
         },
         "required": [
           "paths"
+        ]
+      },
+      "SubmitApplicationServiceDto": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "type": "string",
+            "example": "testosterone-replacement",
+            "description": "Service code identifier"
+          },
+          "isTopService": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether this is a top/featured service"
+          }
+        },
+        "required": [
+          "serviceCode",
+          "isTopService"
+        ]
+      },
+      "SubmitApplicationDto": {
+        "type": "object",
+        "properties": {
+          "clinicName": {
+            "type": "string",
+            "example": "Horizon Hormone Health",
+            "description": "Clinic name"
+          },
+          "contactEmail": {
+            "type": "string",
+            "example": "apply@example.com",
+            "description": "Primary contact email"
+          },
+          "businessEmail": {
+            "type": "string",
+            "example": "billing@example.com",
+            "description": "Business billing email"
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "description": "City"
+          },
+          "stateCode": {
+            "type": "string",
+            "example": "TX",
+            "description": "Two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "78701",
+            "description": "ZIP code"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "example": "https://example.com",
+            "description": "Clinic website URL"
+          },
+          "telehealthAvailable": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether telehealth is available"
+          },
+          "offersLabWork": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether the clinic offers lab work"
+          },
+          "newPatientWait": {
+            "type": "string",
+            "example": "1-2 weeks",
+            "description": "Typical new patient wait time"
+          },
+          "npiNumber": {
+            "type": "string",
+            "example": "1234567890",
+            "description": "NPI number"
+          },
+          "stateLicenseNumber": {
+            "type": "string",
+            "example": "TX-MED-001",
+            "description": "State medical license number"
+          },
+          "consultationFeeBand": {
+            "type": "string",
+            "example": "$100-$200",
+            "description": "Consultation fee band"
+          },
+          "monthlyProgramBand": {
+            "type": "string",
+            "example": "$200-$400",
+            "description": "Monthly program fee band"
+          },
+          "financingAvailable": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether financing is available"
+          },
+          "insuranceAccepted": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether insurance is accepted"
+          },
+          "insuranceNotes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Insurance notes",
+            "example": "HSA/FSA accepted."
+          },
+          "about": {
+            "type": "string",
+            "example": "Specializes in bioidentical hormone replacement therapy.",
+            "description": "About the clinic"
+          },
+          "differentiators": {
+            "type": "string",
+            "example": "Board-certified endocrinologist on staff.",
+            "description": "Clinic differentiators"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "Dr. Elena Voss, MD",
+            "description": "Primary provider name"
+          },
+          "credentials": {
+            "type": "string",
+            "example": "MD, Board Certified Endocrinology",
+            "description": "Provider credentials"
+          },
+          "logoUrl": {
+            "type": "string",
+            "example": "https://storage.example.com/applications/abc/logo.png",
+            "description": "Public URL of the uploaded clinic logo"
+          },
+          "photoUrls": {
+            "example": [
+              "https://storage.example.com/applications/abc/photo-1.jpg"
+            ],
+            "description": "Public URLs of uploaded clinic photos",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categories": {
+            "example": [
+              "hormone",
+              "peptide"
+            ],
+            "description": "Assessment category codes the clinic serves",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "services": {
+            "description": "Services the clinic offers",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmitApplicationServiceDto"
+            }
+          }
+        },
+        "required": [
+          "clinicName",
+          "contactEmail",
+          "categories",
+          "services"
+        ]
+      },
+      "SignApplicationLogoDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "description": "MIME type of the logo image"
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "SignApplicationPhotosDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Number of photo upload URLs to generate"
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
+      "ReviewApplicationDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "denied"
+            ],
+            "example": "approved",
+            "description": "Review decision for the application"
+          },
+          "denyReason": {
+            "type": "string",
+            "example": "Incomplete NPI verification",
+            "description": "Reason shown to the applicant when denying"
+          }
+        },
+        "required": [
+          "status"
         ]
       }
     }

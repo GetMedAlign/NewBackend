@@ -1,6 +1,7 @@
-// Prisma schema for MedAlign — Foundation + Patient Journey slices
+// Prisma schema for MedAlign — Foundation + Patient Journey + Clinic Applications slices
 // See: docs/superpowers/specs/2026-07-10-backend-foundation-design.md §5
 //      docs/superpowers/specs/2026-07-13-patient-journey-design.md §3
+//      docs/superpowers/specs/2026-07-15-clinic-applications-design.md §3
 
 generator client {
   provider        = "prisma-client"
@@ -52,9 +53,10 @@ model User {
   name                   String?   @map("name")
   clinicId               String?   @map("clinic_id") @db.Uuid
 
-  roles          UserRole[]
-  twoFactorCodes TwoFactorCode[]
-  clinic         Clinic?         @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: SetNull)
+  roles               UserRole[]
+  twoFactorCodes      TwoFactorCode[]
+  clinic              Clinic?              @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: SetNull)
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -241,11 +243,12 @@ model Clinic {
   suspensionReason     String?            @map("suspension_reason")
   createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz
 
-  categories ClinicCategory[]
-  services   ClinicService[]
-  leads      Lead[]
-  photos     ClinicPhoto[]
-  users      User[]          @relation("ClinicUsers")
+  categories   ClinicCategory[]
+  services     ClinicService[]
+  leads        Lead[]
+  photos       ClinicPhoto[]
+  users        User[]              @relation("ClinicUsers")
+  applications ClinicApplication[]
 
   @@map("clinics")
 }
@@ -338,4 +341,83 @@ model ZipCode {
   stateCode String  @map("state_code")
 
   @@map("zip_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Clinic Applications — §3 Data model
+// ---------------------------------------------------------------------------
+
+model ClinicApplication {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicName          String    @map("clinic_name")
+  contactEmail        String    @map("contact_email")
+  businessEmail       String?   @map("business_email")
+  city                String?
+  stateCode           String?   @map("state_code")
+  zipCode             String?   @map("zip_code")
+  websiteUrl          String?   @map("website_url")
+  telehealthAvailable Boolean   @default(false) @map("telehealth_available")
+  offersLabWork       Boolean   @default(false) @map("offers_lab_work")
+  newPatientWait      String?   @map("new_patient_wait")
+  npiNumber           String?   @map("npi_number")
+  stateLicenseNumber  String?   @map("state_license_number")
+  consultationFeeBand String?   @map("consultation_fee_band")
+  monthlyProgramBand  String?   @map("monthly_program_band")
+  financingAvailable  Boolean   @default(false) @map("financing_available")
+  insuranceAccepted   Boolean   @default(false) @map("insurance_accepted")
+  insuranceNotes      String?   @map("insurance_notes")
+  about               String?
+  differentiators     String?
+  providerName        String?   @map("provider_name")
+  credentials         String?
+  logoUrl             String?   @map("logo_url")
+  photoUrls           Json?     @map("photo_urls")
+  status              String    @default("pending")
+  denyReason          String?   @map("deny_reason")
+  reviewedAt          DateTime? @map("reviewed_at") @db.Timestamptz
+  reviewedByUserId    String?   @map("reviewed_by_user_id") @db.Uuid
+  createdClinicId     String?   @map("created_clinic_id") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  createdClinic Clinic?                @relation(fields: [createdClinicId], references: [id], onDelete: SetNull)
+  categories    ApplicationCategory[]
+  services      ApplicationService[]
+
+  @@map("clinic_applications")
+}
+
+model ApplicationCategory {
+  applicationId String             @map("application_id") @db.Uuid
+  category      AssessmentCategory
+
+  application ClinicApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, category])
+  @@map("application_categories")
+}
+
+model ApplicationService {
+  id            String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId String  @map("application_id") @db.Uuid
+  serviceCode   String  @map("service_code")
+  isTopService  Boolean @default(false) @map("is_top_service")
+  displayOrder  Int     @map("display_order")
+
+  application ClinicApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("application_services")
+}
+
+model PasswordResetToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
 }
