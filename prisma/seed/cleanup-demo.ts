@@ -33,6 +33,8 @@ const KEEP_CLINICS = false;
 
 const SEED_EMAIL_SUFFIX = '@medalign-seed.example.com';
 const DEMO_CLINIC_SLUGS = CLINICS.map((c) => c.slug);
+// The two seeded pending clinic applications, keyed by their unique clinic names.
+const DEMO_APPLICATION_CLINIC_NAMES = ['Horizon Hormone Health', 'Summit Wellness Collective'];
 
 async function cleanup(): Promise<void> {
   const connectionString = process.env['DATABASE_URL'];
@@ -95,6 +97,13 @@ async function cleanup(): Promise<void> {
     //    and any remaining patients). Covers clinic + patient + superadmin seed
     //    users, since all use the seed email domain.
     await del('users', `DELETE FROM users WHERE email LIKE '%' || $1`, [SEED_EMAIL_SUFFIX]);
+
+    // 7. seeded pending clinic applications (cascades application_categories/services).
+    await del(
+      'clinic_applications',
+      `DELETE FROM clinic_applications WHERE clinic_name = ANY($1::text[])`,
+      [DEMO_APPLICATION_CLINIC_NAMES],
+    );
 
     await client.query('COMMIT');
 
