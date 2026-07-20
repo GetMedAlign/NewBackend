@@ -6,6 +6,8 @@ describe('ListClinicsUseCase', () => {
     getClinic: jest.fn(),
     updateClinic: jest.fn(),
     pauseDelivery: jest.fn(),
+    clinicExists: jest.fn(),
+    listClinicLeads: jest.fn(),
   };
   const useCase = new ListClinicsUseCase(repo);
   const ctx = { userId: 'u1', role: 'admin', ip: '127.0.0.1' };

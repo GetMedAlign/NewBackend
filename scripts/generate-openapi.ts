@@ -81,6 +81,9 @@ import { ListClinicsUseCase } from '../src/modules/admin-clinics/application/lis
 import { GetClinicUseCase } from '../src/modules/admin-clinics/application/get-clinic.use-case';
 import { UpdateClinicUseCase } from '../src/modules/admin-clinics/application/update-clinic.use-case';
 import { PauseDeliveryUseCase } from '../src/modules/admin-clinics/application/pause-delivery.use-case';
+import { ListClinicLeadsUseCase as AdminListClinicLeadsUseCase } from '../src/modules/admin-clinics/application/list-clinic-leads.use-case';
+import { ListNotesUseCase } from '../src/modules/admin-clinics/application/list-notes.use-case';
+import { AddNoteUseCase } from '../src/modules/admin-clinics/application/add-note.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -158,6 +161,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetClinicUseCase),
     stubProvider(UpdateClinicUseCase),
     stubProvider(PauseDeliveryUseCase),
+    stubProvider(AdminListClinicLeadsUseCase),
+    stubProvider(ListNotesUseCase),
+    stubProvider(AddNoteUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

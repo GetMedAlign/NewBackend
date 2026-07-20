@@ -1,5 +1,6 @@
 import type { AdminCtx } from '../../../../infrastructure/security/admin-ctx';
 import type { AdminClinicDto } from '../clinic-dto.mapper';
+import type { AdminLeadRow } from '../../infrastructure/http/dto/admin-lead-row.dto';
 
 /**
  * Partial update payload for PUT /admin/clinics/:id. A field that is absent
@@ -42,6 +43,12 @@ export interface AdminClinicRepositoryPort {
 
   /** Sets/clears delivery pause per spec §1.3. Returns false when the clinic does not exist. */
   pauseDelivery(ctx: AdminCtx, clinicId: string, paused: boolean): Promise<boolean>;
+
+  /** Returns true when a clinic with this id exists (under admin RLS). */
+  clinicExists(ctx: AdminCtx, clinicId: string): Promise<boolean>;
+
+  /** Returns all leads for a clinic ordered by received_at DESC (spec §1.4). */
+  listClinicLeads(ctx: AdminCtx, clinicId: string): Promise<AdminLeadRow[]>;
 }
 
 export const ADMIN_CLINIC_REPOSITORY = Symbol('AdminClinicRepositoryPort');

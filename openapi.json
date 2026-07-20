@@ -1248,6 +1248,101 @@
           "Admin — Clinics"
         ]
       }
+    },
+    "/admin/clinics/{id}/leads": {
+      "get": {
+        "operationId": "AdminClinicsController_listLeads",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List a clinic's leads (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/notes": {
+      "get": {
+        "operationId": "AdminClinicsController_listClinicNotes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List a clinic's admin notes (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      },
+      "post": {
+        "operationId": "AdminClinicsController_addClinicNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Add an admin note to a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
     }
   },
   "info": {
@@ -1921,6 +2016,19 @@
         },
         "required": [
           "paused"
+        ]
+      },
+      "AddNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "example": "Called clinic to confirm license renewal.",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "body"
         ]
       }
     }

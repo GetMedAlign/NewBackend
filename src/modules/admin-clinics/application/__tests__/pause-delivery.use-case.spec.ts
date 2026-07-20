@@ -16,6 +16,8 @@ describe('PauseDeliveryUseCase', () => {
       getClinic: jest.fn(),
       updateClinic: jest.fn(),
       pauseDelivery: jest.fn(),
+      clinicExists: jest.fn(),
+      listClinicLeads: jest.fn(),
     };
 
     const module = await Test.createTestingModule({

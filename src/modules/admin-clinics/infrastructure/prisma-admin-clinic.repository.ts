@@ -12,10 +12,23 @@ import type {
   AdminClinicRepositoryPort,
   UpdateClinicInput,
 } from '../domain/ports/admin-clinic-repository.port';
+import type { AdminLeadRow } from './http/dto/admin-lead-row.dto';
 
 type CategoryRow = { clinic_id: string; category: string };
 type ServiceJoinRow = ClinicServiceRow & { clinic_id: string };
 type LeadStatsRow = { clinic_id: string; count: bigint; last_at: Date | null };
+
+/** Raw row shape from the §1.4 query, before the timestamp/null conversions. */
+type LeadQueryRow = {
+  lead_id: string;
+  received_at: Date;
+  patientFirstName: string;
+  patientEmail: string;
+  patientZip: string | null;
+  treatmentCategory: string;
+  delivery_status: string;
+  clinic_status: string;
+};
 
 @Injectable()
 export class PrismaAdminClinicRepository implements AdminClinicRepositoryPort {
@@ -205,6 +218,48 @@ export class PrismaAdminClinicRepository implements AdminClinicRepositoryPort {
            WHERE id = ${clinicId}::uuid`;
 
         return true;
+      },
+    );
+  }
+
+  async clinicExists(ctx: AdminCtx, clinicId: string): Promise<boolean> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const rows = await tx.$queryRaw<{ exists: number }[]>`
+          SELECT 1 AS exists FROM clinics WHERE id = ${clinicId}::uuid`;
+        return rows.length > 0;
+      },
+    );
+  }
+
+  async listClinicLeads(ctx: AdminCtx, clinicId: string): Promise<AdminLeadRow[]> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const rows = await tx.$queryRaw<LeadQueryRow[]>`
+          SELECT lead_id            AS "lead_id",
+                 received_at        AS "received_at",
+                 patient_first_name AS "patientFirstName",
+                 patient_email      AS "patientEmail",
+                 patient_zip        AS "patientZip",
+                 treatment_category AS "treatmentCategory",
+                 delivery_status    AS "delivery_status",
+                 clinic_status      AS "clinic_status"
+            FROM leads
+           WHERE clinic_id = ${clinicId}::uuid
+           ORDER BY received_at DESC`;
+
+        return rows.map((row): AdminLeadRow => ({
+          lead_id: row.lead_id,
+          received_at: row.received_at.toISOString(),
+          patientFirstName: row.patientFirstName,
+          patientEmail: row.patientEmail,
+          patientZip: row.patientZip ?? '',
+          treatmentCategory: row.treatmentCategory,
+          delivery_status: row.delivery_status,
+          clinic_status: row.clinic_status,
+        }));
       },
     );
   }
