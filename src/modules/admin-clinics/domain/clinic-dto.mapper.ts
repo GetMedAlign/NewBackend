@@ -119,7 +119,9 @@ export function toAdminClinicDto(
     slug: row.slug,
     name: row.name,
     category,
-    specialty: SPECIALTIES[category] ?? category,
+    specialty: Object.prototype.hasOwnProperty.call(SPECIALTIES, category)
+      ? SPECIALTIES[category]
+      : category,
     location: orEmpty(row.location),
     city: orEmpty(row.city),
     stateCode: orEmpty(row.state_code),

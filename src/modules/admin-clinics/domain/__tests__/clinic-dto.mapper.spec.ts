@@ -64,6 +64,12 @@ describe('toAdminClinicDto', () => {
     expect(dto.specialty).toBe('cryotherapy');
   });
 
+  it('treats inherited object properties as unknown categories', () => {
+    const dto = toAdminClinicDto(baseRow, ['constructor'], [], 0, null);
+    expect(dto.specialty).toBe('constructor');
+    expect(typeof dto.specialty).toBe('string');
+  });
+
   it('uses the first category when several exist', () => {
     const dto = toAdminClinicDto(baseRow, ['peptide', 'hormone'], [], 0, null);
     expect(dto.category).toBe('peptide');
