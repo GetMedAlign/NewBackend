@@ -86,6 +86,9 @@ import { ListNotesUseCase } from '../src/modules/admin-clinics/application/list-
 import { AddNoteUseCase } from '../src/modules/admin-clinics/application/add-note.use-case';
 import { SendClinicPasswordResetUseCase } from '../src/modules/admin-clinics/application/send-clinic-password-reset.use-case';
 import { SetClinicPasswordUseCase } from '../src/modules/admin-clinics/application/set-clinic-password.use-case';
+import { AdminPatientsController } from '../src/modules/admin-patients/infrastructure/http/admin-patients.controller';
+import { ListPatientsUseCase } from '../src/modules/admin-patients/application/list-patients.use-case';
+import { GetPatientUseCase } from '../src/modules/admin-patients/application/get-patient.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -121,6 +124,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ClinicApplicationsController,
     AdminApplicationsController,
     AdminClinicsController,
+    AdminPatientsController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -168,6 +172,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(AddNoteUseCase),
     stubProvider(SendClinicPasswordResetUseCase),
     stubProvider(SetClinicPasswordUseCase),
+    stubProvider(ListPatientsUseCase),
+    stubProvider(GetPatientUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

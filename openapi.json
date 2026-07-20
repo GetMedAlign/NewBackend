@@ -1411,6 +1411,55 @@
           "Admin — Clinics"
         ]
       }
+    },
+    "/admin/patients": {
+      "get": {
+        "operationId": "AdminPatientsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all patients (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
+    },
+    "/admin/patients/{id}": {
+      "get": {
+        "operationId": "AdminPatientsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single patient by id (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
     }
   },
   "info": {
