@@ -142,6 +142,24 @@ export class PrismaAdminPatientRepository implements AdminPatientRepositoryPort 
       },
     );
   }
+
+  async findPatientUser(
+    ctx: AdminCtx,
+    patientId: string,
+  ): Promise<{ userId: string; email: string } | null> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const rows = await tx.$queryRaw<{ id: string; email: string }[]>`
+          SELECT u.id, u.email FROM patients p
+            JOIN users u ON u.id = p.user_id
+           WHERE p.id = ${patientId}::uuid`;
+        const row = rows[0];
+        if (!row) return null;
+        return { userId: row.id, email: row.email };
+      },
+    );
+  }
 }
 
 function toDto(row: RawPatientRow): AdminPatientDto {

@@ -7,6 +7,7 @@ describe('GetPatientUseCase', () => {
     getPatient: jest.fn(),
     updatePatient: jest.fn(),
     softDeletePatient: jest.fn(),
+    findPatientUser: jest.fn(),
   };
   const useCase = new GetPatientUseCase(repo);
   const ctx = { userId: 'u1', role: 'admin', ip: '127.0.0.1' };

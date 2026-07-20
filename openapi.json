@@ -1524,6 +1524,74 @@
           "Admin — Patients"
         ]
       }
+    },
+    "/admin/patients/{id}/send-password-reset": {
+      "post": {
+        "operationId": "AdminPatientsController_sendPasswordReset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Email a password reset link to the patient's linked user (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
+    },
+    "/admin/patients/{id}/set-password": {
+      "post": {
+        "operationId": "AdminPatientsController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set the patient's linked user's password (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
     }
   },
   "info": {

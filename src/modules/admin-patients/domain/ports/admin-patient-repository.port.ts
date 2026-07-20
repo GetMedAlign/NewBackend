@@ -51,6 +51,16 @@ export interface AdminPatientRepositoryPort {
    * §3.3). Terminal — there is no restore endpoint.
    */
   softDeletePatient(ctx: AdminCtx, patientId: string): Promise<PatientWriteResult>;
+
+  /**
+   * Returns the id and email of the user linked to the patient, or null if
+   * the patient does not exist (or is hidden by RLS). Backs both password
+   * routes (spec §4.4).
+   */
+  findPatientUser(
+    ctx: AdminCtx,
+    patientId: string,
+  ): Promise<{ userId: string; email: string } | null>;
 }
 
 export const ADMIN_PATIENT_REPOSITORY = Symbol('AdminPatientRepositoryPort');

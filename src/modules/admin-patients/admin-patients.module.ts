@@ -5,6 +5,8 @@ import { ListPatientsUseCase } from './application/list-patients.use-case';
 import { GetPatientUseCase } from './application/get-patient.use-case';
 import { UpdatePatientUseCase } from './application/update-patient.use-case';
 import { SoftDeletePatientUseCase } from './application/soft-delete-patient.use-case';
+import { SendPatientPasswordResetUseCase } from './application/send-patient-password-reset.use-case';
+import { SetPatientPasswordUseCase } from './application/set-patient-password.use-case';
 import { ADMIN_PATIENT_REPOSITORY } from './domain/ports/admin-patient-repository.port';
 import { PrismaAdminPatientRepository } from './infrastructure/prisma-admin-patient.repository';
 import { AdminPatientsController } from './infrastructure/http/admin-patients.controller';
@@ -18,6 +20,8 @@ import { PhiAccessInterceptor } from './infrastructure/http/phi-access.intercept
     GetPatientUseCase,
     UpdatePatientUseCase,
     SoftDeletePatientUseCase,
+    SendPatientPasswordResetUseCase,
+    SetPatientPasswordUseCase,
     PhiAccessInterceptor,
     { provide: ADMIN_PATIENT_REPOSITORY, useClass: PrismaAdminPatientRepository },
   ],

@@ -7,6 +7,7 @@ import {
   Ip,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
   UseGuards,
   UseInterceptors,
@@ -24,8 +25,11 @@ import { ListPatientsUseCase } from '../../application/list-patients.use-case';
 import { GetPatientUseCase } from '../../application/get-patient.use-case';
 import { UpdatePatientUseCase } from '../../application/update-patient.use-case';
 import { SoftDeletePatientUseCase } from '../../application/soft-delete-patient.use-case';
+import { SendPatientPasswordResetUseCase } from '../../application/send-patient-password-reset.use-case';
+import { SetPatientPasswordUseCase } from '../../application/set-patient-password.use-case';
 import type { AdminPatientDto } from '../../domain/patient-dto.mapper';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { SetPasswordDto } from '../../../../infrastructure/http/dto/set-password.dto';
 
 /** Tighter rate limit for the list route, which returns identifying information for every patient in one call. */
 const PHI_THROTTLE = { default: { limit: 20, ttl: 60_000 } };
@@ -43,6 +47,8 @@ export class AdminPatientsController {
     private readonly getPatient: GetPatientUseCase,
     private readonly updatePatient: UpdatePatientUseCase,
     private readonly softDeletePatient: SoftDeletePatientUseCase,
+    private readonly sendPatientPasswordReset: SendPatientPasswordResetUseCase,
+    private readonly setPatientPassword: SetPatientPasswordUseCase,
   ) {}
 
   @ApiOperation({ summary: 'List all patients (admin only)' })
@@ -82,5 +88,34 @@ export class AdminPatientsController {
     @Ip() ip: string,
   ): Promise<{ success: true }> {
     return this.softDeletePatient.execute({ userId: user.sub, role: user.role, ip }, id);
+  }
+
+  @ApiOperation({
+    summary: "Email a password reset link to the patient's linked user (admin only)",
+  })
+  @Post(':id/send-password-reset')
+  @HttpCode(200)
+  async sendPasswordReset(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    return this.sendPatientPasswordReset.execute({ userId: user.sub, role: user.role, ip }, id);
+  }
+
+  @ApiOperation({ summary: "Directly set the patient's linked user's password (admin only)" })
+  @Post(':id/set-password')
+  @HttpCode(200)
+  async setPassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SetPasswordDto,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    return this.setPatientPassword.execute(
+      { userId: user.sub, role: user.role, ip },
+      id,
+      body.newPassword,
+    );
   }
 }
