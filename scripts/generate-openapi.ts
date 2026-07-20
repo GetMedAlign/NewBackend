@@ -207,6 +207,11 @@ async function generate(): Promise<void> {
         '**Clinic portal logins** (password `SeedClinic1!` for both):\n' +
         '- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n' +
         '- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n' +
+        '**Superadmin login** (for `/admin/clinics*` and `/admin/patients*`): ' +
+        '`superadmin@medalign-seed.example.com` / `SeedAdmin1!`\n\n' +
+        '**Soft-deleted patient** (locked out of sign-in; use it to exercise the admin ' +
+        'patient deleted-state and lockout paths): `patient-deleted@medalign-seed.example.com` / ' +
+        '`SeedPatient1!`\n\n' +
         '**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server ' +
         'logs (LoggingEmailSender) instead of being emailed. Read it from the console ' +
         'and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\n' +

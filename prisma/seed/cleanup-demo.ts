@@ -7,11 +7,19 @@
  *   - leads:    `lead_id` starts with `lead_seed`
  *   - assessments: `session_id` starts with `session_seed`
  *   - clinics:  the fixed demo slugs from `clinics.ts`
+ *   - admin_notes: `clinic_id` in the fixed demo clinic slugs from `clinics.ts`
  *
  * Deletes run in FK-safe order (children before parents) inside one
  * transaction, so it is all-or-nothing and idempotent (re-running is a no-op
  * once the rows are gone). `zip_codes` are generic reference data and are left
  * in place.
+ *
+ * admin_notes would cascade automatically when their clinic is deleted, but
+ * under `KEEP_CLINICS = true` the clinics survive, so admin_notes are always
+ * deleted explicitly, before the clinics step. The soft-deleted seed patient
+ * (`patient-deleted@...`) needs no special handling here: its `patients` row
+ * and `users` row are already covered by the generic patients/users deletes
+ * above (the `%@medalign-seed.example.com` rule matches its email too).
  *
  * Connects as the `postgres` role via DATABASE_URL (bypasses RLS), same as the
  * seed. Run it with the SAME env you seeded with (esp. DATABASE_URL):
@@ -83,6 +91,16 @@ async function cleanup(): Promise<void> {
       `DELETE FROM patients
        WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%' || $1)`,
       [SEED_EMAIL_SUFFIX],
+    );
+
+    // 4b. admin_notes on the demo clinics. These cascade when their clinic is
+    //     deleted, but under KEEP_CLINICS = true the clinics survive, so they
+    //     must be deleted explicitly (and always before the clinics step).
+    await del(
+      'admin_notes',
+      `DELETE FROM admin_notes
+        WHERE clinic_id IN (SELECT id FROM clinics WHERE slug = ANY($1::text[]))`,
+      [DEMO_CLINIC_SLUGS],
     );
 
     // 5. demo clinics (cascades clinic_categories/services/photos). Guarded by
