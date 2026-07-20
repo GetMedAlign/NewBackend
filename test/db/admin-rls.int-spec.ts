@@ -20,6 +20,7 @@ let patientBId: string;
 let clinicId: string;
 let assessmentId: string;
 let leadId: string;
+let seededNoteId: string;
 
 async function createUser(email: string): Promise<string> {
   const rows = await service.asSystem(
@@ -122,6 +123,20 @@ beforeAll(async () => {
     `,
   );
   leadId = leadRows[0]!.id;
+
+  // Seed an admin_notes row (via asSystem, bypassing RLS) so the negative
+  // probes below assert that RLS filters out a *real* row, not that the
+  // table happens to be empty. Without this, those probes would pass
+  // vacuously if run in isolation (e.g. before the admin-INSERT test, or in
+  // a filtered/`.only` run that skips it).
+  const noteRows = await service.asSystem(
+    (client) => client.$queryRaw<{ id: string }[]>`
+      INSERT INTO admin_notes (clinic_id, author_user_id, author_name, body)
+      VALUES (${clinicId}::uuid, ${adminId}::uuid, 'Seed Admin', 'Seeded note for negative probes')
+      RETURNING id
+    `,
+  );
+  seededNoteId = noteRows[0]!.id;
 });
 
 afterAll(async () => {
@@ -195,15 +210,16 @@ describe('admin context — admin_notes access', () => {
 // Clinic context — locked out of admin_notes
 // ---------------------------------------------------------------------------
 describe('clinic context — admin_notes locked out', () => {
-  it('clinic context SELECT admin_notes returns 0 rows', async () => {
+  it('clinic context SELECT admin_notes returns 0 rows (seeded row is invisible)', async () => {
     const rows = await service.withUserContext(
       { userId: null, role: 'clinic', ip: null, clinicId },
-      (tx) => tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes`,
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes WHERE id = ${seededNoteId}::uuid`,
     );
     expect(rows).toHaveLength(0);
   });
 
-  it('clinic context INSERT into admin_notes is REJECTED', async () => {
+  it('clinic context INSERT into admin_notes is REJECTED by RLS', async () => {
     await expect(
       service.withUserContext(
         { userId: null, role: 'clinic', ip: null, clinicId },
@@ -212,7 +228,7 @@ describe('clinic context — admin_notes locked out', () => {
           VALUES (${clinicId}::uuid, ${adminId}::uuid, 'Sneaky Clinic', 'Not allowed')
         `,
       ),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/row-level security/i);
   });
 });
 
@@ -220,10 +236,11 @@ describe('clinic context — admin_notes locked out', () => {
 // Patient context — locked out of admin_notes, scoped to own patient row
 // ---------------------------------------------------------------------------
 describe('patient context — admin_notes locked out, patients scoped to self', () => {
-  it('patient context SELECT admin_notes returns 0 rows', async () => {
+  it('patient context SELECT admin_notes returns 0 rows (seeded row is invisible)', async () => {
     const rows = await service.withUserContext(
       { userId: patientAUserId, role: 'patient', ip: null },
-      (tx) => tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes`,
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes WHERE id = ${seededNoteId}::uuid`,
     );
     expect(rows).toHaveLength(0);
   });
@@ -242,10 +259,11 @@ describe('patient context — admin_notes locked out, patients scoped to self', 
 // Anonymous context (no userId) — locked out of admin_notes
 // ---------------------------------------------------------------------------
 describe('anonymous context — admin_notes locked out', () => {
-  it('anonymous context SELECT admin_notes returns 0 rows', async () => {
+  it('anonymous context SELECT admin_notes returns 0 rows (seeded row is invisible)', async () => {
     const rows = await service.withUserContext(
       { userId: null, role: null, ip: null },
-      (tx) => tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes`,
+      (tx) =>
+        tx.$queryRaw<{ id: string }[]>`SELECT id FROM admin_notes WHERE id = ${seededNoteId}::uuid`,
     );
     expect(rows).toHaveLength(0);
   });
