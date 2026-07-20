@@ -45,6 +45,18 @@ describe('UpdatePatientUseCase', () => {
     expect(repo.updatePatient).toHaveBeenCalledWith(ctx, 'p1', { dob: '1985-04-12' });
   });
 
+  it('drops a rolled-over calendar date like 2020-02-30 instead of rejecting the request', async () => {
+    repo.updatePatient.mockResolvedValue('ok');
+    await useCase.execute(ctx, 'p1', { name: 'Alex', dob: '2020-02-30' });
+    expect(repo.updatePatient).toHaveBeenCalledWith(ctx, 'p1', { name: 'Alex' });
+  });
+
+  it('drops a bare year like 2020 instead of rejecting the request', async () => {
+    repo.updatePatient.mockResolvedValue('ok');
+    await useCase.execute(ctx, 'p1', { name: 'Alex', dob: '2020' });
+    expect(repo.updatePatient).toHaveBeenCalledWith(ctx, 'p1', { name: 'Alex' });
+  });
+
   it('drops null fields, leaving them out of the forwarded input', async () => {
     repo.updatePatient.mockResolvedValue('ok');
     await useCase.execute(ctx, 'p1', { name: null as unknown as undefined, zipCode: '90210' });

@@ -284,6 +284,40 @@ describe('Admin patients write routes (e2e)', () => {
       expect(row.date_of_birth?.toISOString().slice(0, 10)).toBe('1980-01-01');
     });
 
+    // A real-looking but invalid calendar date (Feb only has 29 days even in
+    // a leap year) — Date.parse would silently roll this to 2020-03-01 and
+    // let it reach the `::date` cast, which raises a driver error inside the
+    // transaction (500). The guard must reject it before it gets there.
+    it('returns 200 and leaves date_of_birth unchanged when dob rolls over (2020-02-30)', async () => {
+      const { patientId } = await createPatient({ dob: '1980-01-01' });
+
+      const res = await agent()
+        .put(`/admin/patients/${patientId}`)
+        .set(adminHeaders())
+        .send({ dob: '2020-02-30' })
+        .expect(200);
+      expect(res.body).toEqual({ success: true });
+
+      const row = await readPatientRow(patientId);
+      expect(row.date_of_birth?.toISOString().slice(0, 10)).toBe('1980-01-01');
+    });
+
+    // A bare year — Date.parse('2020') parses successfully in Node, but
+    // Postgres's `::date` cast rejects it, so this must be dropped too.
+    it('returns 200 and leaves date_of_birth unchanged when dob is a bare year (2020)', async () => {
+      const { patientId } = await createPatient({ dob: '1980-01-01' });
+
+      const res = await agent()
+        .put(`/admin/patients/${patientId}`)
+        .set(adminHeaders())
+        .send({ dob: '2020' })
+        .expect(200);
+      expect(res.body).toEqual({ success: true });
+
+      const row = await readPatientRow(patientId);
+      expect(row.date_of_birth?.toISOString().slice(0, 10)).toBe('1980-01-01');
+    });
+
     it('updates dob when it is a valid date', async () => {
       const { patientId } = await createPatient({ dob: '1980-01-01' });
 
@@ -414,14 +448,19 @@ describe('Admin patients write routes (e2e)', () => {
         .expect(200);
 
       // 3. Sign-in with the NEW password must still be refused: the deletion
-      //    lock survives a valid password reset.
+      //    lock survives a valid password reset. Assert the account is
+      //    LOCKED specifically (423 / ACCOUNT_LOCKED) rather than just any
+      //    4xx — a bare status-range check would also pass if the password
+      //    reset had silently failed to update the hash (signin would then
+      //    401 as INVALID_CREDENTIALS), which proves nothing about the
+      //    deletion lock under test.
       const res = await agent()
         .post('/auth/signin')
         .set('Cookie', `csrf_token=${csrfToken}`)
         .set('x-csrf-token', csrfToken)
         .send({ email: patientEmail, password: newPassword });
-      expect(res.status).toBeGreaterThanOrEqual(400);
-      expect(res.status).not.toBe(200);
+      expect(res.status).toBe(423);
+      expect((res.body as { error: { code: string } }).error.code).toBe('ACCOUNT_LOCKED');
     });
   });
 });
