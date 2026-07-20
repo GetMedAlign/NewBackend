@@ -1123,6 +1123,55 @@
           "Admin — Applications"
         ]
       }
+    },
+    "/admin/clinics": {
+      "get": {
+        "operationId": "AdminClinicsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all clinics (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}": {
+      "get": {
+        "operationId": "AdminClinicsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single clinic by id (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
     }
   },
   "info": {
