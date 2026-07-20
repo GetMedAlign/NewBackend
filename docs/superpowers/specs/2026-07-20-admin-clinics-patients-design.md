@@ -229,17 +229,17 @@ All 15 require `@Roles('admin','superadmin')`.
 
 ### 2.1 Clinics — base path `/admin/clinics`
 
-| Method | Path | Behavior |
-|---|---|---|
-| GET | `/` | List all clinics as `AdminClinicDto`, ordered by name. Lead stats resolved in one grouped query, not N+1. |
-| GET | `/:id` | One clinic as `AdminClinicDto`. 404 if absent. |
-| PUT | `/:id` | Partial update per §1.2. 404 if absent. |
-| POST | `/:id/pause-delivery` | Per §1.3. 404 if absent. |
-| GET | `/:id/leads` | `AdminLeadRowDto[]` per §1.4. 404 if the clinic is absent. |
-| GET | `/:id/notes` | `AdminNoteDto[]`. 404 if the clinic is absent. |
-| POST | `/:id/notes` | Create a note, return the created `AdminNoteDto`. 404 if the clinic is absent. |
-| POST | `/:id/send-password-reset` | Issue a reset token for the clinic's user and email the link. 404 if no linked user. |
-| POST | `/:id/set-password` | Set the clinic user's password directly. 404 if no linked user. |
+| Method | Path                       | Behavior                                                                                                  |
+| ------ | -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| GET    | `/`                        | List all clinics as `AdminClinicDto`, ordered by name. Lead stats resolved in one grouped query, not N+1. |
+| GET    | `/:id`                     | One clinic as `AdminClinicDto`. 404 if absent.                                                            |
+| PUT    | `/:id`                     | Partial update per §1.2. 404 if absent.                                                                   |
+| POST   | `/:id/pause-delivery`      | Per §1.3. 404 if absent.                                                                                  |
+| GET    | `/:id/leads`               | `AdminLeadRowDto[]` per §1.4. 404 if the clinic is absent.                                                |
+| GET    | `/:id/notes`               | `AdminNoteDto[]`. 404 if the clinic is absent.                                                            |
+| POST   | `/:id/notes`               | Create a note, return the created `AdminNoteDto`. 404 if the clinic is absent.                            |
+| POST   | `/:id/send-password-reset` | Issue a reset token for the clinic's user and email the link. 404 if no linked user.                      |
+| POST   | `/:id/set-password`        | Set the clinic user's password directly. 404 if no linked user.                                           |
 
 **Note authorship:** `author_user_id` comes from the authenticated admin's
 token. `author_name` is the admin's `users.name`, falling back to `"Admin"`,
@@ -255,14 +255,14 @@ admin and needs to know the operation failed.
 
 ### 2.2 Patients — base path `/admin/patients`
 
-| Method | Path | Behavior |
-|---|---|---|
-| GET | `/` | `AdminPatientDto[]` per §1.7. Tighter rate limit (§4.3). |
-| GET | `/:id` | One `AdminPatientDto`. 404 if absent. |
-| PUT | `/:id` | Partial update per §1.8. 404 if absent, 409 if deleted. |
-| DELETE | `/:id` | Soft delete per §3.3. 404 if absent, 409 if already deleted. |
-| POST | `/:id/send-password-reset` | As above, for the patient's user. 404 if absent. |
-| POST | `/:id/set-password` | Set the patient user's password directly. 404 if absent. |
+| Method | Path                       | Behavior                                                     |
+| ------ | -------------------------- | ------------------------------------------------------------ |
+| GET    | `/`                        | `AdminPatientDto[]` per §1.7. Tighter rate limit (§4.3).     |
+| GET    | `/:id`                     | One `AdminPatientDto`. 404 if absent.                        |
+| PUT    | `/:id`                     | Partial update per §1.8. 404 if absent, 409 if deleted.      |
+| DELETE | `/:id`                     | Soft delete per §3.3. 404 if absent, 409 if already deleted. |
+| POST   | `/:id/send-password-reset` | As above, for the patient's user. 404 if absent.             |
+| POST   | `/:id/set-password`        | Set the patient user's password directly. 404 if absent.     |
 
 ---
 
@@ -270,14 +270,14 @@ admin and needs to know the operation failed.
 
 ### 3.1 New table `admin_notes`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` pk default `gen_random_uuid()` | |
-| `clinic_id` | `uuid not null` | FK → `clinics(id)` `ON DELETE CASCADE` |
-| `author_user_id` | `uuid not null` | FK → `users(id)` `ON DELETE RESTRICT` |
-| `author_name` | `text not null` | Denormalized snapshot |
-| `body` | `text not null` | |
-| `created_at` | `timestamptz not null default now()` | |
+| Column           | Type                                  | Notes                                  |
+| ---------------- | ------------------------------------- | -------------------------------------- |
+| `id`             | `uuid` pk default `gen_random_uuid()` |                                        |
+| `clinic_id`      | `uuid not null`                       | FK → `clinics(id)` `ON DELETE CASCADE` |
+| `author_user_id` | `uuid not null`                       | FK → `users(id)` `ON DELETE RESTRICT`  |
+| `author_name`    | `text not null`                       | Denormalized snapshot                  |
+| `body`           | `text not null`                       |                                        |
+| `created_at`     | `timestamptz not null default now()`  |                                        |
 
 Index on `(clinic_id, created_at desc)` to serve the notes list.
 
@@ -418,6 +418,7 @@ reimplement token generation or hashing.
 Following the pattern of prior slices.
 
 **DB integration** (`test/db/`):
+
 - Schema spec: `admin_notes` exists with its FKs and index; `clinics.zip_code`
   and `clinics.is_listed_in_directory` exist with the stated default.
 - RLS spec: under an admin context, select and insert succeed on `patients`,
@@ -435,6 +436,7 @@ including the fallback-to-code path, `allServices` ordering, the null-to-empty
 **E2E** (`test/admin/`): every endpoint's success path, its 404, the 409 paths
 on patient update and delete, and a non-admin rejection for each of the 15
 routes. Plus:
+
 - A `phi_access` audit row is written for each patient route.
 - The mixed-case `AdminLeadRowDto` field names are asserted literally.
 - **Regression test:** a soft-deleted patient who completes a valid password

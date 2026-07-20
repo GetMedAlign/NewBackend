@@ -108,9 +108,14 @@ describe('admin clinics/patients schema', () => {
        WHERE table_name = 'admin_notes' ORDER BY column_name`,
     );
     const cols = rows.map((r) => r.column_name);
-    expect(cols).toEqual(
-      ['author_name', 'author_user_id', 'body', 'clinic_id', 'created_at', 'id'],
-    );
+    expect(cols).toEqual([
+      'author_name',
+      'author_user_id',
+      'body',
+      'clinic_id',
+      'created_at',
+      'id',
+    ]);
   });
 
   it('cascades admin_notes on clinic delete and restricts on user delete', async () => {
@@ -367,19 +372,31 @@ git commit -m "feat(db): add admin RLS policies for clinics and patients managem
 // src/infrastructure/security/admin-ctx.ts
 // Shared by BOTH admin-clinics and admin-patients. Defined here, not inside a
 // feature module, so neither module has to import from its sibling.
-export interface AdminCtx { userId: string; role: string; ip: string | null }
+export interface AdminCtx {
+  userId: string;
+  role: string;
+  ip: string | null;
+}
 
 // src/infrastructure/format/date.ts
-export function formatDateOnly(d: Date | null): string | null;  // UTC 'yyyy-MM-dd'
+export function formatDateOnly(d: Date | null): string | null; // UTC 'yyyy-MM-dd'
 
 // src/modules/admin-clinics/domain/clinic-dto.mapper.ts
 export const SPECIALTIES: Readonly<Record<string, string>>;
 export const CLINIC_STATUSES: readonly ['active', 'paused', 'suspended', 'inactive'];
 export type ClinicStatusValue = (typeof CLINIC_STATUSES)[number];
 export function isClinicStatus(value: string): value is ClinicStatusValue;
-export interface ClinicServiceRow { service_code: string; is_top_service: boolean; display_order: number }
-export interface AdminClinicRow { /* snake_case columns, see Step 3 */ }
-export interface AdminClinicDto { /* camelCase, spec §1.1 */ }
+export interface ClinicServiceRow {
+  service_code: string;
+  is_top_service: boolean;
+  display_order: number;
+}
+export interface AdminClinicRow {
+  /* snake_case columns, see Step 3 */
+}
+export interface AdminClinicDto {
+  /* camelCase, spec §1.1 */
+}
 export function toAdminClinicDto(
   row: AdminClinicRow,
   categories: string[],
@@ -1093,7 +1110,9 @@ findClinicUser(ctx: AdminCtx, clinicId: string): Promise<{ userId: string; email
 ```ts
 it('throws NotFoundException when the clinic has no linked user', async () => {
   repo.findClinicUser.mockResolvedValue(null);
-  await expect(useCase.execute(ctx, 'c1')).rejects.toThrow('No user account found for this clinic.');
+  await expect(useCase.execute(ctx, 'c1')).rejects.toThrow(
+    'No user account found for this clinic.',
+  );
 });
 
 it('issues a token and emails the reset link', async () => {
@@ -1236,9 +1255,7 @@ describe('PhiAccessInterceptor', () => {
       params: {},
     };
     await lastValueFrom(interceptor.intercept(ctxFor(req), next));
-    expect(audit.record).toHaveBeenCalledWith(
-      expect.objectContaining({ affectedRecord: null }),
-    );
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ affectedRecord: null }));
   });
 
   it('still returns the response when the audit write fails', async () => {
@@ -1250,9 +1267,7 @@ describe('PhiAccessInterceptor', () => {
       path: '/admin/patients',
       params: {},
     };
-    await expect(
-      lastValueFrom(interceptor.intercept(ctxFor(req), next)),
-    ).resolves.toBe('payload');
+    await expect(lastValueFrom(interceptor.intercept(ctxFor(req), next))).resolves.toBe('payload');
   });
 });
 ```
@@ -1288,16 +1303,31 @@ git commit -m "feat(admin-patients): add PHI access audit interceptor"
 
 ```ts
 export interface AdminPatientDto {
-  id: string; name: string; email: string; dob: string | null; zipCode: string;
-  createdAt: string; lastAssessmentAt: string | null; treatmentCategory: string | null;
-  matchCount: number; isDeleted: boolean; deletedAt: string | null;
+  id: string;
+  name: string;
+  email: string;
+  dob: string | null;
+  zipCode: string;
+  createdAt: string;
+  lastAssessmentAt: string | null;
+  treatmentCategory: string | null;
+  matchCount: number;
+  isDeleted: boolean;
+  deletedAt: string | null;
 }
 
 export interface AdminPatientRow {
-  id: string; name: string | null; email: string; date_of_birth: Date | null;
-  zip_code: string | null; created_at: Date; last_assessment_at: Date | null;
-  treatment_category: string | null; match_count: number;
-  is_deleted: boolean; deleted_at: Date | null;
+  id: string;
+  name: string | null;
+  email: string;
+  date_of_birth: Date | null;
+  zip_code: string | null;
+  created_at: Date;
+  last_assessment_at: Date | null;
+  treatment_category: string | null;
+  match_count: number;
+  is_deleted: boolean;
+  deleted_at: Date | null;
 }
 
 export function toAdminPatientDto(row: AdminPatientRow): AdminPatientDto;
