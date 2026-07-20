@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import type { PasswordResetRepositoryPort } from '../../domain/ports/password-reset-repository.port';
+import type { AdminSetPasswordPort } from '../../domain/ports/admin-set-password.port';
+import type { AuditEvent } from '../../domain/ports/audit.port';
 
 interface UserIdRow {
   id: string;
@@ -12,7 +14,9 @@ interface TokenRow {
 }
 
 @Injectable()
-export class PrismaPasswordResetRepository implements PasswordResetRepositoryPort {
+export class PrismaPasswordResetRepository
+  implements PasswordResetRepositoryPort, AdminSetPasswordPort
+{
   constructor(private readonly prisma: PrismaService) {}
 
   async findUserIdByEmail(email: string): Promise<string | null> {
@@ -71,6 +75,39 @@ export class PrismaPasswordResetRepository implements PasswordResetRepositoryPor
         c.$executeRaw`
         UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}::uuid
       `,
+    );
+  }
+
+  /**
+   * Updates the password hash and writes the admin_set_password audit row in
+   * a single transaction: asSystem() alone does not open a transaction (it
+   * just hands back the base client), so the atomicity comes from the
+   * explicit client.$transaction(...) below. If the audit insert fails, the
+   * password update rolls back with it — see admin-set-password.port.ts.
+   */
+  async setPasswordWithAudit(
+    userId: string,
+    passwordHash: string,
+    auditEvent: AuditEvent,
+  ): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}::uuid
+        `;
+        await tx.$executeRaw`
+          SELECT append_audit_log(
+            ${auditEvent.actorUserId ?? null}::uuid,
+            ${auditEvent.actorRole},
+            ${auditEvent.ip ?? null},
+            ${auditEvent.actionType},
+            ${auditEvent.affectedRecord},
+            NULL::jsonb,
+            NULL::jsonb,
+            ${auditEvent.notes ?? null}
+          )
+        `;
+      }),
     );
   }
 }

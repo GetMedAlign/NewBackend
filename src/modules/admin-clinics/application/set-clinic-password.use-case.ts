@@ -4,11 +4,10 @@ import type { AdminCtx } from '../../../infrastructure/security/admin-ctx';
 import { ADMIN_CLINIC_REPOSITORY } from '../domain/ports/admin-clinic-repository.port';
 import type { AdminClinicRepositoryPort } from '../domain/ports/admin-clinic-repository.port';
 import {
-  PASSWORD_RESET_REPOSITORY,
-  PasswordResetRepositoryPort,
-} from '../../auth/domain/ports/password-reset-repository.port';
+  ADMIN_SET_PASSWORD,
+  AdminSetPasswordPort,
+} from '../../auth/domain/ports/admin-set-password.port';
 import { PASSWORD_HASHER, PasswordHasherPort } from '../../auth/domain/ports/password-hasher.port';
-import { AUDIT, AuditPort } from '../../auth/domain/ports/audit.port';
 
 /**
  * POST /admin/clinics/:id/set-password: lets an admin set the clinic's linked
@@ -21,9 +20,8 @@ import { AUDIT, AuditPort } from '../../auth/domain/ports/audit.port';
 export class SetClinicPasswordUseCase {
   constructor(
     @Inject(ADMIN_CLINIC_REPOSITORY) private readonly repo: AdminClinicRepositoryPort,
-    @Inject(PASSWORD_RESET_REPOSITORY) private readonly resetRepo: PasswordResetRepositoryPort,
+    @Inject(ADMIN_SET_PASSWORD) private readonly adminSetPassword: AdminSetPasswordPort,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasherPort,
-    @Inject(AUDIT) private readonly audit: AuditPort,
   ) {}
 
   async execute(ctx: AdminCtx, clinicId: string, newPassword: string): Promise<{ success: true }> {
@@ -31,9 +29,11 @@ export class SetClinicPasswordUseCase {
     if (!clinicUser) throw new NotFoundException('No user account found for this clinic.');
 
     const passwordHash = await this.hasher.hash(newPassword);
-    await this.resetRepo.updatePasswordHash(clinicUser.userId, passwordHash);
 
-    await this.audit.record({
+    // Password update and admin_set_password audit write commit atomically —
+    // see AdminSetPasswordPort — so a failed audit write can never leave a
+    // changed password with no audit trail (spec §4.4 mitigation).
+    await this.adminSetPassword.setPasswordWithAudit(clinicUser.userId, passwordHash, {
       actorUserId: ctx.userId,
       actorRole: ctx.role,
       ip: ctx.ip,
