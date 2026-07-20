@@ -1459,6 +1459,70 @@
         "tags": [
           "Admin — Patients"
         ]
+      },
+      "put": {
+        "operationId": "AdminPatientsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePatientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Partially update a patient (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminPatientsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Soft-delete a patient and lock their account out (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
       }
     }
   },
@@ -2160,6 +2224,26 @@
         "required": [
           "newPassword"
         ]
+      },
+      "UpdatePatientDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Alex Rivera",
+            "description": "The patient's name (writes users.name, not a patients column)"
+          },
+          "dob": {
+            "type": "string",
+            "example": "1985-04-12",
+            "description": "Date of birth (yyyy-MM-dd). An unparseable value is silently ignored."
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "90210",
+            "description": "ZIP code"
+          }
+        }
       }
     }
   }

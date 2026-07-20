@@ -89,6 +89,8 @@ import { SetClinicPasswordUseCase } from '../src/modules/admin-clinics/applicati
 import { AdminPatientsController } from '../src/modules/admin-patients/infrastructure/http/admin-patients.controller';
 import { ListPatientsUseCase } from '../src/modules/admin-patients/application/list-patients.use-case';
 import { GetPatientUseCase } from '../src/modules/admin-patients/application/get-patient.use-case';
+import { UpdatePatientUseCase } from '../src/modules/admin-patients/application/update-patient.use-case';
+import { SoftDeletePatientUseCase } from '../src/modules/admin-patients/application/soft-delete-patient.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -174,6 +176,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SetClinicPasswordUseCase),
     stubProvider(ListPatientsUseCase),
     stubProvider(GetPatientUseCase),
+    stubProvider(UpdatePatientUseCase),
+    stubProvider(SoftDeletePatientUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
