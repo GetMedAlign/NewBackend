@@ -1194,7 +1194,7 @@ export class PhiAccessInterceptor implements NestInterceptor {
 }
 ```
 
-**Consumes:** `AUDIT` / `AuditPort` (`record(e: AuditEvent)`) from `src/modules/auth/domain/ports/audit.port.ts`. `AuditEvent` fields are exactly: `actorUserId`, `actorRole`, `ip`, `actionType`, `affectedRecord?`, `notes?`.
+**Consumes:** `AUDIT` / `AuditPort` (`record(e: AuditEvent)`) from `src/modules/auth/domain/ports/audit.port.ts`. `AuditEvent` fields are exactly: `actorUserId`, `actorRole`, `ip`, `actionType`, `affectedRecord`, `notes?`. `affectedRecord` is a required non-nullable `string`, matching the `NOT NULL` column `audit_log.affected_record`.
 
 **Read spec §4.2 before starting.**
 
@@ -1203,7 +1203,7 @@ Mapping onto `AuditEvent` (it has no dedicated method/path field, so):
 - `actionType` = `'phi_access'` (constant)
 - `actorUserId` = `request.user.sub`, `actorRole` = `request.user.role`
 - `ip` = `request.ip`
-- `affectedRecord` = the `:id` route param, or `null` on the list route
+- `affectedRecord` = the `:id` route param, or the request path (`req.path`) on the list route, which has no `:id`. It must never be null or empty: `audit_log.affected_record` is `NOT NULL`, and a null would make the insert fail and be silently swallowed by the error handling below.
 - `notes` = `` `${method} ${path}` ``
 
 A failed audit write must be logged via the Nest `Logger` and **swallowed**, so the request still succeeds (spec §4.2).
@@ -1246,7 +1246,7 @@ describe('PhiAccessInterceptor', () => {
     });
   });
 
-  it('records a null affectedRecord on the list route', async () => {
+  it('records the request path as affectedRecord on the list route', async () => {
     const req = {
       user: { sub: 'admin-1', role: 'admin' },
       ip: '10.0.0.4',
@@ -1255,7 +1255,9 @@ describe('PhiAccessInterceptor', () => {
       params: {},
     };
     await lastValueFrom(interceptor.intercept(ctxFor(req), next));
-    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ affectedRecord: null }));
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ affectedRecord: '/admin/patients' }),
+    );
   });
 
   it('still returns the response when the audit write fails', async () => {

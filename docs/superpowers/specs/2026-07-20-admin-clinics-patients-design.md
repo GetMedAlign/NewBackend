@@ -339,7 +339,11 @@ intact.
 A NestJS interceptor on the patients controller, the analog of .NET's
 `PhiAccessFilter`, writes one `audit_log` row per request with
 `action_type = 'phi_access'`, capturing actor user id, actor role, IP, HTTP
-method, path, and the `:id` route parameter as `affected_record`.
+method, path, and the `:id` route parameter as `affected_record`. List routes have
+no `:id`, so they record the request path instead. `affected_record` is never null:
+the column is `NOT NULL`, and `AuditEvent.affectedRecord` is typed as a required
+`string` so a null is a compile error rather than an insert that fails and is
+silently swallowed.
 
 Per the design decision, these records land in the existing `audit_log` table
 rather than a separate `phi_access_log`, since `audit_log` already carries every
