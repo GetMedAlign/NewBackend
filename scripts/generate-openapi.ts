@@ -76,6 +76,23 @@ import { SubmitApplicationUseCase } from '../src/modules/clinic-applications/app
 import { ListApplicationsUseCase } from '../src/modules/clinic-applications/application/list-applications.use-case';
 import { GetApplicationUseCase } from '../src/modules/clinic-applications/application/get-application.use-case';
 import { ReviewApplicationUseCase } from '../src/modules/clinic-applications/application/review-application.use-case';
+import { AdminClinicsController } from '../src/modules/admin-clinics/infrastructure/http/admin-clinics.controller';
+import { ListClinicsUseCase } from '../src/modules/admin-clinics/application/list-clinics.use-case';
+import { GetClinicUseCase } from '../src/modules/admin-clinics/application/get-clinic.use-case';
+import { UpdateClinicUseCase } from '../src/modules/admin-clinics/application/update-clinic.use-case';
+import { PauseDeliveryUseCase } from '../src/modules/admin-clinics/application/pause-delivery.use-case';
+import { ListClinicLeadsUseCase as AdminListClinicLeadsUseCase } from '../src/modules/admin-clinics/application/list-clinic-leads.use-case';
+import { ListNotesUseCase } from '../src/modules/admin-clinics/application/list-notes.use-case';
+import { AddNoteUseCase } from '../src/modules/admin-clinics/application/add-note.use-case';
+import { SendClinicPasswordResetUseCase } from '../src/modules/admin-clinics/application/send-clinic-password-reset.use-case';
+import { SetClinicPasswordUseCase } from '../src/modules/admin-clinics/application/set-clinic-password.use-case';
+import { AdminPatientsController } from '../src/modules/admin-patients/infrastructure/http/admin-patients.controller';
+import { ListPatientsUseCase } from '../src/modules/admin-patients/application/list-patients.use-case';
+import { GetPatientUseCase } from '../src/modules/admin-patients/application/get-patient.use-case';
+import { UpdatePatientUseCase } from '../src/modules/admin-patients/application/update-patient.use-case';
+import { SoftDeletePatientUseCase } from '../src/modules/admin-patients/application/soft-delete-patient.use-case';
+import { SendPatientPasswordResetUseCase } from '../src/modules/admin-patients/application/send-patient-password-reset.use-case';
+import { SetPatientPasswordUseCase } from '../src/modules/admin-patients/application/set-patient-password.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -110,6 +127,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ClinicMediaController,
     ClinicApplicationsController,
     AdminApplicationsController,
+    AdminClinicsController,
+    AdminPatientsController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -148,6 +167,21 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ListApplicationsUseCase),
     stubProvider(GetApplicationUseCase),
     stubProvider(ReviewApplicationUseCase),
+    stubProvider(ListClinicsUseCase),
+    stubProvider(GetClinicUseCase),
+    stubProvider(UpdateClinicUseCase),
+    stubProvider(PauseDeliveryUseCase),
+    stubProvider(AdminListClinicLeadsUseCase),
+    stubProvider(ListNotesUseCase),
+    stubProvider(AddNoteUseCase),
+    stubProvider(SendClinicPasswordResetUseCase),
+    stubProvider(SetClinicPasswordUseCase),
+    stubProvider(ListPatientsUseCase),
+    stubProvider(GetPatientUseCase),
+    stubProvider(UpdatePatientUseCase),
+    stubProvider(SoftDeletePatientUseCase),
+    stubProvider(SendPatientPasswordResetUseCase),
+    stubProvider(SetPatientPasswordUseCase),
     stubProvider(AUDIT),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
@@ -173,6 +207,11 @@ async function generate(): Promise<void> {
         '**Clinic portal logins** (password `SeedClinic1!` for both):\n' +
         '- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n' +
         '- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n' +
+        '**Superadmin login** (for `/admin/clinics*` and `/admin/patients*`): ' +
+        '`superadmin@medalign-seed.example.com` / `SeedAdmin1!`\n\n' +
+        '**Soft-deleted patient** (locked out of sign-in; use it to exercise the admin ' +
+        'patient deleted-state and lockout paths): `patient-deleted@medalign-seed.example.com` / ' +
+        '`SeedPatient1!`\n\n' +
         '**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server ' +
         'logs (LoggingEmailSender) instead of being emailed. Read it from the console ' +
         'and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\n' +

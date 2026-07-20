@@ -145,6 +145,39 @@ Status transition rules: unknown status returns 400; already-approved applicatio
 
 **Local testing seed:** the database seed includes a superadmin account at `superadmin@medalign-seed.example.com`. Use `pnpm seed:pj` to populate the local DB.
 
+## Admin Clinics & Patients API (Slice 5)
+
+Admin/superadmin management of existing clinics and patients: read/edit clinic records, pause lead delivery, keep internal notes, read/edit patients, soft-delete patients, and reset or set passwords for either. Ids are UUID strings.
+
+**Clinics (roles: admin, superadmin):**
+
+```
+GET  /admin/clinics                          -> array of clinic summaries
+GET  /admin/clinics/:id                      -> full clinic detail
+PUT  /admin/clinics/:id                      -> partial update -> { success: true }
+POST /admin/clinics/:id/pause-delivery       -> body: { paused: boolean } -> { success: true }
+GET  /admin/clinics/:id/leads                -> the clinic's leads (admin lead-row shape)
+GET  /admin/clinics/:id/notes                -> the clinic's admin notes (newest first)
+POST /admin/clinics/:id/notes                -> body: { body: string } -> created note (author resolved from the caller's token, never the request body)
+POST /admin/clinics/:id/send-password-reset  -> emails a reset link to the clinic's linked user -> { success: true }
+POST /admin/clinics/:id/set-password         -> body: { newPassword } -> directly sets the linked user's password -> { success: true }
+```
+
+**Patients (roles: admin, superadmin):**
+
+```
+GET    /admin/patients                          -> array of patient summaries (rate-limited: 20/min, since it returns identifying info for every patient)
+GET    /admin/patients/:id                      -> full patient detail
+PUT    /admin/patients/:id                      -> partial update -> { success: true }
+DELETE /admin/patients/:id                      -> soft-delete: sets is_deleted, deleted_at, and locks the linked user out of sign-in -> { success: true }
+POST   /admin/patients/:id/send-password-reset  -> emails a reset link to the patient's linked user -> { success: true }
+POST   /admin/patients/:id/set-password         -> body: { newPassword } -> directly sets the linked user's password -> { success: true }
+```
+
+Patient routes never decrypt encrypted assessment fields (`treatment_category` is the only plain-enum assessment column exposed) and write a `phi_access` audit record on every read.
+
+**Local testing seed:** in addition to the superadmin account above, `pnpm seed:pj` seeds two `admin_notes` on `vitality-hormone-nyc` (authored by the superadmin) and a soft-deleted patient account, `patient-deleted@medalign-seed.example.com` / `SeedPatient1!`, whose linked user is locked out of sign-in (`locked_until` far in the future). Use it to exercise the admin patient list's deleted-state filtering and the sign-in lockout path.
+
 ## Auth additions
 
 Password reset endpoints added in Slice 4 (shared infrastructure, also used by future Admin-initiated resets):
@@ -156,11 +189,12 @@ POST /auth/reset-password   -> { success: true }  (body: { email, token, newPass
 
 Password reset tokens are single-use, expire after 60 minutes, and stored only as a SHA-256 hash.
 
-## Rebuild roadmap (6 slices)
+## Rebuild roadmap
 
 1. **Foundation**: scaffold, config, Prisma + RLS, audit, encryption, auth vertical slice.
 2. Patient journey: assessments, matching, leads.
 3. Clinics & clinic portal.
 4. Clinic Applications and onboarding (Slice 4): application submit, admin review, approval provisioning, password reset.
-5. Billing, background jobs, email.
-6. Cutover: data migration from SQL Server, go-live.
+5. Admin Clinics & Patients (Slice 5): admin clinic list/edit/notes/pause-delivery, admin patient list/edit/soft-delete, password reset/set for both.
+6. Billing, background jobs, email. _(planned)_
+7. Cutover: data migration from SQL Server, go-live. _(planned)_

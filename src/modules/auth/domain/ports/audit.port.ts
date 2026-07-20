@@ -3,7 +3,7 @@ export interface AuditEvent {
   actorRole: string;
   ip: string | null;
   actionType: string;
-  affectedRecord?: string | null;
+  affectedRecord: string;
   notes?: string | null;
 }
 

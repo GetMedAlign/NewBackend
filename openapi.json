@@ -1123,11 +1123,480 @@
           "Admin — Applications"
         ]
       }
+    },
+    "/admin/clinics": {
+      "get": {
+        "operationId": "AdminClinicsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all clinics (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}": {
+      "get": {
+        "operationId": "AdminClinicsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single clinic by id (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      },
+      "put": {
+        "operationId": "AdminClinicsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Partially update a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/pause-delivery": {
+      "post": {
+        "operationId": "AdminClinicsController_setPauseDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Pause or resume lead delivery for a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/leads": {
+      "get": {
+        "operationId": "AdminClinicsController_listLeads",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List a clinic's leads (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/notes": {
+      "get": {
+        "operationId": "AdminClinicsController_listClinicNotes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List a clinic's admin notes (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      },
+      "post": {
+        "operationId": "AdminClinicsController_addClinicNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Add an admin note to a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/send-password-reset": {
+      "post": {
+        "operationId": "AdminClinicsController_sendPasswordReset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Email a password reset link to the clinic's linked user (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/set-password": {
+      "post": {
+        "operationId": "AdminClinicsController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set the clinic's linked user's password (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/patients": {
+      "get": {
+        "operationId": "AdminPatientsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all patients (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
+    },
+    "/admin/patients/{id}": {
+      "get": {
+        "operationId": "AdminPatientsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a single patient by id (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      },
+      "put": {
+        "operationId": "AdminPatientsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePatientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Partially update a patient (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminPatientsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Soft-delete a patient and lock their account out (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
+    },
+    "/admin/patients/{id}/send-password-reset": {
+      "post": {
+        "operationId": "AdminPatientsController_sendPasswordReset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Email a password reset link to the patient's linked user (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
+    },
+    "/admin/patients/{id}/set-password": {
+      "post": {
+        "operationId": "AdminPatientsController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set the patient's linked user's password (admin only)",
+        "tags": [
+          "Admin — Patients"
+        ]
+      }
     }
   },
   "info": {
     "title": "MedAlign Backend API",
-    "description": "MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie set on POST /auth/2fa/verify. All non-GET requests require an `x-csrf-token` header matching the value returned by the CSRF middleware (CSRF is skipped when NODE_ENV=development).\n\n## Local test seed data (run `pnpm seed:pj` against your local DB)\n\n**Clinic portal logins** (password `SeedClinic1!` for both):\n- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server logs (LoggingEmailSender) instead of being emailed. Read it from the console and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\nFor patient-flow testing, sign up a new user via POST /auth/signup, then submit an assessment (POST /assessments) to get a `sessionId` + `claimToken`.",
+    "description": "MedAlign backend API. Authentication uses an HttpOnly `access_token` cookie set on POST /auth/2fa/verify. All non-GET requests require an `x-csrf-token` header matching the value returned by the CSRF middleware (CSRF is skipped when NODE_ENV=development).\n\n## Local test seed data (run `pnpm seed:pj` against your local DB)\n\n**Clinic portal logins** (password `SeedClinic1!` for both):\n- `clinic-vitality@medalign-seed.example.com` — clinic `vitality-hormone-nyc`\n- `clinic-apex@medalign-seed.example.com` — clinic `apex-peptide-telehealth`\n\n**Superadmin login** (for `/admin/clinics*` and `/admin/patients*`): `superadmin@medalign-seed.example.com` / `SeedAdmin1!`\n\n**Soft-deleted patient** (locked out of sign-in; use it to exercise the admin patient deleted-state and lockout paths): `patient-deleted@medalign-seed.example.com` / `SeedPatient1!`\n\n**2FA:** in `NODE_ENV=development` the 6-digit code is printed to the server logs (LoggingEmailSender) instead of being emailed. Read it from the console and POST it to `/auth/2fa/verify` to obtain the session cookie.\n\nFor patient-flow testing, sign up a new user via POST /auth/signup, then submit an assessment (POST /assessments) to get a `sessionId` + `claimToken`.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -1678,6 +2147,171 @@
         "required": [
           "status"
         ]
+      },
+      "UpdateClinicDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Horizon Hormone Health",
+            "description": "Clinic name"
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "description": "One of active, paused, suspended, inactive. An unrecognized value is ignored."
+          },
+          "about": {
+            "type": "string",
+            "description": "About the clinic"
+          },
+          "differentiators": {
+            "type": "string",
+            "description": "Clinic differentiators"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "Dr. Elena Voss, MD",
+            "description": "Primary provider name"
+          },
+          "credentials": {
+            "type": "string",
+            "description": "Provider credentials"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "example": "https://example.com",
+            "description": "Clinic website URL"
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "description": "City"
+          },
+          "stateCode": {
+            "type": "string",
+            "example": "TX",
+            "description": "Two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "78701",
+            "description": "ZIP code"
+          },
+          "telehealth": {
+            "type": "boolean",
+            "description": "Whether telehealth is available"
+          },
+          "offersLabWork": {
+            "type": "boolean",
+            "description": "Whether the clinic offers lab work"
+          },
+          "financing": {
+            "type": "boolean",
+            "description": "Whether financing is available"
+          },
+          "insurance": {
+            "type": "boolean",
+            "description": "Whether insurance is accepted"
+          },
+          "insuranceNotes": {
+            "type": "string",
+            "description": "Insurance notes"
+          },
+          "consultationFee": {
+            "type": "string",
+            "example": "$100-$200",
+            "description": "Consultation fee band"
+          },
+          "monthlyProgram": {
+            "type": "string",
+            "example": "$200-$400",
+            "description": "Monthly program fee band"
+          },
+          "waitTime": {
+            "type": "string",
+            "example": "1-2 weeks",
+            "description": "Typical new patient wait time"
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.5,
+            "description": "Rating out of 5"
+          },
+          "reviewCount": {
+            "type": "number",
+            "example": 120,
+            "description": "Review count"
+          },
+          "isListedInDirectory": {
+            "type": "boolean",
+            "description": "Whether the clinic is listed in the public directory"
+          },
+          "logoUrl": {
+            "type": "string",
+            "example": "https://storage.example.com/clinics/abc/logo.png",
+            "description": "Public URL of the clinic logo"
+          }
+        }
+      },
+      "PauseDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "example": true,
+            "description": "true pauses delivery unconditionally; false un-pauses only if currently paused."
+          }
+        },
+        "required": [
+          "paused"
+        ]
+      },
+      "AddNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "example": "Called clinic to confirm license renewal.",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "SetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "newPassword"
+        ]
+      },
+      "UpdatePatientDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Alex Rivera",
+            "description": "The patient's name (writes users.name, not a patients column)"
+          },
+          "dob": {
+            "type": "string",
+            "example": "1985-04-12",
+            "description": "Date of birth (yyyy-MM-dd). An unparseable value is silently ignored."
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "90210",
+            "description": "ZIP code"
+          }
+        }
       }
     }
   }

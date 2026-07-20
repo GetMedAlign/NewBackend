@@ -29,13 +29,23 @@
  *   - Two sample pending clinic_applications are seeded (each with categories
  *     and services) so the review workflow has data to operate on.
  *
+ * Admin Clinics & Patients additions (Task 12):
+ *   - Two admin_notes on vitality-hormone-nyc, authored by the seeded
+ *     superadmin (author_user_id + denormalized author_name), so the notes
+ *     panel has data to list.
+ *   - A third patient user (patient-deleted) whose `patients` row is
+ *     soft-deleted (is_deleted = true, deleted_at = now()) and whose
+ *     `users.locked_until` carries the same "never sign in again" sentinel
+ *     (9999-12-31T23:59:59Z) Task 10's admin soft-delete flow writes.
+ *
  * Seeded clinic user credentials:
  *   Email: clinic-vitality@medalign-seed.example.com  Password: SeedClinic1!
  *   Email: clinic-apex@medalign-seed.example.com      Password: SeedClinic1!
  *
  * Seeded patient user credentials:
- *   Email: patient-alex@medalign-seed.example.com  Password: SeedPatient1!
- *   Email: patient-sam@medalign-seed.example.com   Password: SeedPatient1!
+ *   Email: patient-alex@medalign-seed.example.com     Password: SeedPatient1!
+ *   Email: patient-sam@medalign-seed.example.com      Password: SeedPatient1!
+ *   Email: patient-deleted@medalign-seed.example.com  Password: SeedPatient1!  (soft-deleted, locked out)
  *
  * Seeded superadmin credentials:
  *   Email: superadmin@medalign-seed.example.com  Password: SeedAdmin1!
@@ -102,6 +112,37 @@ export const SEEDED_PATIENT_USERS: ReadonlyArray<{
   { email: 'patient-alex@medalign-seed.example.com', password: 'SeedPatient1!' },
   { email: 'patient-sam@medalign-seed.example.com', password: 'SeedPatient1!' },
 ];
+
+/**
+ * Fixed credentials for the seeded soft-deleted patient user (Task 12).
+ * Its `patients` row has `is_deleted = true` and its `users.locked_until` is
+ * set to the same lockout sentinel Task 10's admin soft-delete flow writes
+ * (`9999-12-31T23:59:59Z`), so this row exercises the "deleted patient cannot
+ * sign in" path without needing to call the admin endpoint.
+ *
+ * Credentials:
+ *   patient-deleted@medalign-seed.example.com  /  SeedPatient1!
+ */
+export const SEEDED_DELETED_PATIENT_USER: Readonly<{ email: string; password: string }> = {
+  email: 'patient-deleted@medalign-seed.example.com',
+  password: 'SeedPatient1!',
+};
+
+/**
+ * The exact sentinel written to `users.locked_until` for a soft-deleted
+ * patient. Matches `DELETED_LOCK_UNTIL` in
+ * `src/modules/admin-patients/domain/ports/admin-patient-repository.port.ts`.
+ */
+const DELETED_LOCK_UNTIL = '9999-12-31T23:59:59.000Z';
+
+/**
+ * `admin_notes.author_name` for the seeded superadmin's notes. The seeded
+ * superadmin intentionally has `users.name = null` (an e2e test,
+ * `test/admin/admin-clinic-notes.e2e-spec.ts`, relies on this to exercise
+ * the "Admin" fallback in `resolveAuthorName`), so this mirrors that same
+ * fallback rather than setting a name on the user.
+ */
+const SEEDED_ADMIN_NOTE_AUTHOR_NAME = 'Admin';
 
 /**
  * Fixed session_id for the seeded patient assessment.
@@ -267,6 +308,47 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
       INSERT INTO patients (user_id, zip_code, date_of_birth)
       VALUES (${userId}::uuid, '10001', '1985-06-15'::date)
       ON CONFLICT (user_id) DO NOTHING
+    `;
+  }
+
+  // --- Soft-deleted patient user (Task 12) ---------------------------------
+  // A third patient user whose `patients` row is already soft-deleted and
+  // whose `users.locked_until` carries the admin soft-delete lockout
+  // sentinel, so admin-patients tests/demos have a deleted row to list/filter
+  // without needing to call the soft-delete endpoint first.
+  {
+    const existingDeleted = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM users WHERE email = ${SEEDED_DELETED_PATIENT_USER.email}::citext
+    `;
+
+    let deletedUserId: string;
+    if (existingDeleted.length === 0) {
+      const passwordHash = await argon2.hash(SEEDED_DELETED_PATIENT_USER.password, {
+        type: argon2.argon2id,
+      });
+      const rows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT create_user(${SEEDED_DELETED_PATIENT_USER.email}::citext, ${passwordHash}) AS id
+      `;
+      deletedUserId = rows[0]!.id;
+    } else {
+      deletedUserId = existingDeleted[0]!.id;
+    }
+
+    // Insert the patients row already soft-deleted. On re-runs, keep the
+    // original deleted_at (COALESCE) rather than bumping it to `now()` again.
+    await prisma.$executeRaw`
+      INSERT INTO patients (user_id, zip_code, date_of_birth, is_deleted, deleted_at)
+      VALUES (${deletedUserId}::uuid, '30301', '1990-03-22'::date, true, now())
+      ON CONFLICT (user_id) DO UPDATE
+        SET is_deleted = true,
+            deleted_at = COALESCE(patients.deleted_at, now())
+    `;
+
+    // Lock the user out of sign-in with the same sentinel Task 10's admin
+    // soft-delete flow writes (DELETED_LOCK_UNTIL).
+    await prisma.$executeRaw`
+      UPDATE users SET locked_until = ${DELETED_LOCK_UNTIL}::timestamptz
+       WHERE id = ${deletedUserId}::uuid
     `;
   }
 
@@ -682,6 +764,30 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     await prisma.$executeRaw`
       DELETE FROM user_roles WHERE user_id = ${adminUserId}::uuid AND role = 'patient'
     `;
+
+    // --- Admin notes on vitality-hormone-nyc (Task 12) -----------------------
+    // Two notes authored by the seeded superadmin. Idempotent: guarded on the
+    // exact note body: skip if a note with that body already exists on the clinic.
+    const ADMIN_NOTE_BODIES = [
+      'Initial onboarding call completed; clinic profile and services are fully set up.',
+      'Follow-up: confirmed webhook delivery is healthy after the latest lead batch.',
+    ];
+    for (const body of ADMIN_NOTE_BODIES) {
+      const existingNote = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM admin_notes WHERE clinic_id = ${vitalityClinic.id}::uuid AND body = ${body}
+      `;
+      if (existingNote.length === 0) {
+        await prisma.$executeRaw`
+          INSERT INTO admin_notes (clinic_id, author_user_id, author_name, body)
+          VALUES (
+            ${vitalityClinic.id}::uuid,
+            ${adminUserId}::uuid,
+            ${SEEDED_ADMIN_NOTE_AUTHOR_NAME},
+            ${body}
+          )
+        `;
+      }
+    }
   }
 
   // --- Sample pending clinic applications ------------------------------------

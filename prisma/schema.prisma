@@ -57,6 +57,7 @@ model User {
   twoFactorCodes      TwoFactorCode[]
   clinic              Clinic?              @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: SetNull)
   passwordResetTokens PasswordResetToken[]
+  adminNotes          AdminNote[]
 
   @@map("users")
 }
@@ -241,6 +242,8 @@ model Clinic {
   location             String?
   webhookHealth        String             @default("unknown") @map("webhook_health")
   suspensionReason     String?            @map("suspension_reason")
+  zipCode              String?            @map("zip_code")
+  isListedInDirectory  Boolean            @default(true) @map("is_listed_in_directory")
   createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz
 
   categories   ClinicCategory[]
@@ -249,6 +252,7 @@ model Clinic {
   photos       ClinicPhoto[]
   users        User[]              @relation("ClinicUsers")
   applications ClinicApplication[]
+  notes        AdminNote[]
 
   @@map("clinics")
 }
@@ -420,4 +424,19 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
+}
+
+model AdminNote {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicId     String   @map("clinic_id") @db.Uuid
+  authorUserId String   @map("author_user_id") @db.Uuid
+  authorName   String   @map("author_name")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([clinicId, createdAt(sort: Desc)], map: "admin_notes_clinic_created_idx")
+  @@map("admin_notes")
 }

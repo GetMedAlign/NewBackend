@@ -13,6 +13,7 @@ import { USER_REPOSITORY } from './domain/ports/user-repository.port';
 import { AUDIT } from './domain/ports/audit.port';
 import { EMAIL_SENDER } from './infrastructure/adapters/email-sender.port';
 import { PASSWORD_RESET_REPOSITORY } from './domain/ports/password-reset-repository.port';
+import { ADMIN_SET_PASSWORD } from './domain/ports/admin-set-password.port';
 
 import { Argon2PasswordHasher } from './infrastructure/adapters/argon2-password-hasher';
 import { JwtTokenService } from './infrastructure/adapters/jwt-token.service';
@@ -111,6 +112,14 @@ import { ResetPasswordUseCase } from './application/reset-password.use-case';
       useClass: PrismaPasswordResetRepository,
     },
 
+    // AdminSetPasswordPort → same PrismaPasswordResetRepository instance
+    // (reused via useExisting so the admin set-password use cases get an
+    // atomic password-update + audit-write transaction, see the port's doc).
+    {
+      provide: ADMIN_SET_PASSWORD,
+      useExisting: PrismaPasswordResetRepository,
+    },
+
     // AuditPort → PostgresAuditAdapter
     {
       provide: AUDIT,
@@ -125,6 +134,7 @@ import { ResetPasswordUseCase } from './application/reset-password.use-case';
     AUDIT,
     EMAIL_SENDER,
     PASSWORD_RESET_REPOSITORY,
+    ADMIN_SET_PASSWORD,
   ],
 })
 export class AuthModule {}
