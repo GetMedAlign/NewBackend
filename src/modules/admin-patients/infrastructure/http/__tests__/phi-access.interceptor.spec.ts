@@ -1,4 +1,4 @@
-import { of, lastValueFrom } from 'rxjs';
+import { of, throwError, lastValueFrom } from 'rxjs';
 import { PhiAccessInterceptor } from '../phi-access.interceptor';
 
 function ctxFor(req: Record<string, unknown>) {
@@ -47,6 +47,46 @@ describe('PhiAccessInterceptor', () => {
 
   it('still returns the response when the audit write fails', async () => {
     audit.record.mockRejectedValue(new Error('audit down'));
+    const req = {
+      user: { sub: 'admin-1', role: 'admin' },
+      ip: '10.0.0.4',
+      method: 'GET',
+      path: '/admin/patients',
+      params: {},
+    };
+    await expect(lastValueFrom(interceptor.intercept(ctxFor(req), next))).resolves.toBe('payload');
+  });
+
+  it('propagates a handler error and does not swallow it, after still recording the audit event', async () => {
+    audit.record.mockResolvedValue(undefined);
+    const throwingNext = { handle: () => throwError(() => new Error('handler exploded')) };
+    const req = {
+      user: { sub: 'admin-1', role: 'admin' },
+      ip: '10.0.0.4',
+      method: 'GET',
+      path: '/admin/patients',
+      params: {},
+    };
+    await expect(lastValueFrom(interceptor.intercept(ctxFor(req), throwingNext))).rejects.toThrow(
+      'handler exploded',
+    );
+    expect(audit.record).toHaveBeenCalledTimes(1);
+  });
+
+  it('still returns the response when the audit write rejects with a non-Error string', async () => {
+    audit.record.mockRejectedValue('audit down');
+    const req = {
+      user: { sub: 'admin-1', role: 'admin' },
+      ip: '10.0.0.4',
+      method: 'GET',
+      path: '/admin/patients',
+      params: {},
+    };
+    await expect(lastValueFrom(interceptor.intercept(ctxFor(req), next))).resolves.toBe('payload');
+  });
+
+  it('still returns the response when the audit write rejects with null', async () => {
+    audit.record.mockRejectedValue(null);
     const req = {
       user: { sub: 'admin-1', role: 'admin' },
       ip: '10.0.0.4',

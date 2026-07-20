@@ -36,8 +36,10 @@ export class PhiAccessInterceptor implements NestInterceptor {
     // Record the audit event before delegating to next.handle()
     // catchError swallows the error so the request still succeeds
     return defer(() => Promise.resolve(this.audit.record(event))).pipe(
-      catchError((err) => {
-        this.logger.error(`Failed to record PHI access: ${err.message}`);
+      catchError((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        const stack = err instanceof Error ? err.stack : undefined;
+        this.logger.error(`Failed to record PHI access: ${message}`, stack);
         return of(undefined); // Swallow the error
       }),
       switchMap(() => next.handle()),
