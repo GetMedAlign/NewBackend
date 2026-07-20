@@ -1171,6 +1171,82 @@
         "tags": [
           "Admin — Clinics"
         ]
+      },
+      "put": {
+        "operationId": "AdminClinicsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Partially update a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/pause-delivery": {
+      "post": {
+        "operationId": "AdminClinicsController_setPauseDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Pause or resume lead delivery for a clinic (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
       }
     }
   },
@@ -1726,6 +1802,125 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "UpdateClinicDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Horizon Hormone Health",
+            "description": "Clinic name"
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "description": "One of active, paused, suspended, inactive. An unrecognized value is ignored."
+          },
+          "about": {
+            "type": "string",
+            "description": "About the clinic"
+          },
+          "differentiators": {
+            "type": "string",
+            "description": "Clinic differentiators"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "Dr. Elena Voss, MD",
+            "description": "Primary provider name"
+          },
+          "credentials": {
+            "type": "string",
+            "description": "Provider credentials"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "example": "https://example.com",
+            "description": "Clinic website URL"
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "description": "City"
+          },
+          "stateCode": {
+            "type": "string",
+            "example": "TX",
+            "description": "Two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "example": "78701",
+            "description": "ZIP code"
+          },
+          "telehealth": {
+            "type": "boolean",
+            "description": "Whether telehealth is available"
+          },
+          "offersLabWork": {
+            "type": "boolean",
+            "description": "Whether the clinic offers lab work"
+          },
+          "financing": {
+            "type": "boolean",
+            "description": "Whether financing is available"
+          },
+          "insurance": {
+            "type": "boolean",
+            "description": "Whether insurance is accepted"
+          },
+          "insuranceNotes": {
+            "type": "string",
+            "description": "Insurance notes"
+          },
+          "consultationFee": {
+            "type": "string",
+            "example": "$100-$200",
+            "description": "Consultation fee band"
+          },
+          "monthlyProgram": {
+            "type": "string",
+            "example": "$200-$400",
+            "description": "Monthly program fee band"
+          },
+          "waitTime": {
+            "type": "string",
+            "example": "1-2 weeks",
+            "description": "Typical new patient wait time"
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.5,
+            "description": "Rating out of 5"
+          },
+          "reviewCount": {
+            "type": "number",
+            "example": 120,
+            "description": "Review count"
+          },
+          "isListedInDirectory": {
+            "type": "boolean",
+            "description": "Whether the clinic is listed in the public directory"
+          },
+          "logoUrl": {
+            "type": "string",
+            "example": "https://storage.example.com/clinics/abc/logo.png",
+            "description": "Public URL of the clinic logo"
+          }
+        }
+      },
+      "PauseDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean",
+            "example": true,
+            "description": "true pauses delivery unconditionally; false un-pauses only if currently paused."
+          }
+        },
+        "required": [
+          "paused"
         ]
       }
     }

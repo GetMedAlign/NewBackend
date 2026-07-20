@@ -1,9 +1,13 @@
 import {
+  Body,
   Controller,
   Get,
+  HttpCode,
   Ip,
   Param,
   ParseUUIDPipe,
+  Post,
+  Put,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -15,7 +19,11 @@ import { CurrentUser } from '../../../../infrastructure/security/current-user.de
 import type { AuthenticatedUser } from '../../../../infrastructure/security/current-user.decorator';
 import { GetClinicUseCase } from '../../application/get-clinic.use-case';
 import { ListClinicsUseCase } from '../../application/list-clinics.use-case';
+import { UpdateClinicUseCase } from '../../application/update-clinic.use-case';
+import { PauseDeliveryUseCase } from '../../application/pause-delivery.use-case';
 import type { AdminClinicDto } from '../../domain/clinic-dto.mapper';
+import { UpdateClinicDto } from './dto/update-clinic.dto';
+import { PauseDeliveryDto } from './dto/pause-delivery.dto';
 
 @ApiTags('Admin — Clinics')
 @ApiCookieAuth('access_token')
@@ -27,6 +35,8 @@ export class AdminClinicsController {
   constructor(
     private readonly listClinics: ListClinicsUseCase,
     private readonly getClinic: GetClinicUseCase,
+    private readonly updateClinic: UpdateClinicUseCase,
+    private readonly pauseDelivery: PauseDeliveryUseCase,
   ) {}
 
   @ApiOperation({ summary: 'List all clinics (admin only)' })
@@ -43,5 +53,30 @@ export class AdminClinicsController {
     @Ip() ip: string,
   ): Promise<AdminClinicDto> {
     return this.getClinic.execute({ userId: user.sub, role: user.role, ip }, id);
+  }
+
+  @ApiOperation({ summary: 'Partially update a clinic (admin only)' })
+  @Put(':id')
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: UpdateClinicDto,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    await this.updateClinic.execute({ userId: user.sub, role: user.role, ip }, id, body);
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Pause or resume lead delivery for a clinic (admin only)' })
+  @Post(':id/pause-delivery')
+  @HttpCode(200)
+  async setPauseDelivery(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: PauseDeliveryDto,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    await this.pauseDelivery.execute({ userId: user.sub, role: user.role, ip }, id, body.paused);
+    return { success: true };
   }
 }

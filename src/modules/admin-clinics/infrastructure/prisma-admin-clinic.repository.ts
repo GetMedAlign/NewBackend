@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { AdminCtx } from '../../../infrastructure/security/admin-ctx';
 import {
@@ -7,7 +8,10 @@ import {
   type AdminClinicRow,
   type ClinicServiceRow,
 } from '../domain/clinic-dto.mapper';
-import type { AdminClinicRepositoryPort } from '../domain/ports/admin-clinic-repository.port';
+import type {
+  AdminClinicRepositoryPort,
+  UpdateClinicInput,
+} from '../domain/ports/admin-clinic-repository.port';
 
 type CategoryRow = { clinic_id: string; category: string };
 type ServiceJoinRow = ClinicServiceRow & { clinic_id: string };
@@ -97,6 +101,110 @@ export class PrismaAdminClinicRepository implements AdminClinicRepositoryPort {
 
         const dtos = buildClinicDtos(clinics, cats, svcs, stats);
         return dtos[0] ?? null;
+      },
+    );
+  }
+
+  async updateClinic(ctx: AdminCtx, clinicId: string, input: UpdateClinicInput): Promise<boolean> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const sets: Prisma.Sql[] = [];
+        if (input.name !== undefined) sets.push(Prisma.sql`name = ${input.name}`);
+        if (input.status !== undefined) sets.push(Prisma.sql`status = ${input.status}`);
+        if (input.about !== undefined) sets.push(Prisma.sql`about = ${input.about}`);
+        if (input.differentiators !== undefined) {
+          sets.push(Prisma.sql`differentiators = ${input.differentiators}`);
+        }
+        if (input.providerName !== undefined) {
+          sets.push(Prisma.sql`provider_name = ${input.providerName}`);
+        }
+        if (input.credentials !== undefined) {
+          sets.push(Prisma.sql`credentials = ${input.credentials}`);
+        }
+        if (input.websiteUrl !== undefined) {
+          sets.push(Prisma.sql`website_url = ${input.websiteUrl}`);
+        }
+        if (input.city !== undefined) sets.push(Prisma.sql`city = ${input.city}`);
+        if (input.stateCode !== undefined) {
+          sets.push(Prisma.sql`state_code = ${input.stateCode}`);
+        }
+        if (input.zipCode !== undefined) sets.push(Prisma.sql`zip_code = ${input.zipCode}`);
+        if (input.telehealth !== undefined) {
+          sets.push(Prisma.sql`telehealth_available = ${input.telehealth}`);
+        }
+        if (input.offersLabWork !== undefined) {
+          sets.push(Prisma.sql`offers_lab_work = ${input.offersLabWork}`);
+        }
+        if (input.financing !== undefined) {
+          sets.push(Prisma.sql`financing_available = ${input.financing}`);
+        }
+        if (input.insurance !== undefined) {
+          sets.push(Prisma.sql`accepts_insurance = ${input.insurance}`);
+        }
+        if (input.insuranceNotes !== undefined) {
+          sets.push(Prisma.sql`insurance_notes = ${input.insuranceNotes}`);
+        }
+        if (input.consultationFee !== undefined) {
+          sets.push(Prisma.sql`consultation_fee_band = ${input.consultationFee}`);
+        }
+        if (input.monthlyProgram !== undefined) {
+          sets.push(Prisma.sql`monthly_program_band = ${input.monthlyProgram}`);
+        }
+        if (input.waitTime !== undefined) {
+          sets.push(Prisma.sql`new_patient_wait = ${input.waitTime}`);
+        }
+        if (input.rating !== undefined) sets.push(Prisma.sql`rating = ${input.rating}`);
+        if (input.reviewCount !== undefined) {
+          sets.push(Prisma.sql`review_count = ${input.reviewCount}`);
+        }
+        if (input.isListedInDirectory !== undefined) {
+          sets.push(Prisma.sql`is_listed_in_directory = ${input.isListedInDirectory}`);
+        }
+        if (input.logoUrl !== undefined) sets.push(Prisma.sql`logo_url = ${input.logoUrl}`);
+
+        if (sets.length === 0) {
+          const exists = await tx.$queryRaw<{ exists: number }[]>`
+            SELECT 1 AS exists FROM clinics WHERE id = ${clinicId}::uuid`;
+          return exists.length > 0;
+        }
+
+        const result = await tx.$executeRaw`
+          UPDATE clinics SET ${Prisma.join(sets, ', ')} WHERE id = ${clinicId}::uuid`;
+        if (result === 0) return false;
+
+        if (input.city !== undefined || input.stateCode !== undefined) {
+          await tx.$executeRaw`
+            UPDATE clinics SET location = concat(city, ', ', state_code)
+             WHERE id = ${clinicId}::uuid`;
+        }
+
+        return true;
+      },
+    );
+  }
+
+  async pauseDelivery(ctx: AdminCtx, clinicId: string, paused: boolean): Promise<boolean> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const exists = await tx.$queryRaw<{ exists: number }[]>`
+          SELECT 1 AS exists FROM clinics WHERE id = ${clinicId}::uuid`;
+        if (exists.length === 0) return false;
+
+        // All SET expressions in this single UPDATE see the pre-update row,
+        // so both CASE arms below read the old `status` value (spec §1.3).
+        await tx.$executeRaw`
+          UPDATE clinics
+             SET status = CASE WHEN ${paused} THEN 'paused'
+                               WHEN status = 'paused' THEN 'active'
+                               ELSE status END,
+                 notify_on_lead = CASE WHEN ${paused} THEN false
+                                       WHEN status = 'paused' THEN true
+                                       ELSE notify_on_lead END
+           WHERE id = ${clinicId}::uuid`;
+
+        return true;
       },
     );
   }

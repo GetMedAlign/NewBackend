@@ -1,7 +1,12 @@
 import { ListClinicsUseCase } from '../list-clinics.use-case';
 
 describe('ListClinicsUseCase', () => {
-  const repo = { listClinics: jest.fn(), getClinic: jest.fn() };
+  const repo = {
+    listClinics: jest.fn(),
+    getClinic: jest.fn(),
+    updateClinic: jest.fn(),
+    pauseDelivery: jest.fn(),
+  };
   const useCase = new ListClinicsUseCase(repo);
   const ctx = { userId: 'u1', role: 'admin', ip: '127.0.0.1' };
 

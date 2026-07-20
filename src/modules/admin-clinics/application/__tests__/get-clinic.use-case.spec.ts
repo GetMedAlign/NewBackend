@@ -2,7 +2,12 @@ import { NotFoundException } from '@nestjs/common';
 import { GetClinicUseCase } from '../get-clinic.use-case';
 
 describe('GetClinicUseCase', () => {
-  const repo = { listClinics: jest.fn(), getClinic: jest.fn() };
+  const repo = {
+    listClinics: jest.fn(),
+    getClinic: jest.fn(),
+    updateClinic: jest.fn(),
+    pauseDelivery: jest.fn(),
+  };
   const useCase = new GetClinicUseCase(repo);
   const ctx = { userId: 'u1', role: 'admin', ip: '127.0.0.1' };
 
