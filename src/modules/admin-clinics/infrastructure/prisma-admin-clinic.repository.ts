@@ -263,6 +263,22 @@ export class PrismaAdminClinicRepository implements AdminClinicRepositoryPort {
       },
     );
   }
+
+  async findClinicUser(
+    ctx: AdminCtx,
+    clinicId: string,
+  ): Promise<{ userId: string; email: string } | null> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: ctx.ip },
+      async (tx) => {
+        const rows = await tx.$queryRaw<{ id: string; email: string }[]>`
+          SELECT id, email FROM users WHERE clinic_id = ${clinicId}::uuid LIMIT 1`;
+        const row = rows[0];
+        if (!row) return null;
+        return { userId: row.id, email: row.email };
+      },
+    );
+  }
 }
 
 /** Groups categories/services/lead-stats by clinic_id and maps each clinic row to a DTO. */

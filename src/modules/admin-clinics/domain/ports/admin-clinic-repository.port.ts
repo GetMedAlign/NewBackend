@@ -49,6 +49,12 @@ export interface AdminClinicRepositoryPort {
 
   /** Returns all leads for a clinic ordered by received_at DESC (spec §1.4). */
   listClinicLeads(ctx: AdminCtx, clinicId: string): Promise<AdminLeadRow[]>;
+
+  /** Returns the single user linked to this clinic, or null when none exists. */
+  findClinicUser(
+    ctx: AdminCtx,
+    clinicId: string,
+  ): Promise<{ userId: string; email: string } | null>;
 }
 
 export const ADMIN_CLINIC_REPOSITORY = Symbol('AdminClinicRepositoryPort');

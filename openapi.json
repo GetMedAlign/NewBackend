@@ -1343,6 +1343,74 @@
           "Admin — Clinics"
         ]
       }
+    },
+    "/admin/clinics/{id}/send-password-reset": {
+      "post": {
+        "operationId": "AdminClinicsController_sendPasswordReset",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Email a password reset link to the clinic's linked user (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
+    "/admin/clinics/{id}/set-password": {
+      "post": {
+        "operationId": "AdminClinicsController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set the clinic's linked user's password (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
     }
   },
   "info": {
@@ -2029,6 +2097,19 @@
         },
         "required": [
           "body"
+        ]
+      },
+      "SetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "newPassword"
         ]
       }
     }

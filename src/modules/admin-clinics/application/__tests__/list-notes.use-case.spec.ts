@@ -11,6 +11,7 @@ describe('ListNotesUseCase', () => {
     pauseDelivery: jest.fn(),
     clinicExists: jest.fn(),
     listClinicLeads: jest.fn(),
+    findClinicUser: jest.fn(),
   };
   const noteRepo = {
     listNotes: jest.fn(),

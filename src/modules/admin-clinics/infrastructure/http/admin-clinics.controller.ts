@@ -24,12 +24,15 @@ import { PauseDeliveryUseCase } from '../../application/pause-delivery.use-case'
 import { ListClinicLeadsUseCase } from '../../application/list-clinic-leads.use-case';
 import { ListNotesUseCase } from '../../application/list-notes.use-case';
 import { AddNoteUseCase } from '../../application/add-note.use-case';
+import { SendClinicPasswordResetUseCase } from '../../application/send-clinic-password-reset.use-case';
+import { SetClinicPasswordUseCase } from '../../application/set-clinic-password.use-case';
 import type { AdminClinicDto } from '../../domain/clinic-dto.mapper';
 import { UpdateClinicDto } from './dto/update-clinic.dto';
 import { PauseDeliveryDto } from './dto/pause-delivery.dto';
 import { AddNoteDto } from './dto/add-note.dto';
 import type { AdminLeadRow } from './dto/admin-lead-row.dto';
 import type { AdminNote } from './dto/admin-note.dto';
+import { SetPasswordDto } from '../../../../infrastructure/http/dto/set-password.dto';
 
 @ApiTags('Admin — Clinics')
 @ApiCookieAuth('access_token')
@@ -46,6 +49,8 @@ export class AdminClinicsController {
     private readonly listClinicLeads: ListClinicLeadsUseCase,
     private readonly listNotes: ListNotesUseCase,
     private readonly addNote: AddNoteUseCase,
+    private readonly sendClinicPasswordReset: SendClinicPasswordResetUseCase,
+    private readonly setClinicPassword: SetClinicPasswordUseCase,
   ) {}
 
   @ApiOperation({ summary: 'List all clinics (admin only)' })
@@ -118,5 +123,32 @@ export class AdminClinicsController {
     @Ip() ip: string,
   ): Promise<AdminNote> {
     return this.addNote.execute({ userId: user.sub, role: user.role, ip }, id, body.body);
+  }
+
+  @ApiOperation({ summary: "Email a password reset link to the clinic's linked user (admin only)" })
+  @Post(':id/send-password-reset')
+  @HttpCode(200)
+  async sendPasswordReset(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    return this.sendClinicPasswordReset.execute({ userId: user.sub, role: user.role, ip }, id);
+  }
+
+  @ApiOperation({ summary: "Directly set the clinic's linked user's password (admin only)" })
+  @Post(':id/set-password')
+  @HttpCode(200)
+  async setPassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SetPasswordDto,
+    @Ip() ip: string,
+  ): Promise<{ success: true }> {
+    return this.setClinicPassword.execute(
+      { userId: user.sub, role: user.role, ip },
+      id,
+      body.newPassword,
+    );
   }
 }

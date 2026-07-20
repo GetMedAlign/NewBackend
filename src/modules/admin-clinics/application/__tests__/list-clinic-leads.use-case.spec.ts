@@ -26,6 +26,7 @@ describe('ListClinicLeadsUseCase', () => {
     pauseDelivery: jest.fn(),
     clinicExists: jest.fn(),
     listClinicLeads: jest.fn(),
+    findClinicUser: jest.fn(),
   };
   const useCase = new ListClinicLeadsUseCase(repo);
 
