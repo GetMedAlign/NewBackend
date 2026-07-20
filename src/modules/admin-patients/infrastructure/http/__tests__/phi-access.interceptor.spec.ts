@@ -33,7 +33,7 @@ describe('PhiAccessInterceptor', () => {
     });
   });
 
-  it('records a null affectedRecord on the list route', async () => {
+  it('records the request path as affectedRecord on the list route', async () => {
     const req = {
       user: { sub: 'admin-1', role: 'admin' },
       ip: '10.0.0.4',
@@ -42,7 +42,9 @@ describe('PhiAccessInterceptor', () => {
       params: {},
     };
     await lastValueFrom(interceptor.intercept(ctxFor(req), next));
-    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ affectedRecord: null }));
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ affectedRecord: '/admin/patients' }),
+    );
   });
 
   it('still returns the response when the audit write fails', async () => {

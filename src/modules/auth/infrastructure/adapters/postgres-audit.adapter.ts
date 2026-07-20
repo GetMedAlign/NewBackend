@@ -15,7 +15,7 @@ export class PostgresAuditAdapter implements AuditPort {
           ${e.actorRole},
           ${e.ip ?? null},
           ${e.actionType},
-          ${e.affectedRecord ?? ''},
+          ${e.affectedRecord ?? null},
           NULL::jsonb,
           NULL::jsonb,
           ${e.notes ?? null}

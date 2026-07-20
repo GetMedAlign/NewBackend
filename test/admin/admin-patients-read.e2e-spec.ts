@@ -347,7 +347,7 @@ describe('GET /admin/patients (e2e)', () => {
         .expect(401);
     });
 
-    it('records a phi_access audit row for the call', async () => {
+    it('records a phi_access audit row for the call, with the request path as the affected record', async () => {
       const since = new Date();
       await new Promise((r) => setTimeout(r, 10));
       const before = await countPhiAccessRows(since);
@@ -361,6 +361,17 @@ describe('GET /admin/patients (e2e)', () => {
 
       const after = await countPhiAccessRows(since);
       expect(after).toBe(before + 1);
+
+      const rows = await seedPrisma.$queryRaw<{ affected_record: string; notes: string | null }[]>`
+        SELECT affected_record, notes FROM audit_log
+         WHERE action_type = 'phi_access'
+           AND actor_user_id = ${adminUserId}::uuid
+           AND created_at >= ${since}
+         ORDER BY created_at DESC
+         LIMIT 1
+      `;
+      expect(rows[0]!.affected_record).toBe('/admin/patients');
+      expect(rows[0]!.notes).toBe('GET /admin/patients');
     });
   });
 

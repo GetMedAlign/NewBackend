@@ -29,7 +29,7 @@ export class PhiAccessInterceptor implements NestInterceptor {
       actorRole: req.user.role,
       ip: req.ip,
       actionType: 'phi_access' as const,
-      affectedRecord: (req.params.id ?? null) as string | null,
+      affectedRecord: (req.params.id ?? req.path) as string,
       notes: `${req.method} ${req.path}`,
     };
 
