@@ -178,6 +178,38 @@ Patient routes never decrypt encrypted assessment fields (`treatment_category` i
 
 **Local testing seed:** in addition to the superadmin account above, `pnpm seed:pj` seeds two `admin_notes` on `vitality-hormone-nyc` (authored by the superadmin) and a soft-deleted patient account, `patient-deleted@medalign-seed.example.com` / `SeedPatient1!`, whose linked user is locked out of sign-in (`locked_until` far in the future). Use it to exercise the admin patient list's deleted-state filtering and the sign-in lockout path.
 
+## Billing API (Slice 6)
+
+Per-clinic billing profile, default payment method (via Stripe), and an admin read-only billing view. This is billing subsystem 1: profile + fee estimate + card management. Invoicing/subscriptions are a future subsystem, so `invoices` is always `[]` and the subscription fields are always `null` for now.
+
+**Clinic portal (role: clinic):**
+
+```
+GET  /clinic/portal/billing          -> billing profile + current-period lead count + estimated platform fee + promo months remaining
+PUT  /clinic/portal/billing          -> partial update (billingEmail, billingContactName, address, taxId, ...) -> { success: true }
+                                         a changed billingEmail is synced to the clinic's Stripe customer, best-effort
+
+GET  /clinic/portal/payment-method   -> default card, read live from Stripe -> { brand, last4, exp_month, exp_year, stripePaymentMethodId } or null
+POST /clinic/portal/payment-method   -> body: { paymentMethodId }  (from Stripe.js) -> attaches it as the Stripe default -> the same card DTO
+DELETE /clinic/portal/payment-method -> detaches the default payment method (best-effort) -> { success: true }
+```
+
+**Admin (roles: admin, superadmin):**
+
+```
+GET /admin/clinics/:id/billing  -> { info: { stripeCustomerId, billingEmail, cardBrand, cardLast4, cardExpMonth, cardExpYear, monthlyFee, pricePerLead, deliveryPaused }, invoices: [] }
+```
+
+Cards are never stored in the database; every read goes to Stripe live. `estimatedPlatformFee` applies the flat monthly fee + per-lead pricing with proration for a clinic's first partial month and the 2026 Welcome Promotion fee waiver.
+
+### New environment variable (Stripe)
+
+| Variable            | Description                                                                   |
+| ------------------- | ----------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY` | Stripe **test-mode** secret key. Used for customer/payment-method/card calls. |
+
+**One-time backfill:** run `pnpm backfill:stripe` once after deploying this slice (and once against production after the migrations are applied) to create a Stripe customer for every existing clinic that doesn't have one yet. Safe to re-run; it skips clinics that already have a `stripe_customer_id`.
+
 ## Auth additions
 
 Password reset endpoints added in Slice 4 (shared infrastructure, also used by future Admin-initiated resets):
@@ -196,5 +228,5 @@ Password reset tokens are single-use, expire after 60 minutes, and stored only a
 3. Clinics & clinic portal.
 4. Clinic Applications and onboarding (Slice 4): application submit, admin review, approval provisioning, password reset.
 5. Admin Clinics & Patients (Slice 5): admin clinic list/edit/notes/pause-delivery, admin patient list/edit/soft-delete, password reset/set for both.
-6. Billing, background jobs, email. _(planned)_
+6. Billing subsystem 1 (Slice 6): billing profile, fee estimate, Stripe-backed default payment method, admin billing view. Background jobs, email, and invoicing/subscriptions land in a later billing subsystem. _(in progress)_
 7. Cutover: data migration from SQL Server, go-live. _(planned)_
