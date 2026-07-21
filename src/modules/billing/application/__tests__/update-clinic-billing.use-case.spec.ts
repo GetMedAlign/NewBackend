@@ -41,4 +41,22 @@ describe('UpdateClinicBillingUseCase', () => {
     await useCase.execute(ctx, { billingEmail: 'new@c.test' });
     expect(stripe.updateCustomerEmail).not.toHaveBeenCalled();
   });
+
+  it('does not sync to Stripe when billingEmail is explicitly null', async () => {
+    repo.upsertProfile.mockResolvedValue({ oldEmail: 'old@c.test', stripeCustomerId: 'cus_1' });
+    await useCase.execute(ctx, {
+      billingEmail: null as unknown as string | undefined,
+    });
+    expect(stripe.updateCustomerEmail).not.toHaveBeenCalled();
+  });
+
+  it('still succeeds when billingContactName is explicitly null', async () => {
+    repo.upsertProfile.mockResolvedValue({ oldEmail: 'old@c.test', stripeCustomerId: 'cus_1' });
+    await expect(
+      useCase.execute(ctx, {
+        billingContactName: null as unknown as string | undefined,
+      }),
+    ).resolves.toEqual({ success: true });
+    expect(stripe.updateCustomerEmail).not.toHaveBeenCalled();
+  });
 });

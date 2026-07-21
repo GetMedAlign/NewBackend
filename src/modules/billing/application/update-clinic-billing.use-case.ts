@@ -29,8 +29,16 @@ export class UpdateClinicBillingUseCase {
   async execute(ctx: ClinicCtx, input: UpdateBillingProfileInput): Promise<{ success: boolean }> {
     const { oldEmail, stripeCustomerId } = await this.repo.upsertProfile(ctx, input);
 
+    // billingEmail absent or explicitly null means "leave unchanged" (spec
+    // §1.2); class-validator's @IsOptional() lets `null` reach here, so it
+    // must be excluded from the sync decision, not just `undefined`.
     const newEmail = input.billingEmail;
-    if (newEmail !== undefined && newEmail !== oldEmail && stripeCustomerId !== null) {
+    if (
+      newEmail !== undefined &&
+      newEmail !== null &&
+      newEmail !== oldEmail &&
+      stripeCustomerId !== null
+    ) {
       try {
         await this.stripe.updateCustomerEmail(stripeCustomerId, newEmail);
       } catch (err) {

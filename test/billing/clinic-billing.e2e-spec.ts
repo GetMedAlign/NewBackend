@@ -279,4 +279,27 @@ describe('GET /clinic/portal/billing (e2e)', () => {
       .send({ billingEmail: 'new-billing@vitality.test' })
       .expect(200, { success: true });
   });
+
+  it('treats an explicit null the same as absent: it does not overwrite the column', async () => {
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingContactName: 'Keep Me' })
+      .expect(200, { success: true });
+
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingContactName: null })
+      .expect(200, { success: true });
+
+    const res = await supertest(app.getHttpServer())
+      .get('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .expect(200);
+
+    expect(res.body.billingContactName).toBe('Keep Me');
+  });
 });

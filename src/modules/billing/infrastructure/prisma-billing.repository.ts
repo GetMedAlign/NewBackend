@@ -120,8 +120,11 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
       { column: 'zip_code', value: input.zipCode },
       { column: 'tax_id', value: input.taxId },
     ];
+    // A field absent (undefined) or explicitly null leaves the column
+    // unchanged (spec §1.2) — class-validator's @IsOptional() lets `null`
+    // through validation, so both must be excluded here, not just undefined.
     const present = fields.filter(
-      (f): f is { column: string; value: string } => f.value !== undefined,
+      (f): f is { column: string; value: string } => f.value !== undefined && f.value !== null,
     );
 
     const insertColumns = [Prisma.raw('clinic_id'), ...present.map((f) => Prisma.raw(f.column))];
