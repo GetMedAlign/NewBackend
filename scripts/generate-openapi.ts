@@ -21,6 +21,7 @@ process.env['SENDGRID_API_KEY'] ??= 'SG.placeholder';
 process.env['SENDGRID_FROM_EMAIL'] ??= 'noreply@example.com';
 process.env['APP_BASE_URL'] ??= 'http://localhost:3000';
 process.env['CLAIM_TOKEN_SECRET'] ??= 'openapi-gen-placeholder-claim-secret-32chars!';
+process.env['STRIPE_SECRET_KEY'] ??= 'sk_test_openapi_placeholder';
 
 import * as path from 'path';
 import * as fs from 'fs';

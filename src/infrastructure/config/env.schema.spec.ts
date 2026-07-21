@@ -14,6 +14,7 @@ const validFixture = {
   CLAIM_TOKEN_SECRET: 'test-claim-token-secret-at-least-32-chars!!',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+  STRIPE_SECRET_KEY: 'sk_test_fixture',
 };
 
 describe('parseEnv', () => {
