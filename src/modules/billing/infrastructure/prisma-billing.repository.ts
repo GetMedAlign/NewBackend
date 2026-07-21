@@ -265,4 +265,19 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
       },
     );
   }
+
+  async setClinicStripeCustomerId(
+    ctx: AdminBillingCtx,
+    clinicId: string,
+    customerId: string,
+  ): Promise<void> {
+    await this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        await tx.$executeRaw`
+          UPDATE clinics SET stripe_customer_id = ${customerId} WHERE id = ${clinicId}::uuid
+        `;
+      },
+    );
+  }
 }

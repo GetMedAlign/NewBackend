@@ -31,6 +31,6 @@ import { ClinicBillingController } from './infrastructure/http/clinic-billing.co
       useClass: StripeAdapter,
     },
   ],
-  exports: [GetAdminClinicBillingUseCase],
+  exports: [GetAdminClinicBillingUseCase, BILLING_REPOSITORY, STRIPE_PORT],
 })
 export class BillingModule {}

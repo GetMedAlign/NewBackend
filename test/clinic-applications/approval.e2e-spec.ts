@@ -38,6 +38,8 @@ import { STORAGE_PORT } from '../../src/modules/clinic-media/domain/ports/storag
 import type { StoragePort } from '../../src/modules/clinic-media/domain/ports/storage.port';
 import { TOKEN_SERVICE } from '../../src/modules/auth/domain/ports/token-service.port';
 import type { TokenServicePort } from '../../src/modules/auth/domain/ports/token-service.port';
+import { STRIPE_PORT } from '../../src/modules/billing/domain/ports/stripe.port';
+import { FakeStripeAdapter } from '../../src/modules/billing/infrastructure/adapters/fake-stripe.adapter';
 
 class CapturingEmailSender implements EmailSenderPort {
   public readonly lastBodyByEmail = new Map<string, string>();
@@ -100,6 +102,7 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
   let patientToken: string;
   let csrfToken: string;
   const emailSender = new CapturingEmailSender();
+  const fakeStripe = new FakeStripeAdapter();
 
   const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
   const adapter = new PrismaPg(pool);
@@ -110,6 +113,7 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
 
   const unique = Date.now();
   const applicantEmail = `e2e-approve-${unique}@test.example.com`;
+  const stripeFailApplicantEmail = `e2e-approve-stripefail-${unique}@test.example.com`;
   const createdApplicationIds: string[] = [];
   const createdClinicIds: string[] = [];
 
@@ -121,6 +125,8 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
       .useValue(new StubWebhookSender())
       .overrideProvider(STORAGE_PORT)
       .useValue(mockStorage)
+      .overrideProvider(STRIPE_PORT)
+      .useValue(fakeStripe)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -160,6 +166,7 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
   afterAll(async () => {
     // Delete the provisioned clinic user (references the clinic).
     await seedPrisma.$executeRaw`DELETE FROM users WHERE email = ${applicantEmail}::citext`;
+    await seedPrisma.$executeRaw`DELETE FROM users WHERE email = ${stripeFailApplicantEmail}::citext`;
     await seedPrisma.$executeRaw`DELETE FROM users WHERE id = ${patientUserId}::uuid`;
     for (const id of createdApplicationIds) {
       await seedPrisma.$executeRaw`
@@ -212,6 +219,12 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
     expect(typeof approveBody.clinicId).toBe('string');
     createdClinicIds.push(approveBody.clinicId);
 
+    // Approval also creates a Stripe customer for the clinic (best-effort, post-commit).
+    const clinicRow = await seedPrisma.$queryRaw<{ stripe_customer_id: string | null }[]>`
+      SELECT stripe_customer_id FROM clinics WHERE id = ${approveBody.clinicId}::uuid
+    `;
+    expect(clinicRow[0]!.stripe_customer_id).not.toBeNull();
+
     // The new clinic user resets their password using the emailed token.
     const rawToken = emailSender.tokenFor(applicantEmail);
     expect(rawToken).toMatch(/^[0-9a-f]{64}$/);
@@ -255,6 +268,44 @@ describe('PUT /admin/applications/:id/status (e2e)', () => {
       .expect(200);
     const profile = profileRes.body as { name: string };
     expect(profile.name).toBe('E2E Onboard Clinic');
+  });
+
+  it('a forced Stripe failure still approves and provisions the clinic (best-effort)', async () => {
+    const res = await agent()
+      .post('/clinic-applications')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({
+        clinicName: 'E2E Stripe-Fail Clinic',
+        contactEmail: stripeFailApplicantEmail,
+        city: 'Austin',
+        stateCode: 'TX',
+        categories: ['hormone'],
+        services: [{ serviceCode: 'testosterone-replacement', isTopService: true }],
+      })
+      .expect(201);
+    const applicationId = (res.body as { applicationId: string }).applicationId;
+    createdApplicationIds.push(applicationId);
+
+    fakeStripe.failNextCreateCustomer('stripe is down');
+
+    const approveRes = await agent()
+      .put(`/admin/applications/${applicationId}/status`)
+      .set('Cookie', `access_token=${adminToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ status: 'approved' })
+      .expect(200);
+
+    const approveBody = approveRes.body as { success: boolean; clinicId: string };
+    expect(approveBody.success).toBe(true);
+    expect(typeof approveBody.clinicId).toBe('string');
+    createdClinicIds.push(approveBody.clinicId);
+
+    // Provisioning still committed even though Stripe failed — no customer id stored.
+    const clinicRow = await seedPrisma.$queryRaw<{ stripe_customer_id: string | null }[]>`
+      SELECT stripe_customer_id FROM clinics WHERE id = ${approveBody.clinicId}::uuid
+    `;
+    expect(clinicRow[0]!.stripe_customer_id).toBeNull();
   });
 
   it('a second approve on the same application returns 409', async () => {

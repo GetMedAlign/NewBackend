@@ -10,6 +10,8 @@ import type {
 } from '../../domain/ports/application-repository.port';
 import type { PasswordResetRepositoryPort } from '../../../auth/domain/ports/password-reset-repository.port';
 import type { EmailSenderPort } from '../../../auth/infrastructure/adapters/email-sender.port';
+import type { StripePort } from '../../../billing/domain/ports/stripe.port';
+import type { BillingRepositoryPort } from '../../../billing/domain/ports/billing-repository.port';
 
 const ctx = { userId: 'admin-1', role: 'superadmin' };
 
@@ -47,18 +49,52 @@ function makeConfig(): ConfigService {
   return { get: jest.fn().mockReturnValue('https://app.example.com') } as unknown as ConfigService;
 }
 
+function makeStripe(overrides: Partial<StripePort> = {}): StripePort {
+  return {
+    createCustomer: jest.fn().mockResolvedValue('cus_test_1'),
+    getDefaultPaymentMethod: jest.fn(),
+    attachPaymentMethod: jest.fn(),
+    detachDefaultPaymentMethod: jest.fn(),
+    updateCustomerEmail: jest.fn(),
+    ...overrides,
+  } as unknown as StripePort;
+}
+
+function makeBillingRepo(overrides: Partial<BillingRepositoryPort> = {}): BillingRepositoryPort {
+  return {
+    getClinicContext: jest.fn(),
+    getProfile: jest.fn(),
+    countInvoices: jest.fn(),
+    countCurrentMonthLeads: jest.fn(),
+    upsertProfile: jest.fn(),
+    getClinicStripeCustomerId: jest.fn(),
+    setBillingStatus: jest.fn(),
+    getAdminClinicBilling: jest.fn(),
+    setClinicStripeCustomerId: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  } as unknown as BillingRepositoryPort;
+}
+
 describe('ReviewApplicationUseCase', () => {
   describe('approve', () => {
     it('provisions, then issues a reset token and welcome email, and returns clinicId', async () => {
       const approveResult: ApproveResult = {
         clinicId: 'clinic-1',
+        clinicName: 'Test Clinic',
         clinicUserId: 'user-1',
         loginEmail: 'apply@example.com',
       };
       const repo = makeRepo({ approve: jest.fn().mockResolvedValue(approveResult) });
       const resetRepo = makeResetRepo();
       const send = jest.fn().mockResolvedValue(undefined);
-      const uc = new ReviewApplicationUseCase(repo, resetRepo, makeEmailSender(send), makeConfig());
+      const uc = new ReviewApplicationUseCase(
+        repo,
+        resetRepo,
+        makeEmailSender(send),
+        makeStripe(),
+        makeBillingRepo(),
+        makeConfig(),
+      );
 
       const res = await uc.execute(ctx, 'app-1', { status: 'approved' });
 
@@ -75,6 +111,7 @@ describe('ReviewApplicationUseCase', () => {
     it('swallows a welcome-email failure and still returns success', async () => {
       const approveResult: ApproveResult = {
         clinicId: 'clinic-1',
+        clinicName: 'Test Clinic',
         clinicUserId: 'user-1',
         loginEmail: 'apply@example.com',
       };
@@ -84,11 +121,74 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(send),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
 
       const res = await uc.execute(ctx, 'app-1', { status: 'approved' });
       expect(res).toEqual({ success: true, clinicId: 'clinic-1' });
+    });
+
+    it('creates a Stripe customer and stores its id on the clinic', async () => {
+      const approveResult: ApproveResult = {
+        clinicId: 'clinic-1',
+        clinicName: 'Test Clinic',
+        clinicUserId: 'user-1',
+        loginEmail: 'apply@example.com',
+      };
+      const repo = makeRepo({ approve: jest.fn().mockResolvedValue(approveResult) });
+      const stripe = makeStripe({ createCustomer: jest.fn().mockResolvedValue('cus_abc123') });
+      const billingRepo = makeBillingRepo();
+      const uc = new ReviewApplicationUseCase(
+        repo,
+        makeResetRepo(),
+        makeEmailSender(),
+        stripe,
+        billingRepo,
+        makeConfig(),
+      );
+
+      const res = await uc.execute(ctx, 'app-1', { status: 'approved' });
+
+      expect(res).toEqual({ success: true, clinicId: 'clinic-1' });
+      expect(stripe.createCustomer).toHaveBeenCalledWith(
+        'Test Clinic',
+        'apply@example.com',
+        'clinic-1',
+      );
+      expect(billingRepo.setClinicStripeCustomerId).toHaveBeenCalledWith(
+        { userId: ctx.userId, role: ctx.role },
+        'clinic-1',
+        'cus_abc123',
+      );
+    });
+
+    it('swallows a Stripe failure and still returns success (best-effort, provisioning already committed)', async () => {
+      const approveResult: ApproveResult = {
+        clinicId: 'clinic-1',
+        clinicName: 'Test Clinic',
+        clinicUserId: 'user-1',
+        loginEmail: 'apply@example.com',
+      };
+      const repo = makeRepo({ approve: jest.fn().mockResolvedValue(approveResult) });
+      const stripe = makeStripe({
+        createCustomer: jest.fn().mockRejectedValue(new Error('stripe is down')),
+      });
+      const billingRepo = makeBillingRepo();
+      const uc = new ReviewApplicationUseCase(
+        repo,
+        makeResetRepo(),
+        makeEmailSender(),
+        stripe,
+        billingRepo,
+        makeConfig(),
+      );
+
+      const res = await uc.execute(ctx, 'app-1', { status: 'approved' });
+
+      expect(res).toEqual({ success: true, clinicId: 'clinic-1' });
+      expect(billingRepo.setClinicStripeCustomerId).not.toHaveBeenCalled();
     });
 
     it('maps not_found to 404', async () => {
@@ -97,6 +197,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
       await expect(uc.execute(ctx, 'app-1', { status: 'approved' })).rejects.toBeInstanceOf(
@@ -112,6 +214,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
       await expect(uc.execute(ctx, 'app-1', { status: 'approved' })).rejects.toBeInstanceOf(
@@ -132,6 +236,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(send),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
 
@@ -153,7 +259,14 @@ describe('ReviewApplicationUseCase', () => {
         deny: jest.fn().mockResolvedValue({ contactEmail: 'a@b.com', clinicName: 'X' }),
       });
       const resetRepo = makeResetRepo();
-      const uc = new ReviewApplicationUseCase(repo, resetRepo, makeEmailSender(), makeConfig());
+      const uc = new ReviewApplicationUseCase(
+        repo,
+        resetRepo,
+        makeEmailSender(),
+        makeStripe(),
+        makeBillingRepo(),
+        makeConfig(),
+      );
       await uc.execute(ctx, 'app-1', { status: 'denied' });
       expect(resetRepo.issue).not.toHaveBeenCalled();
     });
@@ -167,6 +280,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(send),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
       await expect(uc.execute(ctx, 'app-1', { status: 'denied' })).resolves.toEqual({
@@ -180,6 +295,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
       await expect(uc.execute(ctx, 'app-1', { status: 'denied' })).rejects.toBeInstanceOf(
@@ -195,6 +312,8 @@ describe('ReviewApplicationUseCase', () => {
         repo,
         makeResetRepo(),
         makeEmailSender(),
+        makeStripe(),
+        makeBillingRepo(),
         makeConfig(),
       );
       await expect(uc.execute(ctx, 'app-1', { status: 'denied' })).rejects.toBeInstanceOf(

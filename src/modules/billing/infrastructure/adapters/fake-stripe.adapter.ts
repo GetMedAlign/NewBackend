@@ -16,14 +16,25 @@ export class FakeStripeAdapter implements StripePort {
   private readonly customers = new Map<string, FakeCustomer>();
   private seq = 0;
   private attachError: string | null = null;
+  private createCustomerError: string | null = null;
 
   /** Test helper: make the next attachPaymentMethod throw with this message. */
   failNextAttach(message: string): void {
     this.attachError = message;
   }
 
+  /** Test helper: make the next createCustomer throw with this message. */
+  failNextCreateCustomer(message: string): void {
+    this.createCustomerError = message;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createCustomer(_clinicName: string, email: string, _clinicId: string): Promise<string> {
+    if (this.createCustomerError !== null) {
+      const msg = this.createCustomerError;
+      this.createCustomerError = null;
+      throw new Error(msg);
+    }
     const id = `cus_fake_${++this.seq}`;
     this.customers.set(id, { email, defaultPaymentMethodId: null });
     return id;

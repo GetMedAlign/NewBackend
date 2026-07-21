@@ -85,6 +85,16 @@ export interface BillingRepositoryPort {
     ctx: AdminBillingCtx,
     clinicId: string,
   ): Promise<AdminClinicBillingResult | null>;
+  /**
+   * Stores a newly created Stripe customer id on the clinic row, under the
+   * caller's admin context (never `asSystem`) — the `clinics_admin_all` RLS
+   * policy permits this write.
+   */
+  setClinicStripeCustomerId(
+    ctx: AdminBillingCtx,
+    clinicId: string,
+    customerId: string,
+  ): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

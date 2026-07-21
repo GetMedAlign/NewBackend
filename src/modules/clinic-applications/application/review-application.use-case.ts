@@ -21,6 +21,11 @@ import {
   type EmailSenderPort,
 } from '../../auth/infrastructure/adapters/email-sender.port';
 import { generateResetToken, RESET_TOKEN_TTL_MINUTES } from '../../auth/domain/reset-token';
+import { STRIPE_PORT, type StripePort } from '../../billing/domain/ports/stripe.port';
+import {
+  BILLING_REPOSITORY,
+  type BillingRepositoryPort,
+} from '../../billing/domain/ports/billing-repository.port';
 
 export interface ReviewApplicationCtx {
   userId: string;
@@ -43,6 +48,10 @@ export class ReviewApplicationUseCase {
     private readonly resetRepo: PasswordResetRepositoryPort,
     @Inject(EMAIL_SENDER)
     private readonly emailSender: EmailSenderPort,
+    @Inject(STRIPE_PORT)
+    private readonly stripe: StripePort,
+    @Inject(BILLING_REPOSITORY)
+    private readonly billingRepo: BillingRepositoryPort,
     private readonly config: ConfigService,
   ) {}
 
@@ -85,6 +94,26 @@ export class ReviewApplicationUseCase {
     } catch (err) {
       this.logger.error(
         `Failed to issue welcome/set-password email for clinic user ${result.clinicUserId} (provisioning already committed)`,
+        err instanceof Error ? err.stack : String(err),
+      );
+    }
+
+    // A second, independent best-effort block: Stripe customer creation must
+    // NEVER roll back or fail the already-committed provisioning.
+    try {
+      const customerId = await this.stripe.createCustomer(
+        result.clinicName,
+        result.loginEmail,
+        result.clinicId,
+      );
+      await this.billingRepo.setClinicStripeCustomerId(
+        { userId: ctx.userId, role: ctx.role },
+        result.clinicId,
+        customerId,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to create Stripe customer for clinic ${result.clinicId} (provisioning already committed)`,
         err instanceof Error ? err.stack : String(err),
       );
     }

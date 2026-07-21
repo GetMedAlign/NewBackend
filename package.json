@@ -23,6 +23,7 @@
     "openapi": "ts-node -P tsconfig.json scripts/generate-openapi.ts",
     "seed:pj": "ts-node -P tsconfig.json prisma/seed/patient-journey.seed.ts",
     "cleanup:demo": "ts-node -r dotenv/config -P tsconfig.json prisma/seed/cleanup-demo.ts",
+    "backfill:stripe": "ts-node -r dotenv/config -P tsconfig.json prisma/scripts/backfill-stripe-customers.ts",
     "prisma": "prisma",
     "prepare": "prisma generate"
   },
