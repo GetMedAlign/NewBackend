@@ -32,14 +32,26 @@ describe('estimatePlatformFee', () => {
   });
 
   it('prorates a mid-month signup (non-2026)', () => {
-    // April has 30 days; created on the 16th 00:00 UTC => active from 16th to 30th = 14 days
+    // April has 30 days (totalDays = periodEnd - periodStart = May 1 - Apr 1).
+    // activeDays = periodEnd - createdAt = May 1 00:00 UTC - Apr 16 00:00 UTC = 15 days.
     const r = estimatePlatformFee({
       clinicCreatedAt: new Date('2025-04-16T00:00:00Z'),
       now: new Date('2025-04-20T00:00:00Z'),
       invoiceCount: 0,
     });
-    // round(49 * 14/30, 2) = round(22.8666..) = 22.87
-    expect(r.estimatedPlatformFee).toBeCloseTo(22.87, 2);
+    // round(49 * 15/30, 2) = round(24.5) = 24.50
+    expect(r.estimatedPlatformFee).toBeCloseTo(24.5, 2);
+    expect(r.promoMonthsRemaining).toBe(0);
+  });
+
+  it('does not prorate a clinic created exactly at the start of the month', () => {
+    // clinicCreatedAt === periodStart is not strictly after periodStart, so no proration.
+    const r = estimatePlatformFee({
+      clinicCreatedAt: new Date('2025-04-01T00:00:00Z'),
+      now: new Date('2025-04-20T00:00:00Z'),
+      invoiceCount: 0,
+    });
+    expect(r.estimatedPlatformFee).toBe(PLATFORM_FEE);
     expect(r.promoMonthsRemaining).toBe(0);
   });
 

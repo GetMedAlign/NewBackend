@@ -26,10 +26,7 @@ export function estimatePlatformFee(input: {
   let fee = PLATFORM_FEE;
   if (clinicCreatedAt.getTime() > periodStart.getTime()) {
     const totalDays = (periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY;
-    const lastDayOfMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0),
-    ).getUTCDate();
-    const activeDays = lastDayOfMonth - clinicCreatedAt.getUTCDate();
+    const activeDays = (periodEnd.getTime() - clinicCreatedAt.getTime()) / MS_PER_DAY;
     fee = Math.round(PLATFORM_FEE * (activeDays / totalDays) * 100) / 100;
   }
 
