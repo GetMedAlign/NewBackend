@@ -200,7 +200,7 @@ DELETE /clinic/portal/payment-method -> detaches the default payment method (bes
 GET /admin/clinics/:id/billing  -> { info: { stripeCustomerId, billingEmail, cardBrand, cardLast4, cardExpMonth, cardExpYear, monthlyFee, pricePerLead, deliveryPaused }, invoices: [] }
 ```
 
-Cards are never stored in the database; every read goes to Stripe live. `estimatedPlatformFee` applies the flat monthly fee + per-lead pricing with proration for a clinic's first partial month and the 2026 Welcome Promotion fee waiver.
+Cards are never stored in the database; every read goes to Stripe live. `estimatedPlatformFee` is only the flat monthly platform fee, prorated for a clinic's first partial month and waived under the 2026 Welcome Promotion. Per-lead pricing is not included in this field; `currentPeriodLeadCount` is returned separately as a raw count.
 
 ### New environment variable (Stripe)
 
