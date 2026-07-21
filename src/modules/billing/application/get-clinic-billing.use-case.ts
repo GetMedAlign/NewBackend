@@ -39,7 +39,7 @@ export class GetClinicBillingUseCase {
     dto.stateCode = profile?.stateCode ?? null;
     dto.zipCode = profile?.zipCode ?? null;
     dto.taxId = profile?.taxId ?? null;
-    dto.stripeCustomerId = profile?.stripeCustomerId ?? context.stripeCustomerId;
+    dto.stripeCustomerId = context.stripeCustomerId;
     dto.subscriptionCancelledAt = null;
     dto.subscriptionActiveThrough = null;
     dto.currentPeriodLeadCount = currentPeriodLeadCount;

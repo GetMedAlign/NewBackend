@@ -62,4 +62,30 @@ describe('GetClinicBillingUseCase', () => {
     expect(dto.estimatedPlatformFee).toBe(0); // 2026 promo
     expect(dto.promoMonthsRemaining).toBe(2);
   });
+
+  it('uses the clinics stripe_customer_id, not the billing profile one', async () => {
+    repo.getClinicContext.mockResolvedValue({
+      clinicId: 'c1',
+      createdAt: new Date('2025-01-01T00:00:00Z'),
+      status: 'active',
+      billingStatus: 'current',
+      stripeCustomerId: 'cus_from_clinic',
+    });
+    repo.getProfile.mockResolvedValue({
+      billingEmail: null,
+      billingContactName: null,
+      addressLine1: null,
+      addressLine2: null,
+      city: null,
+      stateCode: null,
+      zipCode: null,
+      taxId: null,
+      stripeCustomerId: 'cus_from_profile',
+    });
+    repo.countInvoices.mockResolvedValue(0);
+    repo.countCurrentMonthLeads.mockResolvedValue(0);
+
+    const dto = await useCase.execute({ clinicId: 'c1' }, new Date('2026-03-15T00:00:00Z'));
+    expect(dto.stripeCustomerId).toBe('cus_from_clinic');
+  });
 });
