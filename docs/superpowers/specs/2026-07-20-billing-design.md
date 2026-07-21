@@ -164,7 +164,7 @@ default. On success, if the clinic's `billing_status` is `no_card`, flip it to
 `current`. Returns the resulting `ClinicPaymentMethodDto`.
 
 - If the clinic has no `stripe_customer_id`: `422` with message `"No Stripe
-  customer found for this clinic. Contact support."` (matches .NET; with approval
+customer found for this clinic. Contact support."` (matches .NET; with approval
   provisioning + backfill this should not occur, but the guard stays).
 - If Stripe rejects the attach (for example a card requiring authentication):
   `400` with Stripe's error message.
@@ -200,7 +200,7 @@ Empty array until subsystem 2 populates `invoices`.
 
 - Missing clinic (admin route) → `404`, `"Clinic not found."`
 - No Stripe customer on `POST /payment-method` → `422`, `"No Stripe customer
-  found for this clinic. Contact support."`
+found for this clinic. Contact support."`
 - Stripe attach rejection → `400`, Stripe's message.
 
 All flow through the existing `AllExceptionsFilter` envelope.
@@ -212,15 +212,15 @@ All flow through the existing `AllExceptionsFilter` envelope.
 `STRIPE_PORT` (Symbol) with this interface. Only the methods subsystem 1 needs:
 
 - `createCustomer(clinicName: string, email: string, clinicId: string):
-  Promise<string>` — returns the Stripe customer id; sets metadata
+Promise<string>` — returns the Stripe customer id; sets metadata
   `{ clinicId, source: 'medalign' }`.
 - `getDefaultPaymentMethod(customerId: string): Promise<{ paymentMethodId:
-  string; brand: string; last4: string; expMonth: number; expYear: number } |
-  null>` — null when the customer is missing or has no default card. Stripe
+string; brand: string; last4: string; expMonth: number; expYear: number } |
+null>` — null when the customer is missing or has no default card. Stripe
   `resource_missing` is treated as null, other Stripe errors are logged and
   return null.
 - `attachPaymentMethod(customerId: string, paymentMethodId: string):
-  Promise<{ brand: string; last4: string; expMonth: number; expYear: number }>`
+Promise<{ brand: string; last4: string; expMonth: number; expYear: number }>`
   — attaches and sets as the customer's default; throws on Stripe error so the
   route can surface a 400.
 - `detachDefaultPaymentMethod(customerId: string): Promise<void>` — best-effort;
