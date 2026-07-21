@@ -1592,6 +1592,26 @@
           "Admin — Patients"
         ]
       }
+    },
+    "/clinic/portal/billing": {
+      "get": {
+        "operationId": "ClinicBillingController_getBilling",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic billing profile and fee estimate",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      }
     }
   },
   "info": {
