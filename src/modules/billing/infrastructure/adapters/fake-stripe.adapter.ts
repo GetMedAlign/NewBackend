@@ -57,6 +57,11 @@ export class FakeStripeAdapter implements StripePort {
     if (c) c.email = email;
   }
 
+  /** Test helper: read back the email currently recorded for a fake customer. */
+  emailFor(customerId: string): string | undefined {
+    return this.customers.get(customerId)?.email;
+  }
+
   private card(): StripeCard {
     return { brand: 'visa', last4: '4242', expMonth: 12, expYear: 2030 };
   }

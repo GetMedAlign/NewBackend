@@ -41,6 +41,12 @@ describe('FakeStripeAdapter', () => {
     expect(await stripe.getDefaultPaymentMethod('cus_nope')).toBeNull();
   });
 
+  it('records an updated email and lets a test read it back', async () => {
+    const id = await stripe.createCustomer('Vitality', 'a@b.test', 'clinic-1');
+    await stripe.updateCustomerEmail(id, 'new@b.test');
+    expect(stripe.emailFor(id)).toBe('new@b.test');
+  });
+
   it('lets a test force an attach failure', async () => {
     const id = await stripe.createCustomer('Vitality', 'a@b.test', 'clinic-1');
     stripe.failNextAttach('Your card was declined.');

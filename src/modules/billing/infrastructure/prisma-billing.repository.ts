@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type {
   BillingRepositoryPort,
   ClinicBillingContext,
   BillingProfileRow,
   ClinicCtx,
+  UpdateBillingProfileInput,
+  UpsertProfileResult,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -28,6 +31,8 @@ type BillingProfileDbRow = {
 };
 
 type CountRow = { count: bigint };
+
+type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | null };
 
 @Injectable()
 export class PrismaBillingRepository implements BillingRepositoryPort {
@@ -97,6 +102,61 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           WHERE clinic_id = ${ctx.clinicId}::uuid AND received_at >= ${monthStart}
         `;
         return Number(rows[0]?.count ?? 0);
+      },
+    );
+  }
+
+  async upsertProfile(
+    ctx: ClinicCtx,
+    input: UpdateBillingProfileInput,
+  ): Promise<UpsertProfileResult> {
+    const fields: { column: string; value: string | undefined }[] = [
+      { column: 'billing_email', value: input.billingEmail },
+      { column: 'billing_contact_name', value: input.billingContactName },
+      { column: 'address_line1', value: input.addressLine1 },
+      { column: 'address_line2', value: input.addressLine2 },
+      { column: 'city', value: input.city },
+      { column: 'state_code', value: input.stateCode },
+      { column: 'zip_code', value: input.zipCode },
+      { column: 'tax_id', value: input.taxId },
+    ];
+    const present = fields.filter(
+      (f): f is { column: string; value: string } => f.value !== undefined,
+    );
+
+    const insertColumns = [Prisma.raw('clinic_id'), ...present.map((f) => Prisma.raw(f.column))];
+    const insertValues = [
+      Prisma.sql`${ctx.clinicId}::uuid`,
+      ...present.map((f) => Prisma.sql`${f.value}`),
+    ];
+    const updateSets = [
+      ...present.map((f) => Prisma.sql`${Prisma.raw(f.column)} = ${f.value}`),
+      Prisma.sql`updated_at = now()`,
+    ];
+
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        const oldRows = await tx.$queryRaw<OldValueRow[]>`
+          SELECT
+            c.stripe_customer_id AS "stripeCustomerId",
+            bp.billing_email     AS "billingEmail"
+          FROM clinics c
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+          WHERE c.id = ${ctx.clinicId}::uuid
+        `;
+        const oldRow = oldRows[0] ?? null;
+
+        await tx.$executeRaw`
+          INSERT INTO billing_profiles (${Prisma.join(insertColumns, ', ')})
+          VALUES (${Prisma.join(insertValues, ', ')})
+          ON CONFLICT (clinic_id) DO UPDATE SET ${Prisma.join(updateSets, ', ')}
+        `;
+
+        return {
+          oldEmail: oldRow?.billingEmail ?? null,
+          stripeCustomerId: oldRow?.stripeCustomerId ?? null,
+        };
       },
     );
   }

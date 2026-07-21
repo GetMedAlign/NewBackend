@@ -22,11 +22,28 @@ export interface ClinicCtx {
   clinicId: string;
 }
 
+export interface UpdateBillingProfileInput {
+  billingEmail?: string;
+  billingContactName?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  stateCode?: string;
+  zipCode?: string;
+  taxId?: string;
+}
+
+export interface UpsertProfileResult {
+  oldEmail: string | null;
+  stripeCustomerId: string | null;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
   countInvoices(ctx: ClinicCtx): Promise<number>;
   countCurrentMonthLeads(ctx: ClinicCtx, now: Date): Promise<number>;
+  upsertProfile(ctx: ClinicCtx, input: UpdateBillingProfileInput): Promise<UpsertProfileResult>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

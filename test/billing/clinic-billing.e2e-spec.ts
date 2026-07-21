@@ -1,11 +1,17 @@
 /**
- * e2e for GET /clinic/portal/billing.
+ * e2e for GET and PUT /clinic/portal/billing.
  *
  * Covers:
  *   1. Signin + 2FA for a seeded clinic user, then 200 with the expected shape
  *      (the seeded clinic has no billing profile yet, so profile fields are
  *      null and currentPeriodLeadCount is a number).
  *   2. Security: a signed-in patient gets 403.
+ *   3. PUT partial-update semantics: only the fields sent are written; a
+ *      GET afterwards shows unnamed fields still null.
+ *   4. PUT billing-email sync: when the clinic has a Stripe customer id, a
+ *      changed billingEmail is synced to the (fake) Stripe adapter; the
+ *      fake never touches the network.
+ *   5. Security: PUT is also 403 for a non-clinic caller.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -68,8 +74,25 @@ describe('GET /clinic/portal/billing (e2e)', () => {
   const adapter = new PrismaPg(pool);
   const seedPrisma = new PrismaClient({ adapter });
 
+  /**
+   * `seedPatientJourney` upserts clinics but never touches `stripe_customer_id`
+   * or `billing_profiles` (those columns/table postdate the original seed and
+   * this PUT test is the first writer of them), so leftover state from a
+   * previous run of this suite would otherwise leak into the next one. Reset
+   * both explicitly, independent of the shared seed helper.
+   */
+  async function resetBillingState(clinicId: string): Promise<void> {
+    await seedPrisma.billingProfile.deleteMany({ where: { clinicId } });
+    await seedPrisma.clinic.update({ where: { id: clinicId }, data: { stripeCustomerId: null } });
+  }
+
   beforeAll(async () => {
     await seedPatientJourney(seedPrisma);
+
+    const vitalityClinic = await seedPrisma.clinic.findUniqueOrThrow({
+      where: { slug: clinicUser.clinicSlug },
+    });
+    await resetBillingState(vitalityClinic.id);
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(EMAIL_SENDER)
@@ -144,6 +167,10 @@ describe('GET /clinic/portal/billing (e2e)', () => {
   });
 
   afterAll(async () => {
+    const vitalityClinic = await seedPrisma.clinic.findUniqueOrThrow({
+      where: { slug: clinicUser.clinicSlug },
+    });
+    await resetBillingState(vitalityClinic.id);
     await seedPatientJourney(seedPrisma);
     await app.close();
     await seedPrisma.$disconnect();
@@ -178,5 +205,78 @@ describe('GET /clinic/portal/billing (e2e)', () => {
       .get('/clinic/portal/billing')
       .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
       .expect(403);
+  });
+
+  it('rejects a non-clinic (patient) caller on PUT with 403', async () => {
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingContactName: 'Nope' })
+      .expect(403);
+  });
+
+  it('upserts only the fields sent, leaving the rest untouched', async () => {
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingContactName: 'Dana Vitality', city: 'Austin' })
+      .expect(200, { success: true });
+
+    const res = await supertest(app.getHttpServer())
+      .get('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      billingContactName: 'Dana Vitality',
+      city: 'Austin',
+      billingEmail: null,
+      addressLine1: null,
+      addressLine2: null,
+      stateCode: null,
+      zipCode: null,
+      taxId: null,
+    });
+  });
+
+  it('syncs a changed billing email to Stripe (best-effort, no network)', async () => {
+    const clinic = await seedPrisma.clinic.findUniqueOrThrow({
+      where: { slug: clinicUser.clinicSlug },
+    });
+    const stripeCustomerId = await fakeStripe.createCustomer(
+      clinic.name,
+      'old-billing@vitality.test',
+      clinic.id,
+    );
+    await seedPrisma.clinic.update({
+      where: { id: clinic.id },
+      data: { stripeCustomerId },
+    });
+
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingEmail: 'new-billing@vitality.test' })
+      .expect(200, { success: true });
+
+    expect(fakeStripe.emailFor(stripeCustomerId)).toBe('new-billing@vitality.test');
+
+    const res = await supertest(app.getHttpServer())
+      .get('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .expect(200);
+    expect(res.body.billingEmail).toBe('new-billing@vitality.test');
+
+    // A repeat PUT with the same email must not call Stripe again (unchanged
+    // email), and still succeeds.
+    await supertest(app.getHttpServer())
+      .put('/clinic/portal/billing')
+      .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+      .set('x-csrf-token', csrfToken)
+      .send({ billingEmail: 'new-billing@vitality.test' })
+      .expect(200, { success: true });
   });
 });

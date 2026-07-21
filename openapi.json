@@ -1611,6 +1611,34 @@
         "tags": [
           "Clinic Portal — Billing"
         ]
+      },
+      "put": {
+        "operationId": "ClinicBillingController_updateBilling",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicBillingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Upsert the authenticated clinic billing profile; a changed billing email is synced to Stripe best-effort",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
       }
     }
   },
@@ -2330,6 +2358,43 @@
             "type": "string",
             "example": "90210",
             "description": "ZIP code"
+          }
+        }
+      },
+      "UpdateClinicBillingDto": {
+        "type": "object",
+        "properties": {
+          "billingEmail": {
+            "type": "string",
+            "description": "Billing contact email. Synced to Stripe when changed."
+          },
+          "billingContactName": {
+            "type": "string",
+            "description": "Billing contact name"
+          },
+          "addressLine1": {
+            "type": "string",
+            "description": "Billing address line 1"
+          },
+          "addressLine2": {
+            "type": "string",
+            "description": "Billing address line 2"
+          },
+          "city": {
+            "type": "string",
+            "description": "Billing city"
+          },
+          "stateCode": {
+            "type": "string",
+            "description": "Billing two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Billing ZIP code"
+          },
+          "taxId": {
+            "type": "string",
+            "description": "Tax ID / EIN"
           }
         }
       }

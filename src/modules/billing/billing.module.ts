@@ -5,6 +5,7 @@ import { STRIPE_PORT } from './domain/ports/stripe.port';
 import { PrismaBillingRepository } from './infrastructure/prisma-billing.repository';
 import { StripeAdapter } from './infrastructure/adapters/stripe.adapter';
 import { GetClinicBillingUseCase } from './application/get-clinic-billing.use-case';
+import { UpdateClinicBillingUseCase } from './application/update-clinic-billing.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 
 @Module({
@@ -12,6 +13,7 @@ import { ClinicBillingController } from './infrastructure/http/clinic-billing.co
   controllers: [ClinicBillingController],
   providers: [
     GetClinicBillingUseCase,
+    UpdateClinicBillingUseCase,
     {
       provide: BILLING_REPOSITORY,
       useClass: PrismaBillingRepository,
