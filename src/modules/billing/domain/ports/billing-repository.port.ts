@@ -38,12 +38,19 @@ export interface UpsertProfileResult {
   stripeCustomerId: string | null;
 }
 
+export interface ClinicStripeCustomer {
+  stripeCustomerId: string | null;
+  billingStatus: string;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
   countInvoices(ctx: ClinicCtx): Promise<number>;
   countCurrentMonthLeads(ctx: ClinicCtx, now: Date): Promise<number>;
   upsertProfile(ctx: ClinicCtx, input: UpdateBillingProfileInput): Promise<UpsertProfileResult>;
+  getClinicStripeCustomerId(ctx: ClinicCtx): Promise<ClinicStripeCustomer | null>;
+  setBillingStatus(ctx: ClinicCtx, status: string): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

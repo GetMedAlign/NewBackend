@@ -6,6 +6,9 @@ import { PrismaBillingRepository } from './infrastructure/prisma-billing.reposit
 import { StripeAdapter } from './infrastructure/adapters/stripe.adapter';
 import { GetClinicBillingUseCase } from './application/get-clinic-billing.use-case';
 import { UpdateClinicBillingUseCase } from './application/update-clinic-billing.use-case';
+import { GetPaymentMethodUseCase } from './application/get-payment-method.use-case';
+import { SavePaymentMethodUseCase } from './application/save-payment-method.use-case';
+import { RemovePaymentMethodUseCase } from './application/remove-payment-method.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 
 @Module({
@@ -14,6 +17,9 @@ import { ClinicBillingController } from './infrastructure/http/clinic-billing.co
   providers: [
     GetClinicBillingUseCase,
     UpdateClinicBillingUseCase,
+    GetPaymentMethodUseCase,
+    SavePaymentMethodUseCase,
+    RemovePaymentMethodUseCase,
     {
       provide: BILLING_REPOSITORY,
       useClass: PrismaBillingRepository,

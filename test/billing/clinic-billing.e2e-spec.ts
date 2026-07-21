@@ -302,4 +302,128 @@ describe('GET /clinic/portal/billing (e2e)', () => {
 
     expect(res.body.billingContactName).toBe('Keep Me');
   });
+
+  describe('GET/POST/DELETE /clinic/portal/payment-method', () => {
+    it('runs the full card lifecycle against the fake Stripe adapter', async () => {
+      const clinic = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { slug: clinicUser.clinicSlug },
+      });
+      const stripeCustomerId = await fakeStripe.createCustomer(
+        clinic.name,
+        'pm-lifecycle@vitality.test',
+        clinic.id,
+      );
+      await seedPrisma.clinic.update({
+        where: { id: clinic.id },
+        data: { stripeCustomerId, billingStatus: 'no_card' },
+      });
+
+      // No card yet.
+      const beforeRes = await supertest(app.getHttpServer())
+        .get('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+      expect(JSON.parse(beforeRes.text)).toBeNull();
+
+      // Attach a card; billing_status flips no_card -> current.
+      const postRes = await supertest(app.getHttpServer())
+        .post('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .send({ paymentMethodId: 'pm_visa' })
+        .expect(200);
+
+      expect(Object.keys(postRes.body).sort()).toEqual([
+        'brand',
+        'exp_month',
+        'exp_year',
+        'last4',
+        'stripePaymentMethodId',
+      ]);
+      expect(postRes.body).toEqual({
+        brand: 'visa',
+        last4: '4242',
+        exp_month: 12,
+        exp_year: 2030,
+        stripePaymentMethodId: 'pm_visa',
+      });
+
+      const clinicAfterPost = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { id: clinic.id },
+      });
+      expect(clinicAfterPost.billingStatus).toBe('current');
+
+      // A second GET now returns the same card.
+      const afterAttachRes = await supertest(app.getHttpServer())
+        .get('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+      expect(afterAttachRes.body).toEqual({
+        brand: 'visa',
+        last4: '4242',
+        exp_month: 12,
+        exp_year: 2030,
+        stripePaymentMethodId: 'pm_visa',
+      });
+
+      // Remove it; billing_status flips back to no_card.
+      await supertest(app.getHttpServer())
+        .delete('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .expect(200, { success: true });
+
+      const clinicAfterDelete = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { id: clinic.id },
+      });
+      expect(clinicAfterDelete.billingStatus).toBe('no_card');
+
+      const afterDeleteRes = await supertest(app.getHttpServer())
+        .get('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+      expect(JSON.parse(afterDeleteRes.text)).toBeNull();
+    });
+
+    it('rejects POST with 422 when the clinic has no Stripe customer', async () => {
+      const clinic = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { slug: clinicUser.clinicSlug },
+      });
+      await seedPrisma.clinic.update({
+        where: { id: clinic.id },
+        data: { stripeCustomerId: null },
+      });
+
+      const res = await supertest(app.getHttpServer())
+        .post('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .send({ paymentMethodId: 'pm_visa' })
+        .expect(422);
+
+      expect(res.body.error.message).toBe(
+        'No Stripe customer found for this clinic. Contact support.',
+      );
+    });
+
+    it('rejects a non-clinic (patient) caller with 403 on every payment-method route', async () => {
+      await supertest(app.getHttpServer())
+        .get('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+        .expect(403);
+
+      await supertest(app.getHttpServer())
+        .post('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .send({ paymentMethodId: 'pm_visa' })
+        .expect(403);
+
+      await supertest(app.getHttpServer())
+        .delete('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .expect(403);
+    });
+  });
 });

@@ -98,6 +98,9 @@ import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 import { ClinicBillingController } from '../src/modules/billing/infrastructure/http/clinic-billing.controller';
 import { GetClinicBillingUseCase } from '../src/modules/billing/application/get-clinic-billing.use-case';
 import { UpdateClinicBillingUseCase } from '../src/modules/billing/application/update-clinic-billing.use-case';
+import { GetPaymentMethodUseCase } from '../src/modules/billing/application/get-payment-method.use-case';
+import { SavePaymentMethodUseCase } from '../src/modules/billing/application/save-payment-method.use-case';
+import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -190,6 +193,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(AUDIT),
     stubProvider(GetClinicBillingUseCase),
     stubProvider(UpdateClinicBillingUseCase),
+    stubProvider(GetPaymentMethodUseCase),
+    stubProvider(SavePaymentMethodUseCase),
+    stubProvider(RemovePaymentMethodUseCase),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },

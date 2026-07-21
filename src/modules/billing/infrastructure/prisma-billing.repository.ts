@@ -6,6 +6,7 @@ import type {
   ClinicBillingContext,
   BillingProfileRow,
   ClinicCtx,
+  ClinicStripeCustomer,
   UpdateBillingProfileInput,
   UpsertProfileResult,
 } from '../domain/ports/billing-repository.port';
@@ -33,6 +34,8 @@ type BillingProfileDbRow = {
 type CountRow = { count: bigint };
 
 type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | null };
+
+type StripeCustomerRow = { stripeCustomerId: string | null; billingStatus: string };
 
 @Injectable()
 export class PrismaBillingRepository implements BillingRepositoryPort {
@@ -160,6 +163,33 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           oldEmail: oldRow?.billingEmail ?? null,
           stripeCustomerId: oldRow?.stripeCustomerId ?? null,
         };
+      },
+    );
+  }
+
+  async getClinicStripeCustomerId(ctx: ClinicCtx): Promise<ClinicStripeCustomer | null> {
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        const rows = await tx.$queryRaw<StripeCustomerRow[]>`
+          SELECT
+            stripe_customer_id AS "stripeCustomerId",
+            billing_status     AS "billingStatus"
+          FROM clinics
+          WHERE id = ${ctx.clinicId}::uuid
+        `;
+        return rows[0] ?? null;
+      },
+    );
+  }
+
+  async setBillingStatus(ctx: ClinicCtx, status: string): Promise<void> {
+    await this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        await tx.$executeRaw`
+          UPDATE clinics SET billing_status = ${status} WHERE id = ${ctx.clinicId}::uuid
+        `;
       },
     );
   }

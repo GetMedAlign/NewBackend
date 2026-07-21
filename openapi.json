@@ -1640,6 +1640,79 @@
           "Clinic Portal — Billing"
         ]
       }
+    },
+    "/clinic/portal/payment-method": {
+      "get": {
+        "operationId": "ClinicBillingController_getPaymentMethodInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the clinic's default payment method, read live from Stripe; null if none",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      },
+      "post": {
+        "operationId": "ClinicBillingController_savePaymentMethodInfo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePaymentMethodDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Attach a payment method as the clinic's Stripe default",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      },
+      "delete": {
+        "operationId": "ClinicBillingController_removePaymentMethodInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Detach the clinic's default payment method (best-effort)",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      }
     }
   },
   "info": {
@@ -2397,6 +2470,45 @@
             "description": "Tax ID / EIN"
           }
         }
+      },
+      "PaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "exp_month": {
+            "type": "number"
+          },
+          "exp_year": {
+            "type": "number"
+          },
+          "stripePaymentMethodId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "brand",
+          "last4",
+          "exp_month",
+          "exp_year",
+          "stripePaymentMethodId"
+        ]
+      },
+      "SavePaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "paymentMethodId": {
+            "type": "string",
+            "description": "Stripe PaymentMethod id to attach as the clinic default"
+          }
+        },
+        "required": [
+          "paymentMethodId"
+        ]
       }
     }
   }
