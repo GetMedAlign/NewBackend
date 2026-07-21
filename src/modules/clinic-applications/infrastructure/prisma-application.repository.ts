@@ -480,7 +480,7 @@ export class PrismaApplicationRepository implements ApplicationRepositoryPort {
           WHERE id = ${applicationId}::uuid
         `;
 
-        return { clinicId: clinic.id, clinicUserId, loginEmail };
+        return { clinicId: clinic.id, clinicName: app.clinic_name, clinicUserId, loginEmail };
       },
     );
   }

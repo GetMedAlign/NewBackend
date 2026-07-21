@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { parseEnv } from './env.schema';
 
 const validFixture = {
@@ -14,6 +17,7 @@ const validFixture = {
   CLAIM_TOKEN_SECRET: 'test-claim-token-secret-at-least-32-chars!!',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+  STRIPE_SECRET_KEY: 'sk_test_fixture',
 };
 
 describe('parseEnv', () => {
@@ -57,5 +61,33 @@ describe('parseEnv', () => {
 
   it('throws for an invalid URL in DATABASE_URL', () => {
     expect(() => parseEnv({ ...validFixture, DATABASE_URL: 'not-a-url' })).toThrow();
+  });
+});
+
+/**
+ * Guards against the CI-only failure where a newly-required env var is added to
+ * the schema (and to .env / .env.example) but NOT to the committed test/.env.test
+ * that CI relies on. Locally, tests can still pass because Nest's ConfigModule
+ * also loads the gitignored .env — masking the gap until CI boots without one.
+ * This test parses the REAL test/.env.test through the schema, so a missing
+ * required key fails here (in `pnpm test`) rather than only in CI's e2e.
+ */
+describe('test/.env.test satisfies the env schema', () => {
+  it('parses the committed CI test env without error', () => {
+    const envPath = path.resolve(__dirname, '../../../test/.env.test');
+    const raw = fs.readFileSync(envPath, 'utf-8');
+
+    const parsed: Record<string, string> = {};
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eq = trimmed.indexOf('=');
+      if (eq === -1) continue;
+      parsed[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+    }
+
+    // Fails with the missing key's name if a required schema field is absent
+    // from test/.env.test — the exact class of bug that broke CI.
+    expect(() => parseEnv(parsed)).not.toThrow();
   });
 });

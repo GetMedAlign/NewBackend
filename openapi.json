@@ -1210,6 +1210,35 @@
         ]
       }
     },
+    "/admin/clinics/{id}/billing": {
+      "get": {
+        "operationId": "AdminClinicsController_getBilling",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a clinic's billing info and invoices (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
     "/admin/clinics/{id}/pause-delivery": {
       "post": {
         "operationId": "AdminClinicsController_setPauseDelivery",
@@ -1590,6 +1619,127 @@
         "summary": "Directly set the patient's linked user's password (admin only)",
         "tags": [
           "Admin — Patients"
+        ]
+      }
+    },
+    "/clinic/portal/billing": {
+      "get": {
+        "operationId": "ClinicBillingController_getBilling",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic billing profile and fee estimate",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      },
+      "put": {
+        "operationId": "ClinicBillingController_updateBilling",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicBillingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Upsert the authenticated clinic billing profile; a changed billing email is synced to Stripe best-effort",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      }
+    },
+    "/clinic/portal/payment-method": {
+      "get": {
+        "operationId": "ClinicBillingController_getPaymentMethodInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the clinic's default payment method, read live from Stripe; null if none",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      },
+      "post": {
+        "operationId": "ClinicBillingController_savePaymentMethodInfo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePaymentMethodDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Attach a payment method as the clinic's Stripe default",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      },
+      "delete": {
+        "operationId": "ClinicBillingController_removePaymentMethodInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Detach the clinic's default payment method (best-effort)",
+        "tags": [
+          "Clinic Portal — Billing"
         ]
       }
     }
@@ -2312,6 +2462,82 @@
             "description": "ZIP code"
           }
         }
+      },
+      "UpdateClinicBillingDto": {
+        "type": "object",
+        "properties": {
+          "billingEmail": {
+            "type": "string",
+            "description": "Billing contact email. Synced to Stripe when changed."
+          },
+          "billingContactName": {
+            "type": "string",
+            "description": "Billing contact name"
+          },
+          "addressLine1": {
+            "type": "string",
+            "description": "Billing address line 1"
+          },
+          "addressLine2": {
+            "type": "string",
+            "description": "Billing address line 2"
+          },
+          "city": {
+            "type": "string",
+            "description": "Billing city"
+          },
+          "stateCode": {
+            "type": "string",
+            "description": "Billing two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "Billing ZIP code"
+          },
+          "taxId": {
+            "type": "string",
+            "description": "Tax ID / EIN"
+          }
+        }
+      },
+      "PaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "exp_month": {
+            "type": "number"
+          },
+          "exp_year": {
+            "type": "number"
+          },
+          "stripePaymentMethodId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "brand",
+          "last4",
+          "exp_month",
+          "exp_year",
+          "stripePaymentMethodId"
+        ]
+      },
+      "SavePaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "paymentMethodId": {
+            "type": "string",
+            "description": "Stripe PaymentMethod id to attach as the clinic default"
+          }
+        },
+        "required": [
+          "paymentMethodId"
+        ]
       }
     }
   }

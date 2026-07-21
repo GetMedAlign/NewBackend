@@ -93,6 +93,7 @@ export interface ApplicationDetail {
 /** Result of a successful approval provisioning transaction. */
 export interface ApproveResult {
   clinicId: string;
+  clinicName: string;
   clinicUserId: string;
   loginEmail: string;
 }

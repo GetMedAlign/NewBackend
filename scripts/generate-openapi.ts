@@ -21,6 +21,7 @@ process.env['SENDGRID_API_KEY'] ??= 'SG.placeholder';
 process.env['SENDGRID_FROM_EMAIL'] ??= 'noreply@example.com';
 process.env['APP_BASE_URL'] ??= 'http://localhost:3000';
 process.env['CLAIM_TOKEN_SECRET'] ??= 'openapi-gen-placeholder-claim-secret-32chars!';
+process.env['STRIPE_SECRET_KEY'] ??= 'sk_test_openapi_placeholder';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -94,6 +95,13 @@ import { SoftDeletePatientUseCase } from '../src/modules/admin-patients/applicat
 import { SendPatientPasswordResetUseCase } from '../src/modules/admin-patients/application/send-patient-password-reset.use-case';
 import { SetPatientPasswordUseCase } from '../src/modules/admin-patients/application/set-patient-password.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
+import { ClinicBillingController } from '../src/modules/billing/infrastructure/http/clinic-billing.controller';
+import { GetClinicBillingUseCase } from '../src/modules/billing/application/get-clinic-billing.use-case';
+import { UpdateClinicBillingUseCase } from '../src/modules/billing/application/update-clinic-billing.use-case';
+import { GetPaymentMethodUseCase } from '../src/modules/billing/application/get-payment-method.use-case';
+import { SavePaymentMethodUseCase } from '../src/modules/billing/application/save-payment-method.use-case';
+import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
+import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -129,6 +137,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     AdminApplicationsController,
     AdminClinicsController,
     AdminPatientsController,
+    ClinicBillingController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -183,6 +192,12 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SendPatientPasswordResetUseCase),
     stubProvider(SetPatientPasswordUseCase),
     stubProvider(AUDIT),
+    stubProvider(GetClinicBillingUseCase),
+    stubProvider(UpdateClinicBillingUseCase),
+    stubProvider(GetPaymentMethodUseCase),
+    stubProvider(SavePaymentMethodUseCase),
+    stubProvider(RemovePaymentMethodUseCase),
+    stubProvider(GetAdminClinicBillingUseCase),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },
