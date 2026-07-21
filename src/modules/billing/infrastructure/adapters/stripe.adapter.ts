@@ -16,14 +16,14 @@ export class StripeAdapter implements StripePort {
 
   constructor(configService: ConfigService<Env, true>) {
     const secretKey = configService.getOrThrow<string>('STRIPE_SECRET_KEY');
-    this.stripe = new Stripe(secretKey);
+    this.stripe = new Stripe(secretKey, { apiVersion: '2026-06-24.dahlia' });
   }
 
   async createCustomer(clinicName: string, email: string, clinicId: string): Promise<string> {
     const customer = await this.stripe.customers.create({
       name: clinicName,
       email,
-      metadata: { clinicId },
+      metadata: { clinicId, source: 'medalign' },
     });
     return customer.id;
   }
