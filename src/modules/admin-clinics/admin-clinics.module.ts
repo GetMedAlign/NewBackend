@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 import { GetClinicUseCase } from './application/get-clinic.use-case';
 import { ListClinicsUseCase } from './application/list-clinics.use-case';
 import { UpdateClinicUseCase } from './application/update-clinic.use-case';
@@ -17,7 +18,7 @@ import { PrismaAdminNoteRepository } from './infrastructure/prisma-admin-note.re
 import { AdminClinicsController } from './infrastructure/http/admin-clinics.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, BillingModule],
   controllers: [AdminClinicsController],
   providers: [
     ListClinicsUseCase,

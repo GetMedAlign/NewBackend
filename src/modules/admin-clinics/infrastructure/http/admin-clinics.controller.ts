@@ -26,6 +26,8 @@ import { ListNotesUseCase } from '../../application/list-notes.use-case';
 import { AddNoteUseCase } from '../../application/add-note.use-case';
 import { SendClinicPasswordResetUseCase } from '../../application/send-clinic-password-reset.use-case';
 import { SetClinicPasswordUseCase } from '../../application/set-clinic-password.use-case';
+import { GetAdminClinicBillingUseCase } from '../../../billing/application/get-admin-clinic-billing.use-case';
+import type { AdminClinicBillingDto } from '../../../billing/infrastructure/http/dto/admin-clinic-billing.dto';
 import type { AdminClinicDto } from '../../domain/clinic-dto.mapper';
 import { UpdateClinicDto } from './dto/update-clinic.dto';
 import { PauseDeliveryDto } from './dto/pause-delivery.dto';
@@ -51,6 +53,7 @@ export class AdminClinicsController {
     private readonly addNote: AddNoteUseCase,
     private readonly sendClinicPasswordReset: SendClinicPasswordResetUseCase,
     private readonly setClinicPassword: SetClinicPasswordUseCase,
+    private readonly getAdminClinicBilling: GetAdminClinicBillingUseCase,
   ) {}
 
   @ApiOperation({ summary: 'List all clinics (admin only)' })
@@ -67,6 +70,15 @@ export class AdminClinicsController {
     @Ip() ip: string,
   ): Promise<AdminClinicDto> {
     return this.getClinic.execute({ userId: user.sub, role: user.role, ip }, id);
+  }
+
+  @ApiOperation({ summary: "Get a clinic's billing info and invoices (admin only)" })
+  @Get(':id/billing')
+  getBilling(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AdminClinicBillingDto> {
+    return this.getAdminClinicBilling.execute({ userId: user.sub, role: user.role }, id);
   }
 
   @ApiOperation({ summary: 'Partially update a clinic (admin only)' })

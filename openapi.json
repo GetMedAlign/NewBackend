@@ -1210,6 +1210,35 @@
         ]
       }
     },
+    "/admin/clinics/{id}/billing": {
+      "get": {
+        "operationId": "AdminClinicsController_getBilling",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get a clinic's billing info and invoices (admin only)",
+        "tags": [
+          "Admin — Clinics"
+        ]
+      }
+    },
     "/admin/clinics/{id}/pause-delivery": {
       "post": {
         "operationId": "AdminClinicsController_setPauseDelivery",

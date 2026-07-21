@@ -9,6 +9,10 @@ import type {
   ClinicStripeCustomer,
   UpdateBillingProfileInput,
   UpsertProfileResult,
+  AdminBillingCtx,
+  AdminBillingRow,
+  AdminInvoiceRow,
+  AdminClinicBillingResult,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -36,6 +40,21 @@ type CountRow = { count: bigint };
 type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | null };
 
 type StripeCustomerRow = { stripeCustomerId: string | null; billingStatus: string };
+
+type AdminBillingDbRow = AdminBillingRow;
+
+/** Raw row shape from the §1.7 invoices query, before the ISO-string/Number conversions. */
+type AdminInvoiceDbRow = {
+  id: string;
+  period_start: Date;
+  period_end: Date;
+  lead_count: number;
+  total_amount: number;
+  status: string;
+  due_date: Date | null;
+  paid_at: Date | null;
+  invoice_url: string | null;
+};
 
 @Injectable()
 export class PrismaBillingRepository implements BillingRepositoryPort {
@@ -190,6 +209,59 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
         await tx.$executeRaw`
           UPDATE clinics SET billing_status = ${status} WHERE id = ${ctx.clinicId}::uuid
         `;
+      },
+    );
+  }
+
+  async getAdminClinicBilling(
+    ctx: AdminBillingCtx,
+    clinicId: string,
+  ): Promise<AdminClinicBillingResult | null> {
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        const rows = await tx.$queryRaw<AdminBillingDbRow[]>`
+          SELECT
+            c.id                                              AS "clinicId",
+            c.status,
+            COALESCE(bp.stripe_customer_id, c.stripe_customer_id) AS "stripeCustomerId",
+            bp.billing_email                                  AS "billingEmail"
+          FROM clinics c
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+          WHERE c.id = ${clinicId}::uuid
+        `;
+        const row = rows[0];
+        if (!row) return null;
+
+        const invoiceRows = await tx.$queryRaw<AdminInvoiceDbRow[]>`
+          SELECT
+            id,
+            period_start,
+            period_end,
+            lead_count,
+            total_amount,
+            status,
+            due_date,
+            paid_at,
+            invoice_url
+          FROM invoices
+          WHERE clinic_id = ${clinicId}::uuid
+          ORDER BY period_start DESC
+        `;
+
+        const invoices: AdminInvoiceRow[] = invoiceRows.map((inv) => ({
+          id: inv.id,
+          period_start: inv.period_start.toISOString(),
+          period_end: inv.period_end.toISOString(),
+          lead_count: Number(inv.lead_count),
+          total_amount: Number(inv.total_amount),
+          status: inv.status,
+          due_date: inv.due_date ? inv.due_date.toISOString() : null,
+          paid_at: inv.paid_at ? inv.paid_at.toISOString() : null,
+          invoice_url: inv.invoice_url,
+        }));
+
+        return { row, invoices };
       },
     );
   }
