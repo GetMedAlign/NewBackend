@@ -18,11 +18,13 @@ import { SuspendOverdueAccountsJob } from './application/suspend-overdue-account
 import { HandleStripeWebhookUseCase } from './application/handle-stripe-webhook.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 import { StripeWebhookController } from './infrastructure/http/stripe-webhook.controller';
+import { BillingJobsController } from './infrastructure/http/billing-jobs.controller';
+import { JobTriggerGuard } from './infrastructure/http/job-trigger.guard';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [ClinicBillingController, StripeWebhookController],
+  controllers: [ClinicBillingController, StripeWebhookController, BillingJobsController],
   providers: [
     GetClinicBillingUseCase,
     UpdateClinicBillingUseCase,
@@ -34,6 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     GenerateInvoicesJob,
     SuspendOverdueAccountsJob,
     HandleStripeWebhookUseCase,
+    JobTriggerGuard,
     {
       provide: BILLING_REPOSITORY,
       useClass: PrismaBillingRepository,

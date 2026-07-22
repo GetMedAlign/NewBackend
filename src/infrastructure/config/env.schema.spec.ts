@@ -19,6 +19,7 @@ const validFixture = {
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
   STRIPE_SECRET_KEY: 'sk_test_fixture',
   STRIPE_WEBHOOK_SECRET: 'whsec_fixture',
+  JOB_TRIGGER_SECRET: 'job_fixture',
 };
 
 describe('parseEnv', () => {

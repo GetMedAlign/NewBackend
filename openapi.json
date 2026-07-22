@@ -1784,6 +1784,39 @@
           "Stripe Webhook"
         ]
       }
+    },
+    "/admin/jobs/run/{jobName}": {
+      "post": {
+        "operationId": "BillingJobsController_run",
+        "parameters": [
+          {
+            "name": "jobName",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-job-secret",
+            "in": "header",
+            "description": "Shared secret for the external cron that triggers billing jobs.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Trigger a billing job (invoice-generation | account-suspension). Authenticated via the X-Job-Secret header, not a session cookie.",
+        "tags": [
+          "Admin — Jobs"
+        ]
+      }
     }
   },
   "info": {

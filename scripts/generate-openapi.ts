@@ -23,6 +23,7 @@ process.env['APP_BASE_URL'] ??= 'http://localhost:3000';
 process.env['CLAIM_TOKEN_SECRET'] ??= 'openapi-gen-placeholder-claim-secret-32chars!';
 process.env['STRIPE_SECRET_KEY'] ??= 'sk_test_openapi_placeholder';
 process.env['STRIPE_WEBHOOK_SECRET'] ??= 'whsec_openapi';
+process.env['JOB_TRIGGER_SECRET'] ??= 'job_openapi';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -98,6 +99,10 @@ import { SetPatientPasswordUseCase } from '../src/modules/admin-patients/applica
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 import { ClinicBillingController } from '../src/modules/billing/infrastructure/http/clinic-billing.controller';
 import { StripeWebhookController } from '../src/modules/billing/infrastructure/http/stripe-webhook.controller';
+import { BillingJobsController } from '../src/modules/billing/infrastructure/http/billing-jobs.controller';
+import { JobTriggerGuard } from '../src/modules/billing/infrastructure/http/job-trigger.guard';
+import { GenerateInvoicesJob } from '../src/modules/billing/application/generate-invoices.job';
+import { SuspendOverdueAccountsJob } from '../src/modules/billing/application/suspend-overdue-accounts.job';
 import { GetClinicBillingUseCase } from '../src/modules/billing/application/get-clinic-billing.use-case';
 import { UpdateClinicBillingUseCase } from '../src/modules/billing/application/update-clinic-billing.use-case';
 import { GetPaymentMethodUseCase } from '../src/modules/billing/application/get-payment-method.use-case';
@@ -143,6 +148,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     AdminPatientsController,
     ClinicBillingController,
     StripeWebhookController,
+    BillingJobsController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -205,6 +211,11 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
     stubProvider(HandleStripeWebhookUseCase),
+    stubProvider(GenerateInvoicesJob),
+    stubProvider(SuspendOverdueAccountsJob),
+    // Real (cheap) provider: JobTriggerGuard only depends on ConfigService,
+    // which ConfigModule.forRoot already provides above.
+    JobTriggerGuard,
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },
