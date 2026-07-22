@@ -12,6 +12,7 @@ import { RemovePaymentMethodUseCase } from './application/remove-payment-method.
 import { CancelSubscriptionUseCase } from './application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from './application/get-admin-clinic-billing.use-case';
 import { GenerateInvoicesJob } from './application/generate-invoices.job';
+import { SuspendOverdueAccountsJob } from './application/suspend-overdue-accounts.job';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 import { AuthModule } from '../auth/auth.module';
 
@@ -27,6 +28,7 @@ import { AuthModule } from '../auth/auth.module';
     CancelSubscriptionUseCase,
     GetAdminClinicBillingUseCase,
     GenerateInvoicesJob,
+    SuspendOverdueAccountsJob,
     {
       provide: BILLING_REPOSITORY,
       useClass: PrismaBillingRepository,
@@ -36,6 +38,12 @@ import { AuthModule } from '../auth/auth.module';
       useClass: StripeAdapter,
     },
   ],
-  exports: [GetAdminClinicBillingUseCase, GenerateInvoicesJob, BILLING_REPOSITORY, STRIPE_PORT],
+  exports: [
+    GetAdminClinicBillingUseCase,
+    GenerateInvoicesJob,
+    SuspendOverdueAccountsJob,
+    BILLING_REPOSITORY,
+    STRIPE_PORT,
+  ],
 })
 export class BillingModule {}

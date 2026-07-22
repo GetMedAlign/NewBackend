@@ -16,6 +16,8 @@ describe('GetClinicBillingUseCase', () => {
     countLeadsInPeriod: jest.fn(),
     countInvoicesForClinic: jest.fn(),
     insertGeneratedInvoice: jest.fn(),
+    listSuspendableClinics: jest.fn(),
+    suspendClinicForNonPayment: jest.fn(),
   };
   const useCase = new GetClinicBillingUseCase(repo);
   const ctx = { clinicId: 'c1' };

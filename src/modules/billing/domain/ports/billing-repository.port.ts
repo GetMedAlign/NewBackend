@@ -82,6 +82,15 @@ export interface EligibleClinic {
   billingEmail: string | null;
 }
 
+/** An active clinic with an invoice 30+ days past its due date (spec §4). */
+export interface OverdueClinic {
+  clinicId: string;
+  clinicName: string;
+  billingEmail: string | null;
+  overdueTotal: number;
+  overdueDueDate: Date | null;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -146,6 +155,22 @@ export interface BillingRepositoryPort {
     invoiceUrl: string | null;
     pdfUrl: string | null;
   }): Promise<void>;
+
+  /**
+   * Active clinics with an invoice ('open' or 'overdue') whose due_date is
+   * 30+ days in the past (spec §4), one row per clinic (the most recent
+   * such invoice). `asSystem` — the job acts for no user. Idempotent by
+   * construction: a clinic already suspended is no longer `active`, so a
+   * re-run excludes it.
+   */
+  listSuspendableClinics(now: Date): Promise<OverdueClinic[]>;
+  /**
+   * Suspends one clinic for non-payment in a single transaction: sets
+   * `status = 'suspended'`, `suspension_reason = 'overdue_payment'`,
+   * `notify_on_lead = false`, and marks that clinic's `open` invoices
+   * `overdue`. `asSystem` — the job acts for no user.
+   */
+  suspendClinicForNonPayment(clinicId: string): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

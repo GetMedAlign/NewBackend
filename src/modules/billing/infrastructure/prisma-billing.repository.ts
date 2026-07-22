@@ -14,6 +14,7 @@ import type {
   AdminInvoiceRow,
   AdminClinicBillingResult,
   EligibleClinic,
+  OverdueClinic,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -51,6 +52,15 @@ type EligibleClinicDbRow = {
   createdAt: Date;
   stripeCustomerId: string | null;
   billingEmail: string | null;
+};
+
+/** Raw row shape from `listSuspendableClinics`, before the Number(overdueTotal) conversion. */
+type OverdueClinicDbRow = {
+  clinicId: string;
+  clinicName: string;
+  billingEmail: string | null;
+  overdueTotal: string;
+  overdueDueDate: Date | null;
 };
 
 /** Raw row shape from the §1.7 invoices query, before the ISO-string/Number conversions. */
@@ -388,6 +398,42 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
             ${row.clinicId}::uuid, ${row.stripeInvoiceId}, ${row.periodStart}, ${row.periodEnd}, ${row.leadCount},
             ${row.pricePerLead}, ${row.platformFee}, ${row.totalAmount}, 'open', ${row.dueDate}, ${row.invoiceUrl}, ${row.pdfUrl}
           )
+        `;
+      }),
+    );
+  }
+
+  async listSuspendableClinics(now: Date): Promise<OverdueClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<OverdueClinicDbRow[]>`
+        SELECT c.id AS "clinicId", c.name AS "clinicName",
+               COALESCE(bp.billing_email, c.business_email) AS "billingEmail",
+               i.total_amount::text AS "overdueTotal", i.due_date AS "overdueDueDate"
+          FROM clinics c
+          JOIN LATERAL (
+            SELECT total_amount, due_date FROM invoices
+             WHERE clinic_id = c.id AND status IN ('open','overdue')
+               AND due_date + interval '30 days' < ${now}
+             ORDER BY due_date DESC NULLS LAST LIMIT 1
+          ) i ON true
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+         WHERE c.status = 'active'
+      `;
+      return rows.map((row) => ({ ...row, overdueTotal: Number(row.overdueTotal) }));
+    });
+  }
+
+  async suspendClinicForNonPayment(clinicId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE clinics
+          SET status = 'suspended', suspension_reason = 'overdue_payment', notify_on_lead = false
+          WHERE id = ${clinicId}::uuid
+        `;
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'overdue'
+          WHERE clinic_id = ${clinicId}::uuid AND status = 'open'
         `;
       }),
     );
