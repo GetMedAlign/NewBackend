@@ -73,6 +73,15 @@ export interface AdminClinicBillingResult {
   invoices: AdminInvoiceRow[];
 }
 
+/** A clinic due an invoice for the given period (spec §3 eligibility SQL). */
+export interface EligibleClinic {
+  clinicId: string;
+  clinicName: string;
+  createdAt: Date;
+  stripeCustomerId: string;
+  billingEmail: string | null;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -106,6 +115,37 @@ export interface BillingRepositoryPort {
     clinicId: string,
     customerId: string,
   ): Promise<void>;
+
+  /**
+   * Clinics due an invoice for [periodStart, periodEnd) (spec §3): active,
+   * has a Stripe customer, created before periodEnd, subscription still
+   * active through periodStart (or never cancelled), and with no existing
+   * invoices row for this exact period yet — this last clause is what makes
+   * re-running `GenerateInvoicesJob` for an already-invoiced period a no-op.
+   * Runs `asSystem` — the job acts for no user.
+   */
+  listInvoiceEligibleClinics(periodStart: Date, periodEnd: Date): Promise<EligibleClinic[]>;
+  /** Leads received within [periodStart, periodEnd) for one clinic. `asSystem`. */
+  countLeadsInPeriod(clinicId: string, periodStart: Date, periodEnd: Date): Promise<number>;
+  /** Total prior invoices for one clinic, used for the 2026 promo window. `asSystem`. */
+  countInvoicesForClinic(clinicId: string): Promise<number>;
+  /**
+   * Stores one generated invoice row (`status = 'open'`) in a single
+   * transaction. `asSystem` — the job acts for no user.
+   */
+  insertGeneratedInvoice(row: {
+    clinicId: string;
+    stripeInvoiceId: string;
+    periodStart: Date;
+    periodEnd: Date;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    totalAmount: number;
+    dueDate: Date;
+    invoiceUrl: string | null;
+    pdfUrl: string | null;
+  }): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

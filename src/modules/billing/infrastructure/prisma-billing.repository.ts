@@ -13,6 +13,7 @@ import type {
   AdminBillingRow,
   AdminInvoiceRow,
   AdminClinicBillingResult,
+  EligibleClinic,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -42,6 +43,15 @@ type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | nul
 type StripeCustomerRow = { stripeCustomerId: string | null; billingStatus: string };
 
 type AdminBillingDbRow = AdminBillingRow;
+
+/** Raw row shape from `listInvoiceEligibleClinics`, before the non-null assertion on stripeCustomerId. */
+type EligibleClinicDbRow = {
+  clinicId: string;
+  clinicName: string;
+  createdAt: Date;
+  stripeCustomerId: string | null;
+  billingEmail: string | null;
+};
 
 /** Raw row shape from the §1.7 invoices query, before the ISO-string/Number conversions. */
 type AdminInvoiceDbRow = {
@@ -310,6 +320,76 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           UPDATE clinics SET stripe_customer_id = ${customerId} WHERE id = ${clinicId}::uuid
         `;
       },
+    );
+  }
+
+  async listInvoiceEligibleClinics(periodStart: Date, periodEnd: Date): Promise<EligibleClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<EligibleClinicDbRow[]>`
+        SELECT c.id AS "clinicId", c.name AS "clinicName", c.created_at AS "createdAt",
+               c.stripe_customer_id AS "stripeCustomerId",
+               COALESCE(bp.billing_email, c.business_email) AS "billingEmail"
+          FROM clinics c
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+         WHERE c.status = 'active'
+           AND c.stripe_customer_id IS NOT NULL
+           AND c.created_at < ${periodEnd}
+           AND (c.subscription_active_through IS NULL OR c.subscription_active_through > ${periodStart})
+           AND NOT EXISTS (SELECT 1 FROM invoices i
+                             WHERE i.clinic_id = c.id AND i.period_start = ${periodStart} AND i.period_end = ${periodEnd})
+      `;
+      // WHERE c.stripe_customer_id IS NOT NULL guarantees this at the SQL
+      // level; the assertion here just narrows the TS type to match the port.
+      return rows.map((row) => ({ ...row, stripeCustomerId: row.stripeCustomerId! }));
+    });
+  }
+
+  async countLeadsInPeriod(clinicId: string, periodStart: Date, periodEnd: Date): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads
+        WHERE clinic_id = ${clinicId}::uuid
+          AND received_at >= ${periodStart} AND received_at < ${periodEnd}
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async countInvoicesForClinic(clinicId: string): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM invoices WHERE clinic_id = ${clinicId}::uuid
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async insertGeneratedInvoice(row: {
+    clinicId: string;
+    stripeInvoiceId: string;
+    periodStart: Date;
+    periodEnd: Date;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    totalAmount: number;
+    dueDate: Date;
+    invoiceUrl: string | null;
+    pdfUrl: string | null;
+  }): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          INSERT INTO invoices (
+            clinic_id, stripe_invoice_id, period_start, period_end, lead_count,
+            price_per_lead, platform_fee, total_amount, status, due_date, invoice_url, pdf_url
+          )
+          VALUES (
+            ${row.clinicId}::uuid, ${row.stripeInvoiceId}, ${row.periodStart}, ${row.periodEnd}, ${row.leadCount},
+            ${row.pricePerLead}, ${row.platformFee}, ${row.totalAmount}, 'open', ${row.dueDate}, ${row.invoiceUrl}, ${row.pdfUrl}
+          )
+        `;
+      }),
     );
   }
 }
