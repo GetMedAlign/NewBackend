@@ -15,8 +15,17 @@ interface FakeCustomer {
 export class FakeStripeAdapter implements StripePort {
   private readonly customers = new Map<string, FakeCustomer>();
   private seq = 0;
+  private invoiceSeq = 0;
   private attachError: string | null = null;
   private createCustomerError: string | null = null;
+  private invoiceError: string | null = null;
+
+  /** Recorder: every invoice created via createAndFinalizeInvoice, for test assertions. */
+  readonly invoicesCreated: Array<{
+    customerId: string;
+    leadCount: number;
+    totalCents: number;
+  }> = [];
 
   /** Test helper: make the next attachPaymentMethod throw with this message. */
   failNextAttach(message: string): void {
@@ -26,6 +35,11 @@ export class FakeStripeAdapter implements StripePort {
   /** Test helper: make the next createCustomer throw with this message. */
   failNextCreateCustomer(message: string): void {
     this.createCustomerError = message;
+  }
+
+  /** Test helper: make the next createAndFinalizeInvoice throw with this message. */
+  failNextInvoice(message: string): void {
+    this.invoiceError = message;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,6 +85,34 @@ export class FakeStripeAdapter implements StripePort {
   /** Test helper: read back the email currently recorded for a fake customer. */
   emailFor(customerId: string): string | undefined {
     return this.customers.get(customerId)?.email;
+  }
+
+  async createAndFinalizeInvoice(input: {
+    customerId: string;
+    clinicName: string;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    platformFeeLabel: string;
+    processingFee: number;
+    periodStart: string;
+    periodEnd: string;
+  }): Promise<{ stripeInvoiceId: string; invoiceUrl: string | null; pdfUrl: string | null }> {
+    if (this.invoiceError !== null) {
+      const m = this.invoiceError;
+      this.invoiceError = null;
+      throw new Error(m);
+    }
+    const id = `in_fake_${++this.invoiceSeq}`;
+    const totalCents = Math.round(
+      (input.leadCount * input.pricePerLead + input.platformFee + input.processingFee) * 100,
+    );
+    this.invoicesCreated.push({
+      customerId: input.customerId,
+      leadCount: input.leadCount,
+      totalCents,
+    });
+    return { stripeInvoiceId: id, invoiceUrl: `https://stripe.test/i/${id}`, pdfUrl: null };
   }
 
   private card(): StripeCard {

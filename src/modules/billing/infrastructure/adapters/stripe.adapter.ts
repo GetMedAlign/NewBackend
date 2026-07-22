@@ -105,6 +105,61 @@ export class StripeAdapter implements StripePort {
     await this.stripe.customers.update(customerId, { email });
   }
 
+  async createAndFinalizeInvoice(input: {
+    customerId: string;
+    clinicName: string;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    platformFeeLabel: string;
+    processingFee: number;
+    periodStart: string;
+    periodEnd: string;
+  }): Promise<{ stripeInvoiceId: string; invoiceUrl: string | null; pdfUrl: string | null }> {
+    const invoice = await this.stripe.invoices.create({
+      customer: input.customerId,
+      collection_method: 'send_invoice',
+      days_until_due: 30,
+      auto_advance: false,
+      description: `MedAlign — ${input.clinicName} — ${input.periodStart} to ${input.periodEnd}`,
+    });
+
+    // Pin every item to this invoice id (never create pending items — Stripe
+    // could sweep those into a different draft invoice for this customer).
+    if (input.leadCount > 0) {
+      await this.stripe.invoiceItems.create({
+        customer: input.customerId,
+        invoice: invoice.id,
+        amount: Math.round(input.leadCount * input.pricePerLead * 100),
+        currency: 'usd',
+        description: `${input.leadCount} patient lead(s) × $${input.pricePerLead}`,
+      });
+    }
+    await this.stripe.invoiceItems.create({
+      customer: input.customerId,
+      invoice: invoice.id,
+      amount: Math.round(input.platformFee * 100),
+      currency: 'usd',
+      description: input.platformFeeLabel,
+    });
+    await this.stripe.invoiceItems.create({
+      customer: input.customerId,
+      invoice: invoice.id,
+      amount: Math.round(input.processingFee * 100),
+      currency: 'usd',
+      description: 'Processing fee (0.5%)',
+    });
+
+    const finalized = await this.stripe.invoices.finalizeInvoice(invoice.id, {
+      auto_advance: false,
+    });
+    return {
+      stripeInvoiceId: finalized.id,
+      invoiceUrl: finalized.hosted_invoice_url ?? null,
+      pdfUrl: finalized.invoice_pdf ?? null,
+    };
+  }
+
   private isResourceMissing(error: unknown): boolean {
     return error instanceof Stripe.errors.StripeError && error.code === 'resource_missing';
   }

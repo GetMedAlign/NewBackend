@@ -14,6 +14,20 @@ function startOfNextMonthUtc(d: Date): Date {
 }
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+export function proratedPlatformFee(
+  createdAt: Date,
+  periodStart: Date,
+  periodEnd: Date,
+): { fee: number; activeDays: number; totalDays: number; prorated: boolean } {
+  const totalDays = (periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY;
+  if (createdAt.getTime() <= periodStart.getTime()) {
+    return { fee: PLATFORM_FEE, activeDays: totalDays, totalDays, prorated: false };
+  }
+  const activeDays = (periodEnd.getTime() - createdAt.getTime()) / MS_PER_DAY;
+  const fee = Math.round(PLATFORM_FEE * (activeDays / totalDays) * 100) / 100;
+  return { fee, activeDays, totalDays, prorated: true };
+}
+
 export function estimatePlatformFee(input: {
   clinicCreatedAt: Date;
   now: Date;
@@ -23,12 +37,7 @@ export function estimatePlatformFee(input: {
   const periodStart = startOfMonthUtc(now);
   const periodEnd = startOfNextMonthUtc(now);
 
-  let fee = PLATFORM_FEE;
-  if (clinicCreatedAt.getTime() > periodStart.getTime()) {
-    const totalDays = (periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY;
-    const activeDays = (periodEnd.getTime() - clinicCreatedAt.getTime()) / MS_PER_DAY;
-    fee = Math.round(PLATFORM_FEE * (activeDays / totalDays) * 100) / 100;
-  }
+  let fee = proratedPlatformFee(clinicCreatedAt, periodStart, periodEnd).fee;
 
   let promoMonthsRemaining = 0;
   if (clinicCreatedAt.getUTCFullYear() === 2026) {

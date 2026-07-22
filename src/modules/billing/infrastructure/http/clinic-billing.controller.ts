@@ -21,10 +21,12 @@ import { UpdateClinicBillingUseCase } from '../../application/update-clinic-bill
 import { GetPaymentMethodUseCase } from '../../application/get-payment-method.use-case';
 import { SavePaymentMethodUseCase } from '../../application/save-payment-method.use-case';
 import { RemovePaymentMethodUseCase } from '../../application/remove-payment-method.use-case';
+import { CancelSubscriptionUseCase } from '../../application/cancel-subscription.use-case';
 import { ClinicBillingInfoDto } from './dto/clinic-billing-info.dto';
 import { UpdateClinicBillingDto } from './dto/update-clinic-billing.dto';
 import { PaymentMethodDto } from './dto/payment-method.dto';
 import { SavePaymentMethodDto } from './dto/save-payment-method.dto';
+import { CancelSubscriptionResponseDto } from './dto/cancel-subscription-response.dto';
 
 @ApiTags('Clinic Portal — Billing')
 @ApiCookieAuth('access_token')
@@ -38,6 +40,7 @@ export class ClinicBillingController {
     private readonly getPaymentMethod: GetPaymentMethodUseCase,
     private readonly savePaymentMethod: SavePaymentMethodUseCase,
     private readonly removePaymentMethod: RemovePaymentMethodUseCase,
+    private readonly cancelSubscription: CancelSubscriptionUseCase,
   ) {}
 
   @Get('billing')
@@ -96,5 +99,17 @@ export class ClinicBillingController {
   })
   removePaymentMethodInfo(@CurrentClinic() clinicId: string): Promise<{ success: boolean }> {
     return this.removePaymentMethod.execute({ clinicId });
+  }
+
+  @Post('subscription/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel the clinic subscription; stays active through the end of the current month',
+  })
+  @ApiOkResponse({ type: CancelSubscriptionResponseDto })
+  cancelSubscriptionInfo(
+    @CurrentClinic() clinicId: string,
+  ): Promise<CancelSubscriptionResponseDto> {
+    return this.cancelSubscription.execute({ clinicId }, new Date());
   }
 }

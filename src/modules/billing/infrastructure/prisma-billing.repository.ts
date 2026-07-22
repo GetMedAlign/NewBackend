@@ -13,6 +13,8 @@ import type {
   AdminBillingRow,
   AdminInvoiceRow,
   AdminClinicBillingResult,
+  EligibleClinic,
+  OverdueClinic,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -42,6 +44,24 @@ type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | nul
 type StripeCustomerRow = { stripeCustomerId: string | null; billingStatus: string };
 
 type AdminBillingDbRow = AdminBillingRow;
+
+/** Raw row shape from `listInvoiceEligibleClinics`, before the non-null assertion on stripeCustomerId. */
+type EligibleClinicDbRow = {
+  clinicId: string;
+  clinicName: string;
+  createdAt: Date;
+  stripeCustomerId: string | null;
+  billingEmail: string | null;
+};
+
+/** Raw row shape from `listSuspendableClinics`, before the Number(overdueTotal) conversion. */
+type OverdueClinicDbRow = {
+  clinicId: string;
+  clinicName: string;
+  billingEmail: string | null;
+  overdueTotal: string;
+  overdueDueDate: Date | null;
+};
 
 /** Raw row shape from the §1.7 invoices query, before the ISO-string/Number conversions. */
 type AdminInvoiceDbRow = {
@@ -213,6 +233,38 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
     );
   }
 
+  async cancelSubscription(
+    ctx: ClinicCtx,
+    cancelledAt: Date,
+    activeThrough: Date,
+  ): Promise<'ok' | 'already_cancelled'> {
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        const result = await tx.$executeRaw`
+          UPDATE clinics
+          SET subscription_cancelled_at = ${cancelledAt},
+              subscription_active_through = ${activeThrough},
+              billing_status = 'cancelled',
+              notify_on_lead = false
+          WHERE id = ${ctx.clinicId}::uuid AND subscription_cancelled_at IS NULL
+        `;
+        if (result > 0) return 'ok';
+
+        // 0 rows affected: either the clinic doesn't exist (impossible —
+        // ClinicGuard already validated the session) or it's already
+        // cancelled. Confirm existence to be explicit about which case this is.
+        const existsRows = await tx.$queryRaw<{ exists: number }[]>`
+          SELECT 1 AS exists FROM clinics WHERE id = ${ctx.clinicId}::uuid
+        `;
+        if (existsRows.length === 0) {
+          throw new Error(`Clinic ${ctx.clinicId} not found during subscription cancel`);
+        }
+        return 'already_cancelled';
+      },
+    );
+  }
+
   async getAdminClinicBilling(
     ctx: AdminBillingCtx,
     clinicId: string,
@@ -278,6 +330,161 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           UPDATE clinics SET stripe_customer_id = ${customerId} WHERE id = ${clinicId}::uuid
         `;
       },
+    );
+  }
+
+  async listInvoiceEligibleClinics(periodStart: Date, periodEnd: Date): Promise<EligibleClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<EligibleClinicDbRow[]>`
+        SELECT c.id AS "clinicId", c.name AS "clinicName", c.created_at AS "createdAt",
+               c.stripe_customer_id AS "stripeCustomerId",
+               COALESCE(bp.billing_email, c.business_email) AS "billingEmail"
+          FROM clinics c
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+         WHERE c.status = 'active'
+           AND c.stripe_customer_id IS NOT NULL
+           AND c.created_at < ${periodEnd}
+           AND (c.subscription_active_through IS NULL OR c.subscription_active_through > ${periodStart})
+           AND NOT EXISTS (SELECT 1 FROM invoices i
+                             WHERE i.clinic_id = c.id AND i.period_start = ${periodStart} AND i.period_end = ${periodEnd})
+      `;
+      // WHERE c.stripe_customer_id IS NOT NULL guarantees this at the SQL
+      // level; the assertion here just narrows the TS type to match the port.
+      return rows.map((row) => ({ ...row, stripeCustomerId: row.stripeCustomerId! }));
+    });
+  }
+
+  async countLeadsInPeriod(clinicId: string, periodStart: Date, periodEnd: Date): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads
+        WHERE clinic_id = ${clinicId}::uuid
+          AND received_at >= ${periodStart} AND received_at < ${periodEnd}
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async countInvoicesForClinic(clinicId: string): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM invoices WHERE clinic_id = ${clinicId}::uuid
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async insertGeneratedInvoice(row: {
+    clinicId: string;
+    stripeInvoiceId: string;
+    periodStart: Date;
+    periodEnd: Date;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    totalAmount: number;
+    dueDate: Date;
+    invoiceUrl: string | null;
+    pdfUrl: string | null;
+  }): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          INSERT INTO invoices (
+            clinic_id, stripe_invoice_id, period_start, period_end, lead_count,
+            price_per_lead, platform_fee, total_amount, status, due_date, invoice_url, pdf_url
+          )
+          VALUES (
+            ${row.clinicId}::uuid, ${row.stripeInvoiceId}, ${row.periodStart}, ${row.periodEnd}, ${row.leadCount},
+            ${row.pricePerLead}, ${row.platformFee}, ${row.totalAmount}, 'open', ${row.dueDate}, ${row.invoiceUrl}, ${row.pdfUrl}
+          )
+        `;
+      }),
+    );
+  }
+
+  async listSuspendableClinics(now: Date): Promise<OverdueClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<OverdueClinicDbRow[]>`
+        SELECT c.id AS "clinicId", c.name AS "clinicName",
+               COALESCE(bp.billing_email, c.business_email) AS "billingEmail",
+               i.total_amount::text AS "overdueTotal", i.due_date AS "overdueDueDate"
+          FROM clinics c
+          JOIN LATERAL (
+            SELECT total_amount, due_date FROM invoices
+             WHERE clinic_id = c.id AND status IN ('open','overdue')
+               AND due_date + interval '30 days' < ${now}
+             ORDER BY due_date DESC NULLS LAST LIMIT 1
+          ) i ON true
+          LEFT JOIN billing_profiles bp ON bp.clinic_id = c.id
+         WHERE c.status = 'active'
+      `;
+      return rows.map((row) => ({ ...row, overdueTotal: Number(row.overdueTotal) }));
+    });
+  }
+
+  async suspendClinicForNonPayment(clinicId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE clinics
+          SET status = 'suspended', suspension_reason = 'overdue_payment', notify_on_lead = false
+          WHERE id = ${clinicId}::uuid
+        `;
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'overdue'
+          WHERE clinic_id = ${clinicId}::uuid AND status = 'open'
+        `;
+      }),
+    );
+  }
+
+  async invoiceExistsByStripeId(stripeInvoiceId: string): Promise<boolean> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<{ exists: number }[]>`
+        SELECT 1 AS exists FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId}
+      `;
+      return rows.length > 0;
+    });
+  }
+
+  async markInvoicePaid(stripeInvoiceId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'paid', paid_at = now()
+          WHERE stripe_invoice_id = ${stripeInvoiceId}
+        `;
+        await tx.$executeRaw`
+          UPDATE clinics SET billing_status = 'current'
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+        `;
+        // Conditional reinstate: only a clinic suspended specifically for
+        // overdue_payment, and never a clinic whose subscription was
+        // cancelled (spec §5).
+        await tx.$executeRaw`
+          UPDATE clinics
+          SET status = 'active', suspension_reason = NULL, notify_on_lead = true
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+            AND suspension_reason = 'overdue_payment'
+            AND subscription_cancelled_at IS NULL
+        `;
+      }),
+    );
+  }
+
+  async markInvoicePaymentFailed(stripeInvoiceId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'overdue'
+          WHERE stripe_invoice_id = ${stripeInvoiceId}
+        `;
+        await tx.$executeRaw`
+          UPDATE clinics SET billing_status = 'overdue'
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+        `;
+      }),
     );
   }
 }

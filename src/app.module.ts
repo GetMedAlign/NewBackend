@@ -50,6 +50,9 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(CsrfMiddleware).forRoutes('*');
+    consumer
+      .apply(CsrfMiddleware)
+      .exclude('stripe/webhook', 'admin/jobs/run/:jobName')
+      .forRoutes('*');
   }
 }

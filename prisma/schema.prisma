@@ -285,7 +285,7 @@ model BillingProfile {
 model Invoice {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clinicId        String    @map("clinic_id") @db.Uuid
-  stripeInvoiceId String?   @map("stripe_invoice_id")
+  stripeInvoiceId String?   @unique(map: "invoices_stripe_invoice_id_key") @map("stripe_invoice_id")
   periodStart     DateTime  @map("period_start") @db.Timestamptz
   periodEnd       DateTime  @map("period_end") @db.Timestamptz
   leadCount       Int       @map("lead_count")
@@ -301,6 +301,7 @@ model Invoice {
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
+  @@unique([clinicId, periodStart, periodEnd], map: "invoices_clinic_period_key")
   @@index([clinicId, periodStart(sort: Desc)], map: "invoices_clinic_period_idx")
   @@map("invoices")
 }

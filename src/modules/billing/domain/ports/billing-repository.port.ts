@@ -73,6 +73,24 @@ export interface AdminClinicBillingResult {
   invoices: AdminInvoiceRow[];
 }
 
+/** A clinic due an invoice for the given period (spec §3 eligibility SQL). */
+export interface EligibleClinic {
+  clinicId: string;
+  clinicName: string;
+  createdAt: Date;
+  stripeCustomerId: string;
+  billingEmail: string | null;
+}
+
+/** An active clinic with an invoice 30+ days past its due date (spec §4). */
+export interface OverdueClinic {
+  clinicId: string;
+  clinicName: string;
+  billingEmail: string | null;
+  overdueTotal: number;
+  overdueDueDate: Date | null;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -81,6 +99,17 @@ export interface BillingRepositoryPort {
   upsertProfile(ctx: ClinicCtx, input: UpdateBillingProfileInput): Promise<UpsertProfileResult>;
   getClinicStripeCustomerId(ctx: ClinicCtx): Promise<ClinicStripeCustomer | null>;
   setBillingStatus(ctx: ClinicCtx, status: string): Promise<void>;
+  /**
+   * Cancels the clinic's subscription in a single guarded UPDATE (spec §6).
+   * Returns 'already_cancelled' when the clinic's subscription_cancelled_at
+   * is already set (0 rows affected but the clinic exists — the ClinicGuard
+   * guarantees that); 'ok' otherwise.
+   */
+  cancelSubscription(
+    ctx: ClinicCtx,
+    cancelledAt: Date,
+    activeThrough: Date,
+  ): Promise<'ok' | 'already_cancelled'>;
   getAdminClinicBilling(
     ctx: AdminBillingCtx,
     clinicId: string,
@@ -95,6 +124,76 @@ export interface BillingRepositoryPort {
     clinicId: string,
     customerId: string,
   ): Promise<void>;
+
+  /**
+   * Clinics due an invoice for [periodStart, periodEnd) (spec §3): active,
+   * has a Stripe customer, created before periodEnd, subscription still
+   * active through periodStart (or never cancelled), and with no existing
+   * invoices row for this exact period yet — this last clause is what makes
+   * re-running `GenerateInvoicesJob` for an already-invoiced period a no-op.
+   * Runs `asSystem` — the job acts for no user.
+   */
+  listInvoiceEligibleClinics(periodStart: Date, periodEnd: Date): Promise<EligibleClinic[]>;
+  /** Leads received within [periodStart, periodEnd) for one clinic. `asSystem`. */
+  countLeadsInPeriod(clinicId: string, periodStart: Date, periodEnd: Date): Promise<number>;
+  /** Total prior invoices for one clinic, used for the 2026 promo window. `asSystem`. */
+  countInvoicesForClinic(clinicId: string): Promise<number>;
+  /**
+   * Stores one generated invoice row (`status = 'open'`) in a single
+   * transaction. `asSystem` — the job acts for no user.
+   */
+  insertGeneratedInvoice(row: {
+    clinicId: string;
+    stripeInvoiceId: string;
+    periodStart: Date;
+    periodEnd: Date;
+    leadCount: number;
+    pricePerLead: number;
+    platformFee: number;
+    totalAmount: number;
+    dueDate: Date;
+    invoiceUrl: string | null;
+    pdfUrl: string | null;
+  }): Promise<void>;
+
+  /**
+   * Active clinics with an invoice ('open' or 'overdue') whose due_date is
+   * 30+ days in the past (spec §4), one row per clinic (the most recent
+   * such invoice). `asSystem` — the job acts for no user. Idempotent by
+   * construction: a clinic already suspended is no longer `active`, so a
+   * re-run excludes it.
+   */
+  listSuspendableClinics(now: Date): Promise<OverdueClinic[]>;
+  /**
+   * Suspends one clinic for non-payment in a single transaction: sets
+   * `status = 'suspended'`, `suspension_reason = 'overdue_payment'`,
+   * `notify_on_lead = false`, and marks that clinic's `open` invoices
+   * `overdue`. `asSystem` — the job acts for no user.
+   */
+  suspendClinicForNonPayment(clinicId: string): Promise<void>;
+
+  /**
+   * True if an `invoices` row exists with this Stripe invoice id. Lets the
+   * Stripe webhook handler no-op cleanly (still 200) on an unknown id
+   * instead of erroring (spec §5).
+   */
+  invoiceExistsByStripeId(stripeInvoiceId: string): Promise<boolean>;
+  /**
+   * `invoice.paid` webhook (spec §5), one transaction, `asSystem`: marks the
+   * invoice `status='paid'`/`paid_at=now()`, sets the clinic
+   * `billing_status='current'`, then conditionally reinstates the clinic
+   * (`status='active'`, `suspension_reason=NULL`, `notify_on_lead=true`)
+   * ONLY if it was suspended for `overdue_payment` AND its subscription was
+   * never cancelled — a cancelled clinic is never auto-reactivated, and a
+   * clinic suspended for any other reason is left alone.
+   */
+  markInvoicePaid(stripeInvoiceId: string): Promise<void>;
+  /**
+   * `invoice.payment_failed` webhook (spec §5), one transaction, `asSystem`:
+   * marks the invoice `status='overdue'` and the clinic
+   * `billing_status='overdue'`.
+   */
+  markInvoicePaymentFailed(stripeInvoiceId: string): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');
