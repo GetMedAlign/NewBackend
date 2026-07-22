@@ -125,6 +125,29 @@ describe('POST /admin/jobs/run/:jobName (e2e)', () => {
     expect(auditRows[0]!.affected_record).toBe('invoice-generation');
   });
 
+  it('triggers account-suspension with the correct secret: 200 + JobResult + audit_log row', async () => {
+    const res = await supertest(app.getHttpServer())
+      .post('/admin/jobs/run/account-suspension')
+      .set('X-Job-Secret', CORRECT_SECRET)
+      .expect(200);
+
+    expect(res.body).toMatchObject({ job: 'account-suspension' });
+    expect(typeof res.body.processed).toBe('number');
+    expect(typeof res.body.failed).toBe('number');
+
+    const auditRows = await seedPrisma.$queryRaw<AuditRow[]>`
+      SELECT actor_user_id, actor_role, action_type, affected_record
+      FROM audit_log
+      WHERE action_type = 'job_triggered' AND affected_record = 'account-suspension'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    expect(auditRows).toHaveLength(1);
+    expect(auditRows[0]!.actor_user_id).toBeNull();
+    expect(auditRows[0]!.actor_role).toBe('system');
+    expect(auditRows[0]!.affected_record).toBe('account-suspension');
+  });
+
   it('rejects with 401 when the X-Job-Secret header is missing', async () => {
     await supertest(app.getHttpServer()).post('/admin/jobs/run/invoice-generation').expect(401);
   });
