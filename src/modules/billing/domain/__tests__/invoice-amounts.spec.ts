@@ -72,4 +72,22 @@ describe('computeInvoiceAmounts', () => {
     expect(r.platformFee).toBe(49);
     expect(r.platformFeeLabel).toBe('Monthly platform fee');
   });
+
+  it('waives the fee for a 2026 clinic created mid-period (promo overrides live proration)', () => {
+    // created Mar 16 2026 => would prorate to ~24.50 of the 31-day March period,
+    // but the 2026 promo (priorInvoiceCount < 2) zeroes it.
+    const r = computeInvoiceAmounts({
+      leadCount: 1,
+      clinicCreatedAt: new Date('2026-03-16T00:00:00Z'),
+      periodStart: new Date('2026-03-01T00:00:00Z'),
+      periodEnd: new Date('2026-04-01T00:00:00Z'),
+      priorInvoiceCount: 0,
+    });
+    expect(r.platformFee).toBe(0);
+    expect(r.platformFeeLabel).toBe('Monthly platform fee (2026 Welcome Promotion — waived)');
+    // subtotal = 1*90 + 0 = 90; processing = round(90*0.005)=round(0.45)=0.45; total 90.45
+    expect(r.subtotal).toBe(90);
+    expect(r.processingFee).toBeCloseTo(0.45, 2);
+    expect(r.totalAmount).toBeCloseTo(90.45, 2);
+  });
 });
