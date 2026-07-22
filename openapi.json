@@ -1769,6 +1769,21 @@
           "Clinic Portal — Billing"
         ]
       }
+    },
+    "/stripe/webhook": {
+      "post": {
+        "operationId": "StripeWebhookController_handle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Stripe invoice webhook (invoice.paid / invoice.payment_failed). Authenticated via the stripe-signature header, not a session cookie.",
+        "tags": [
+          "Stripe Webhook"
+        ]
+      }
     }
   },
   "info": {

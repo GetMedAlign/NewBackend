@@ -97,6 +97,7 @@ import { SendPatientPasswordResetUseCase } from '../src/modules/admin-patients/a
 import { SetPatientPasswordUseCase } from '../src/modules/admin-patients/application/set-patient-password.use-case';
 import { AUDIT } from '../src/modules/auth/domain/ports/audit.port';
 import { ClinicBillingController } from '../src/modules/billing/infrastructure/http/clinic-billing.controller';
+import { StripeWebhookController } from '../src/modules/billing/infrastructure/http/stripe-webhook.controller';
 import { GetClinicBillingUseCase } from '../src/modules/billing/application/get-clinic-billing.use-case';
 import { UpdateClinicBillingUseCase } from '../src/modules/billing/application/update-clinic-billing.use-case';
 import { GetPaymentMethodUseCase } from '../src/modules/billing/application/get-payment-method.use-case';
@@ -104,6 +105,7 @@ import { SavePaymentMethodUseCase } from '../src/modules/billing/application/sav
 import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
+import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -140,6 +142,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     AdminClinicsController,
     AdminPatientsController,
     ClinicBillingController,
+    StripeWebhookController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -201,6 +204,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(RemovePaymentMethodUseCase),
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
+    stubProvider(HandleStripeWebhookUseCase),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },
     { provide: APP_GUARD, useValue: stubGuard },

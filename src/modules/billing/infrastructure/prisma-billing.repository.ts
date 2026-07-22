@@ -438,4 +438,53 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
       }),
     );
   }
+
+  async invoiceExistsByStripeId(stripeInvoiceId: string): Promise<boolean> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<{ exists: number }[]>`
+        SELECT 1 AS exists FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId}
+      `;
+      return rows.length > 0;
+    });
+  }
+
+  async markInvoicePaid(stripeInvoiceId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'paid', paid_at = now()
+          WHERE stripe_invoice_id = ${stripeInvoiceId}
+        `;
+        await tx.$executeRaw`
+          UPDATE clinics SET billing_status = 'current'
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+        `;
+        // Conditional reinstate: only a clinic suspended specifically for
+        // overdue_payment, and never a clinic whose subscription was
+        // cancelled (spec §5).
+        await tx.$executeRaw`
+          UPDATE clinics
+          SET status = 'active', suspension_reason = NULL, notify_on_lead = true
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+            AND suspension_reason = 'overdue_payment'
+            AND subscription_cancelled_at IS NULL
+        `;
+      }),
+    );
+  }
+
+  async markInvoicePaymentFailed(stripeInvoiceId: string): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE invoices SET status = 'overdue'
+          WHERE stripe_invoice_id = ${stripeInvoiceId}
+        `;
+        await tx.$executeRaw`
+          UPDATE clinics SET billing_status = 'overdue'
+          WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
+        `;
+      }),
+    );
+  }
 }

@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { Env } from './infrastructure/config/env.schema';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Sets security headers including Strict-Transport-Security (§10).
   app.use(helmet());

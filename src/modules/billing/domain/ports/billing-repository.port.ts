@@ -171,6 +171,29 @@ export interface BillingRepositoryPort {
    * `overdue`. `asSystem` — the job acts for no user.
    */
   suspendClinicForNonPayment(clinicId: string): Promise<void>;
+
+  /**
+   * True if an `invoices` row exists with this Stripe invoice id. Lets the
+   * Stripe webhook handler no-op cleanly (still 200) on an unknown id
+   * instead of erroring (spec §5).
+   */
+  invoiceExistsByStripeId(stripeInvoiceId: string): Promise<boolean>;
+  /**
+   * `invoice.paid` webhook (spec §5), one transaction, `asSystem`: marks the
+   * invoice `status='paid'`/`paid_at=now()`, sets the clinic
+   * `billing_status='current'`, then conditionally reinstates the clinic
+   * (`status='active'`, `suspension_reason=NULL`, `notify_on_lead=true`)
+   * ONLY if it was suspended for `overdue_payment` AND its subscription was
+   * never cancelled — a cancelled clinic is never auto-reactivated, and a
+   * clinic suspended for any other reason is left alone.
+   */
+  markInvoicePaid(stripeInvoiceId: string): Promise<void>;
+  /**
+   * `invoice.payment_failed` webhook (spec §5), one transaction, `asSystem`:
+   * marks the invoice `status='overdue'` and the clinic
+   * `billing_status='overdue'`.
+   */
+  markInvoicePaymentFailed(stripeInvoiceId: string): Promise<void>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');
