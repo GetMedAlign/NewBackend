@@ -9,6 +9,7 @@ import { UpdateClinicBillingUseCase } from './application/update-clinic-billing.
 import { GetPaymentMethodUseCase } from './application/get-payment-method.use-case';
 import { SavePaymentMethodUseCase } from './application/save-payment-method.use-case';
 import { RemovePaymentMethodUseCase } from './application/remove-payment-method.use-case';
+import { CancelSubscriptionUseCase } from './application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from './application/get-admin-clinic-billing.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 
@@ -21,6 +22,7 @@ import { ClinicBillingController } from './infrastructure/http/clinic-billing.co
     GetPaymentMethodUseCase,
     SavePaymentMethodUseCase,
     RemovePaymentMethodUseCase,
+    CancelSubscriptionUseCase,
     GetAdminClinicBillingUseCase,
     {
       provide: BILLING_REPOSITORY,

@@ -213,6 +213,38 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
     );
   }
 
+  async cancelSubscription(
+    ctx: ClinicCtx,
+    cancelledAt: Date,
+    activeThrough: Date,
+  ): Promise<'ok' | 'already_cancelled'> {
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        const result = await tx.$executeRaw`
+          UPDATE clinics
+          SET subscription_cancelled_at = ${cancelledAt},
+              subscription_active_through = ${activeThrough},
+              billing_status = 'cancelled',
+              notify_on_lead = false
+          WHERE id = ${ctx.clinicId}::uuid AND subscription_cancelled_at IS NULL
+        `;
+        if (result > 0) return 'ok';
+
+        // 0 rows affected: either the clinic doesn't exist (impossible —
+        // ClinicGuard already validated the session) or it's already
+        // cancelled. Confirm existence to be explicit about which case this is.
+        const existsRows = await tx.$queryRaw<{ exists: number }[]>`
+          SELECT 1 AS exists FROM clinics WHERE id = ${ctx.clinicId}::uuid
+        `;
+        if (existsRows.length === 0) {
+          throw new Error(`Clinic ${ctx.clinicId} not found during subscription cancel`);
+        }
+        return 'already_cancelled';
+      },
+    );
+  }
+
   async getAdminClinicBilling(
     ctx: AdminBillingCtx,
     clinicId: string,

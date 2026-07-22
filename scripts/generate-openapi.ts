@@ -102,6 +102,7 @@ import { UpdateClinicBillingUseCase } from '../src/modules/billing/application/u
 import { GetPaymentMethodUseCase } from '../src/modules/billing/application/get-payment-method.use-case';
 import { SavePaymentMethodUseCase } from '../src/modules/billing/application/save-payment-method.use-case';
 import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
+import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
@@ -198,6 +199,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetPaymentMethodUseCase),
     stubProvider(SavePaymentMethodUseCase),
     stubProvider(RemovePaymentMethodUseCase),
+    stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
     // Stub global guards/filters so NestJS wires them without crashing
     { provide: APP_GUARD, useValue: stubGuard },

@@ -83,7 +83,17 @@ describe('GET /clinic/portal/billing (e2e)', () => {
    */
   async function resetBillingState(clinicId: string): Promise<void> {
     await seedPrisma.billingProfile.deleteMany({ where: { clinicId } });
-    await seedPrisma.clinic.update({ where: { id: clinicId }, data: { stripeCustomerId: null } });
+    await seedPrisma.clinic.update({
+      where: { id: clinicId },
+      data: {
+        stripeCustomerId: null,
+        // subsystem-2 subscription-cancel columns: not part of the seed's
+        // upsert payload, so they leak across runs of this suite unless
+        // reset explicitly here (mirrors stripeCustomerId above).
+        subscriptionCancelledAt: null,
+        subscriptionActiveThrough: null,
+      },
+    });
   }
 
   beforeAll(async () => {
@@ -421,6 +431,58 @@ describe('GET /clinic/portal/billing (e2e)', () => {
 
       await supertest(app.getHttpServer())
         .delete('/clinic/portal/payment-method')
+        .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .expect(403);
+    });
+  });
+
+  describe('POST /clinic/portal/subscription/cancel', () => {
+    function endOfMonthUtc(now: Date): string {
+      return new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59),
+      ).toISOString();
+    }
+
+    it('cancels the subscription, returning cancelledAt/activeThrough and persisting the row', async () => {
+      const clinic = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { slug: clinicUser.clinicSlug },
+      });
+
+      const beforeRequest = new Date();
+      const res = await supertest(app.getHttpServer())
+        .post('/clinic/portal/subscription/cancel')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .expect(200);
+
+      expect(Object.keys(res.body).sort()).toEqual(['activeThrough', 'cancelledAt']);
+      expect(typeof res.body.cancelledAt).toBe('string');
+      expect(new Date(res.body.cancelledAt).getTime()).toBeGreaterThanOrEqual(
+        beforeRequest.getTime(),
+      );
+      expect(res.body.activeThrough).toBe(endOfMonthUtc(new Date(res.body.cancelledAt)));
+
+      const row = await seedPrisma.clinic.findUniqueOrThrow({ where: { id: clinic.id } });
+      expect(row.billingStatus).toBe('cancelled');
+      expect(row.notifyOnLead).toBe(false);
+      expect(row.subscriptionCancelledAt?.toISOString()).toBe(res.body.cancelledAt);
+      expect(row.subscriptionActiveThrough?.toISOString()).toBe(res.body.activeThrough);
+    });
+
+    it('rejects a second cancel with 409', async () => {
+      const res = await supertest(app.getHttpServer())
+        .post('/clinic/portal/subscription/cancel')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .set('x-csrf-token', csrfToken)
+        .expect(409);
+
+      expect(res.body.error.message).toBe('Subscription is already cancelled.');
+    });
+
+    it('rejects a non-clinic (patient) caller with 403', async () => {
+      await supertest(app.getHttpServer())
+        .post('/clinic/portal/subscription/cancel')
         .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
         .set('x-csrf-token', csrfToken)
         .expect(403);

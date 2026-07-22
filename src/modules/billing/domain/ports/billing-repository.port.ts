@@ -81,6 +81,17 @@ export interface BillingRepositoryPort {
   upsertProfile(ctx: ClinicCtx, input: UpdateBillingProfileInput): Promise<UpsertProfileResult>;
   getClinicStripeCustomerId(ctx: ClinicCtx): Promise<ClinicStripeCustomer | null>;
   setBillingStatus(ctx: ClinicCtx, status: string): Promise<void>;
+  /**
+   * Cancels the clinic's subscription in a single guarded UPDATE (spec §6).
+   * Returns 'already_cancelled' when the clinic's subscription_cancelled_at
+   * is already set (0 rows affected but the clinic exists — the ClinicGuard
+   * guarantees that); 'ok' otherwise.
+   */
+  cancelSubscription(
+    ctx: ClinicCtx,
+    cancelledAt: Date,
+    activeThrough: Date,
+  ): Promise<'ok' | 'already_cancelled'>;
   getAdminClinicBilling(
     ctx: AdminBillingCtx,
     clinicId: string,
