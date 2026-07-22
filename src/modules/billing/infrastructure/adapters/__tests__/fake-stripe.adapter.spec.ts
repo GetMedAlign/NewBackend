@@ -54,4 +54,45 @@ describe('FakeStripeAdapter', () => {
       'Your card was declined.',
     );
   });
+
+  it('createAndFinalizeInvoice returns a deterministic invoice and records the call', async () => {
+    const cus = await stripe.createCustomer('Vitality', 'a@b.test', 'clinic-1');
+    const r = await stripe.createAndFinalizeInvoice({
+      customerId: cus,
+      clinicName: 'Vitality',
+      leadCount: 3,
+      pricePerLead: 90,
+      platformFee: 49,
+      platformFeeLabel: 'Monthly platform fee',
+      processingFee: 1.6,
+      periodStart: '2025-04-01',
+      periodEnd: '2025-05-01',
+    });
+    expect(r.stripeInvoiceId).toMatch(/^in_fake_/);
+    expect(r.invoiceUrl).toContain(r.stripeInvoiceId);
+    expect(stripe.invoicesCreated).toHaveLength(1);
+    expect(stripe.invoicesCreated[0]).toMatchObject({
+      customerId: cus,
+      leadCount: 3,
+      totalCents: expect.any(Number),
+    });
+  });
+
+  it('createAndFinalizeInvoice can be forced to fail', async () => {
+    const cus = await stripe.createCustomer('V', 'a@b.test', 'c1');
+    stripe.failNextInvoice('stripe invoice error');
+    await expect(
+      stripe.createAndFinalizeInvoice({
+        customerId: cus,
+        clinicName: 'V',
+        leadCount: 0,
+        pricePerLead: 90,
+        platformFee: 49,
+        platformFeeLabel: 'x',
+        processingFee: 0.25,
+        periodStart: '2025-04-01',
+        periodEnd: '2025-05-01',
+      }),
+    ).rejects.toThrow('stripe invoice error');
+  });
 });
