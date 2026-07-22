@@ -210,6 +210,66 @@ Cards are never stored in the database; every read goes to Stripe live. `estimat
 
 **One-time backfill:** run `pnpm backfill:stripe` once after deploying this slice (and once against production after the migrations are applied) to create a Stripe customer for every existing clinic that doesn't have one yet. Safe to re-run; it skips clinics that already have a `stripe_customer_id`.
 
+## Billing API (Slice 7)
+
+Invoice generation, account suspension for overdue payment, the Stripe webhook that reconciles invoice state, and clinic-initiated subscription cancellation. This is billing subsystem 2.
+
+**Clinic portal (role: clinic):**
+
+```
+POST /clinic/portal/subscription/cancel -> { cancelledAt, activeThrough }
+     Cancels the clinic's subscription; it stays active through the end of the current
+     calendar month (activeThrough = last day of the current month, 23:59:59 UTC).
+     409 if the subscription is already cancelled.
+```
+
+**Stripe (public, signature-verified — not a clinic/admin caller):**
+
+```
+POST /stripe/webhook -> { received: true }
+     Receives invoice.paid / invoice.payment_failed events. Verified via the
+     stripe-signature header and STRIPE_WEBHOOK_SECRET instead of the session
+     cookie; an invalid signature returns 400. Reconciles the matching invoice's
+     status in the database.
+```
+
+**Admin jobs trigger (shared secret, not a session cookie):**
+
+```
+POST /admin/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
+     jobName is invoice-generation | account-suspension (400 on anything else).
+     Authenticated via the X-Job-Secret header (see JOB_TRIGGER_SECRET below)
+     instead of an admin JWT, so an external cron can call it directly.
+     - invoice-generation: invoices the previous calendar month for every eligible
+       clinic (active, has a Stripe customer, subscription still active, not
+       already invoiced for that period). Re-running for an already-processed
+       month is a no-op.
+     - account-suspension: suspends every active clinic with an invoice 30+ days
+       past due (status -> suspended, notify_on_lead -> false) and best-effort
+       emails the clinic's billing contact. Idempotent; a suspended clinic is
+       excluded from the next run.
+```
+
+### New environment variables (Slice 7)
+
+| Variable                | Description                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (from the Stripe dashboard's webhook config). Verifies `stripe-signature`. |
+| `JOB_TRIGGER_SECRET`    | Shared secret the external cron sends as `X-Job-Secret` to trigger the billing jobs.                     |
+
+### Scheduled jobs
+
+The two billing jobs are not run in-process on a schedule; they are triggered externally (Railway cron or a scheduled GitHub Actions workflow) so the app stays a plain stateless HTTP service. Configure the scheduler to call:
+
+```
+POST /admin/jobs/run/invoice-generation   cron: 0 0 1 * *  (UTC)  -- monthly, 1st of the month
+POST /admin/jobs/run/account-suspension   cron: 0 6 * * *  (UTC)  -- daily, 06:00 UTC
+```
+
+Both calls must send header `X-Job-Secret: <JOB_TRIGGER_SECRET>`. Both jobs are idempotent, so a retried or duplicate run is safe.
+
+Also register the webhook URL (`POST https://<host>/stripe/webhook`) in the Stripe dashboard, subscribed to the `invoice.paid` and `invoice.payment_failed` events, and copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+
 ## Auth additions
 
 Password reset endpoints added in Slice 4 (shared infrastructure, also used by future Admin-initiated resets):
@@ -228,5 +288,6 @@ Password reset tokens are single-use, expire after 60 minutes, and stored only a
 3. Clinics & clinic portal.
 4. Clinic Applications and onboarding (Slice 4): application submit, admin review, approval provisioning, password reset.
 5. Admin Clinics & Patients (Slice 5): admin clinic list/edit/notes/pause-delivery, admin patient list/edit/soft-delete, password reset/set for both.
-6. Billing subsystem 1 (Slice 6): billing profile, fee estimate, Stripe-backed default payment method, admin billing view. Background jobs, email, and invoicing/subscriptions land in a later billing subsystem. _(in progress)_
-7. Cutover: data migration from SQL Server, go-live. _(planned)_
+6. Billing subsystem 1 (Slice 6): billing profile, fee estimate, Stripe-backed default payment method, admin billing view.
+7. Billing subsystem 2 (Slice 7): monthly invoice generation job, daily overdue-account suspension job, an externally-triggered job endpoint, the Stripe webhook for invoice state reconciliation, and clinic-initiated subscription cancellation.
+8. Cutover: data migration from SQL Server, go-live. _(planned)_
