@@ -293,6 +293,22 @@ describe('Clinic Portal Profile (e2e)', () => {
       expect(body.location).toBe('Chicago, IL');
     });
 
+    it('persists zipCode and reflects it on GET', async () => {
+      await agent()
+        .put('/clinic/portal/profile')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .set('x-csrf-token', csrfToken)
+        .send({ zipCode: '10001' })
+        .expect(200);
+
+      const getRes = await agent()
+        .get('/clinic/portal/profile')
+        .set('Cookie', `access_token=${clinicCookie}; csrf_token=${csrfToken}`)
+        .expect(200);
+
+      expect((getRes.body as Record<string, unknown>).zipCode).toBe('10001');
+    });
+
     it('replaces services with topServices/allServices and reflects on GET', async () => {
       await agent()
         .put('/clinic/portal/profile')

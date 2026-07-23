@@ -16,6 +16,7 @@ type ClinicRow = {
   websiteUrl: string | null;
   city: string | null;
   stateCode: string | null;
+  zipCode: string | null;
   location: string | null;
   businessEmail: string | null;
   webhookUrl: string | null;
@@ -63,6 +64,7 @@ export class PrismaClinicWriteRepository implements ClinicWriteRepositoryPort {
             website_url            AS "websiteUrl",
             city,
             state_code             AS "stateCode",
+            zip_code               AS "zipCode",
             location,
             business_email         AS "businessEmail",
             webhook_url            AS "webhookUrl",
@@ -131,6 +133,7 @@ export class PrismaClinicWriteRepository implements ClinicWriteRepositoryPort {
           websiteUrl: clinic.websiteUrl,
           city: clinic.city,
           stateCode: clinic.stateCode,
+          zipCode: clinic.zipCode,
           location: clinic.location,
           businessEmail: clinic.businessEmail,
           webhookUrl: clinic.webhookUrl,
@@ -208,6 +211,7 @@ export class PrismaClinicWriteRepository implements ClinicWriteRepositoryPort {
         if (patch.acceptsInsurance !== undefined) add('accepts_insurance', patch.acceptsInsurance);
         if (patch.city !== undefined) add('city', patch.city);
         if (patch.stateCode !== undefined) add('state_code', patch.stateCode);
+        if (patch.zipCode !== undefined) add('zip_code', patch.zipCode);
 
         const cityOrStateChanged = patch.city !== undefined || patch.stateCode !== undefined;
 

@@ -13,6 +13,7 @@ export type ClinicProfileView = {
   websiteUrl: string | null;
   city: string | null;
   stateCode: string | null;
+  zipCode: string | null;
   location: string | null;
   businessEmail: string | null;
   webhookUrl: string | null;
@@ -52,6 +53,7 @@ export type UpdateClinicProfilePatch = {
   websiteUrl?: string;
   city?: string;
   stateCode?: string;
+  zipCode?: string;
   businessEmail?: string;
   webhookUrl?: string | null;
   notifyOnLead?: boolean;
