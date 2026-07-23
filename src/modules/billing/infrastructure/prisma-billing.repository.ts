@@ -26,6 +26,8 @@ type ClinicContextRow = {
   status: string;
   billingStatus: string;
   stripeCustomerId: string | null;
+  subscriptionCancelledAt: Date | null;
+  subscriptionActiveThrough: Date | null;
 };
 
 type BillingProfileDbRow = {
@@ -105,11 +107,13 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
       async (tx) => {
         const rows = await tx.$queryRaw<ClinicContextRow[]>`
           SELECT
-            id                  AS "clinicId",
-            created_at          AS "createdAt",
+            id                          AS "clinicId",
+            created_at                  AS "createdAt",
             status,
-            billing_status      AS "billingStatus",
-            stripe_customer_id  AS "stripeCustomerId"
+            billing_status              AS "billingStatus",
+            stripe_customer_id          AS "stripeCustomerId",
+            subscription_cancelled_at   AS "subscriptionCancelledAt",
+            subscription_active_through AS "subscriptionActiveThrough"
           FROM clinics
           WHERE id = ${ctx.clinicId}::uuid
         `;

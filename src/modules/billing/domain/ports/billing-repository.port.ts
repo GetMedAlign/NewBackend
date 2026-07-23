@@ -4,6 +4,8 @@ export interface ClinicBillingContext {
   status: string; // clinics.status
   billingStatus: string; // clinics.billing_status
   stripeCustomerId: string | null;
+  subscriptionCancelledAt: Date | null;
+  subscriptionActiveThrough: Date | null;
 }
 
 export interface BillingProfileRow {
