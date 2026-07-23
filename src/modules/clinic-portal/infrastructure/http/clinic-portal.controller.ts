@@ -102,6 +102,7 @@ export class ClinicPortalController {
     dto.websiteUrl = profile.websiteUrl;
     dto.city = profile.city;
     dto.stateCode = profile.stateCode;
+    dto.zipCode = profile.zipCode;
     dto.location = profile.location;
     dto.businessEmail = profile.businessEmail;
     dto.webhookUrl = profile.webhookUrl;
@@ -151,6 +152,7 @@ export class ClinicPortalController {
       websiteUrl: dto.websiteUrl,
       city: dto.city,
       stateCode: dto.stateCode,
+      zipCode: dto.zipCode,
       businessEmail: dto.businessEmail,
       webhookUrl: dto.webhookUrl,
       notifyOnLead: dto.notifyOnLead,

@@ -41,6 +41,12 @@ export class UpdateClinicPortalProfileRequest {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(10)
+  zipCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   @MaxLength(200)
   businessEmail?: string;
 

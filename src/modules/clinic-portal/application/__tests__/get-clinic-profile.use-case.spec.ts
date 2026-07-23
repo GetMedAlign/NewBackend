@@ -17,6 +17,7 @@ function makeProfile(overrides: Partial<ClinicProfileView> = {}): ClinicProfileV
     websiteUrl: null,
     city: 'New York',
     stateCode: 'NY',
+    zipCode: '10001',
     location: 'New York, NY',
     businessEmail: null,
     webhookUrl: null,
@@ -66,6 +67,7 @@ describe('GetClinicProfileUseCase', () => {
     const result = await useCase.execute(CLINIC_ID);
 
     expect(result).toBe(profile);
+    expect(result.zipCode).toBe('10001');
     expect(repo.findProfile).toHaveBeenCalledWith(CLINIC_ID);
   });
 

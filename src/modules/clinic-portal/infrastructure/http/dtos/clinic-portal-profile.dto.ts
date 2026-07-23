@@ -37,6 +37,9 @@ export class ClinicPortalProfileDto {
   stateCode!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
+  zipCode!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
   location!: string | null;
 
   @ApiPropertyOptional({ nullable: true })

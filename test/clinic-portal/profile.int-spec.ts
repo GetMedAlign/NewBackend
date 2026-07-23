@@ -128,6 +128,13 @@ describe('PrismaClinicWriteRepository.updateProfile', () => {
     expect(profile!.location).toBe('Austin, TX');
   });
 
+  it('persists zipCode and round-trips it on findProfile', async () => {
+    await repo.updateProfile(clinicId, { zipCode: '10001' });
+
+    const profile = await repo.findProfile(clinicId);
+    expect(profile!.zipCode).toBe('10001');
+  });
+
   it('replaces treatment categories', async () => {
     await repo.updateProfile(clinicId, { treatmentCategories: ['hormone', 'wellness'] });
 

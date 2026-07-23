@@ -21,6 +21,23 @@ const envSchema = z.object({
 
   APP_BASE_URL: z.string().url(),
 
+  // Origins allowed to call the API with credentials (the frontend). A
+  // comma-separated list, so prod can allow the deployed URL plus any preview
+  // and localhost origins. Defaults to the local Vite dev server. Parsed to a
+  // string[] and passed straight to CORS.
+  FRONTEND_ORIGIN: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((s) =>
+      s
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    )
+    .refine((list) => list.length > 0 && list.every((o) => URL.canParse(o)), {
+      message: 'FRONTEND_ORIGIN must be a comma-separated list of http(s) origins',
+    }),
+
   COOKIE_DOMAIN: z.string().optional(),
 
   CLAIM_TOKEN_SECRET: z.string().min(32),

@@ -2058,6 +2058,9 @@
           "stateCode": {
             "type": "string"
           },
+          "zipCode": {
+            "type": "string"
+          },
           "businessEmail": {
             "type": "string"
           },

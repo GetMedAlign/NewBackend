@@ -64,6 +64,16 @@ describe('UpdateClinicProfileUseCase', () => {
     expect(repo.updateProfile).toHaveBeenCalledWith(CLINIC_ID, patch);
   });
 
+  it('passes zipCode through to repo.updateProfile unchanged', async () => {
+    const repo = makeRepo();
+    const useCase = new UpdateClinicProfileUseCase(repo);
+    const patch: UpdateClinicProfilePatch = { zipCode: '10001' };
+
+    await useCase.execute(CLINIC_ID, patch);
+
+    expect(repo.updateProfile).toHaveBeenCalledWith(CLINIC_ID, patch);
+  });
+
   it('does not validate webhookUrl when it is undefined', async () => {
     const repo = makeRepo();
     const useCase = new UpdateClinicProfileUseCase(repo);
