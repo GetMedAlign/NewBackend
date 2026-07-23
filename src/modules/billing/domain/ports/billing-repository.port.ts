@@ -91,6 +91,13 @@ export interface OverdueClinic {
   overdueDueDate: Date | null;
 }
 
+/** An active clinic opted into the weekly lead-count summary (spec §5). */
+export interface WeeklySummaryClinic {
+  clinicId: string;
+  clinicName: string;
+  businessEmail: string | null;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -194,6 +201,17 @@ export interface BillingRepositoryPort {
    * `billing_status='overdue'`.
    */
   markInvoicePaymentFailed(stripeInvoiceId: string): Promise<void>;
+
+  /**
+   * Active clinics that have opted into the weekly summary email (spec §5):
+   * `status = 'active' AND weekly_summary = true`. `asSystem` — the job acts
+   * for no user.
+   */
+  listWeeklySummaryClinics(): Promise<WeeklySummaryClinic[]>;
+  /** Leads received on or after `since` for one clinic. `asSystem`. */
+  countLeadsSince(clinicId: string, since: Date): Promise<number>;
+  /** All-time lead count for one clinic. `asSystem`. */
+  countAllLeads(clinicId: string): Promise<number>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

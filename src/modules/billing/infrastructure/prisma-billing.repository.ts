@@ -15,6 +15,7 @@ import type {
   AdminClinicBillingResult,
   EligibleClinic,
   OverdueClinic,
+  WeeklySummaryClinic,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -486,5 +487,33 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
         `;
       }),
     );
+  }
+
+  async listWeeklySummaryClinics(): Promise<WeeklySummaryClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      return client.$queryRaw<WeeklySummaryClinic[]>`
+        SELECT id AS "clinicId", name AS "clinicName", business_email AS "businessEmail"
+          FROM clinics WHERE status = 'active' AND weekly_summary = true
+      `;
+    });
+  }
+
+  async countLeadsSince(clinicId: string, since: Date): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads
+        WHERE clinic_id = ${clinicId}::uuid AND received_at >= ${since}
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async countAllLeads(clinicId: string): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads WHERE clinic_id = ${clinicId}::uuid
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
   }
 }
