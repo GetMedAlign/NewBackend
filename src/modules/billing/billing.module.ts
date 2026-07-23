@@ -16,6 +16,7 @@ import { GetAdminClinicBillingUseCase } from './application/get-admin-clinic-bil
 import { GenerateInvoicesJob } from './application/generate-invoices.job';
 import { SuspendOverdueAccountsJob } from './application/suspend-overdue-accounts.job';
 import { WeeklySummaryJob } from './application/weekly-summary.job';
+import { RunBillingJobService } from './application/run-billing-job.service';
 import { HandleStripeWebhookUseCase } from './application/handle-stripe-webhook.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 import { StripeWebhookController } from './infrastructure/http/stripe-webhook.controller';
@@ -37,6 +38,7 @@ import { AuthModule } from '../auth/auth.module';
     GenerateInvoicesJob,
     SuspendOverdueAccountsJob,
     WeeklySummaryJob,
+    RunBillingJobService,
     HandleStripeWebhookUseCase,
     JobTriggerGuard,
     {
