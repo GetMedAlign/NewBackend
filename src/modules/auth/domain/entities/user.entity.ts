@@ -5,6 +5,8 @@ export interface UserProps {
   emailConfirmed: boolean;
   failedLoginCount: number;
   lockedUntil: Date | null;
+  /** Optional so existing callers that don't track it yet don't have to pass it. */
+  name?: string | null;
 }
 
 export class User {
@@ -14,6 +16,7 @@ export class User {
   readonly emailConfirmed: boolean;
   readonly failedLoginCount: number;
   readonly lockedUntil: Date | null;
+  readonly name: string | null;
 
   constructor(props: UserProps) {
     this.id = props.id;
@@ -22,6 +25,7 @@ export class User {
     this.emailConfirmed = props.emailConfirmed;
     this.failedLoginCount = props.failedLoginCount;
     this.lockedUntil = props.lockedUntil;
+    this.name = props.name ?? null;
   }
 
   /** Returns true when the account lock has not yet expired. */

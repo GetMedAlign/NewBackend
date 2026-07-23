@@ -8,6 +8,8 @@ export interface SignUpInput {
   email: string;
   password: string;
   ip?: string;
+  name?: string;
+  dob?: string;
 }
 
 export interface SignUpOutput {
@@ -26,7 +28,7 @@ export class SignUpUseCase {
     const email = Email.create(input.email);
     const passwordHash = await this.hasher.hash(input.password);
 
-    const userId = await this.repo.create(email.toString(), passwordHash);
+    const userId = await this.repo.create(email.toString(), passwordHash, input.name, input.dob);
 
     await this.audit.record({
       actorUserId: userId,

@@ -28,6 +28,7 @@ interface UserRow {
   email_confirmed: boolean;
   failed_login_count: number;
   locked_until: Date | null;
+  name: string | null;
 }
 
 interface RoleRow {
@@ -66,8 +67,17 @@ export class PrismaUserRepository implements UserRepositoryPort {
    * signed-up user has a patient row immediately (dob/zip null until set).
    * Attributing an authenticated caller's lead by userId therefore works even
    * before the assessment is claimed.
+   *
+   * create_user() itself only inserts email/password_hash (it predates the
+   * signup form collecting name/dob), so `name` is persisted with a follow-up
+   * UPDATE in the same transaction, and a parseable `dob` is persisted on the
+   * patient row created right after. An unparseable dob is silently dropped
+   * rather than rejected, matching the lenient pattern used by patient profile
+   * updates (see PrismaPatientRepository.updateProfile).
    */
-  async create(email: string, passwordHash: string): Promise<string> {
+  async create(email: string, passwordHash: string, name?: string, dob?: string): Promise<string> {
+    const dateOfBirth = this.parseDob(dob);
+
     try {
       return await this.prisma.asSystem(async (client) => {
         return client.$transaction(async (tx) => {
@@ -76,8 +86,15 @@ export class PrismaUserRepository implements UserRepositoryPort {
           `;
           const id = rows[0]?.id;
           if (!id) throw new Error('create_user did not return an id');
+
+          if (name !== undefined) {
+            await tx.$executeRaw`UPDATE users SET name = ${name} WHERE id = ${id}::uuid`;
+          }
+
           // Brand-new user: 1:1 patient row created atomically with the user.
-          await tx.patient.create({ data: { userId: id } });
+          await tx.patient.create({
+            data: { userId: id, ...(dateOfBirth ? { dateOfBirth } : {}) },
+          });
           return id;
         });
       });
@@ -89,11 +106,18 @@ export class PrismaUserRepository implements UserRepositoryPort {
     }
   }
 
+  /** Parses a signup dob string leniently; unparseable/absent values yield null. */
+  private parseDob(dob?: string): Date | null {
+    if (dob === undefined) return null;
+    const parsed = new Date(dob);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const rows = await this.prisma.asSystem(
       (client) =>
         client.$queryRaw<UserRow[]>`
-        SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until
+        SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until, name
         FROM users
         WHERE email = ${email}::citext
         LIMIT 1
@@ -106,7 +130,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
     const rows = await this.prisma.asSystem(
       (client) =>
         client.$queryRaw<UserRow[]>`
-        SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until
+        SELECT id, email, password_hash, email_confirmed, failed_login_count, locked_until, name
         FROM users
         WHERE id = ${id}::uuid
         LIMIT 1
@@ -235,6 +259,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
       emailConfirmed: row.email_confirmed,
       failedLoginCount: row.failed_login_count,
       lockedUntil: row.locked_until,
+      name: row.name,
     });
   }
 }

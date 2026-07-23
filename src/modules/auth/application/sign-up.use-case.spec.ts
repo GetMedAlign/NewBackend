@@ -43,13 +43,35 @@ describe('SignUpUseCase', () => {
     await useCase.execute({ email: 'user@example.com', password: 'secret' });
 
     expect(hasher.hash).toHaveBeenCalledWith('secret');
-    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw');
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
   });
 
   it('normalises email (trim + lowercase) before creating', async () => {
     await useCase.execute({ email: '  User@Example.COM  ', password: 'secret' });
 
-    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw');
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
+  });
+
+  it('passes name and dob through to repo.create', async () => {
+    await useCase.execute({
+      email: 'user@example.com',
+      password: 'secret',
+      name: 'Jane Doe',
+      dob: '1990-01-01',
+    });
+
+    expect(repo.create).toHaveBeenCalledWith(
+      'user@example.com',
+      'hashed-pw',
+      'Jane Doe',
+      '1990-01-01',
+    );
+  });
+
+  it('calls repo.create with undefined name/dob when the signup form omits them', async () => {
+    await useCase.execute({ email: 'user@example.com', password: 'secret' });
+
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
   });
 
   it('returns the userId from repo.create', async () => {

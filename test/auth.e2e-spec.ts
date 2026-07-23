@@ -51,6 +51,8 @@ describe('Auth (e2e)', () => {
 
   const email = `e2e-auth-${Date.now()}@example.com`;
   const password = 'super-secret-password-123';
+  const name = 'E2E Test User';
+  const dob = '1990-01-01';
 
   let csrfToken: string;
 
@@ -102,16 +104,19 @@ describe('Auth (e2e)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  let signedUpUserId: string;
+
   it('POST /auth/signup creates the user and writes a user_created audit row', async () => {
     const res = await agent()
       .post('/auth/signup')
       .set('Cookie', `csrf_token=${csrfToken}`)
       .set('x-csrf-token', csrfToken)
-      .send({ email, password })
+      .send({ email, password, name, dob })
       .expect(201);
 
     expect(typeof res.body.userId).toBe('string');
     const userId: string = res.body.userId;
+    signedUpUserId = userId;
 
     const rows = await prisma.asSystem(
       (client) =>
@@ -124,6 +129,24 @@ describe('Auth (e2e)', () => {
       `,
     );
     expect(rows.length).toBe(1);
+  });
+
+  it('POST /auth/signup persists name on users and dob on patients', async () => {
+    const userRows = await prisma.asSystem(
+      (client) =>
+        client.$queryRaw<{ name: string | null }[]>`
+        SELECT name FROM users WHERE id = ${signedUpUserId}::uuid LIMIT 1
+      `,
+    );
+    expect(userRows[0]?.name).toBe(name);
+
+    const patientRows = await prisma.asSystem(
+      (client) =>
+        client.$queryRaw<{ date_of_birth: Date | null }[]>`
+        SELECT date_of_birth FROM patients WHERE user_id = ${signedUpUserId}::uuid LIMIT 1
+      `,
+    );
+    expect(patientRows[0]?.date_of_birth?.toISOString().slice(0, 10)).toBe(dob);
   });
 
   it('POST /auth/signin returns requiresTwoFactor and sets NO access_token cookie', async () => {
@@ -154,6 +177,9 @@ describe('Auth (e2e)', () => {
     expect(res.body.role).toBeDefined();
     expect(typeof res.body.userId).toBe('string');
     expect(res.body.token).toBeUndefined();
+    expect(res.body.name).toBe(name);
+    expect(res.body.email).toBe(email);
+    expect(res.body.clinicId).toBeNull();
 
     const setCookie = res.headers['set-cookie'] as unknown as string[];
     const access = cookieValue(setCookie, 'access_token');

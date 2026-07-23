@@ -161,7 +161,10 @@
                 "schema": {
                   "example": {
                     "userId": "uuid-here",
-                    "role": "patient"
+                    "role": "patient",
+                    "name": "Jane Doe",
+                    "email": "user@example.com",
+                    "clinicId": null
                   }
                 }
               }
@@ -1918,6 +1921,17 @@
             "example": "MySecurePass1!",
             "description": "Password (min 8 characters)",
             "minLength": 8
+          },
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "description": "Full name of the patient signing up",
+            "maxLength": 200
+          },
+          "dob": {
+            "type": "string",
+            "example": "1990-01-01",
+            "description": "Date of birth as an ISO date string (YYYY-MM-DD). An unparseable value is ignored rather than rejected."
           }
         },
         "required": [

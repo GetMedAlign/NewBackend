@@ -86,6 +86,45 @@ describe('PrismaUserRepository', () => {
       const user = await repo.findById('00000000-0000-0000-0000-000000000000');
       expect(user).toBeNull();
     });
+
+    it('persists name and dob supplied at signup', async () => {
+      const id = await repo.create(
+        'with-profile@example.com',
+        'hashed-pw',
+        'Jane Doe',
+        '1985-06-15',
+      );
+
+      const user = await repo.findByEmail('with-profile@example.com');
+      expect(user?.name).toBe('Jane Doe');
+
+      const rows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ date_of_birth: Date | null }[]>`
+            SELECT date_of_birth FROM patients WHERE user_id = ${id}::uuid LIMIT 1
+          `,
+      );
+      expect(rows[0]?.date_of_birth?.toISOString().slice(0, 10)).toBe('1985-06-15');
+    });
+
+    it('leaves name null when signup omits it', async () => {
+      const id = await repo.create('no-name@example.com', 'hashed-pw');
+      const user = await repo.findByEmail('no-name@example.com');
+      expect(user?.id).toBe(id);
+      expect(user?.name).toBeNull();
+    });
+
+    it('drops an unparseable dob rather than rejecting signup', async () => {
+      const id = await repo.create('bad-dob@example.com', 'hashed-pw', 'Alex', 'not-a-date');
+
+      const rows = await prisma.asSystem(
+        (c) =>
+          c.$queryRaw<{ date_of_birth: Date | null }[]>`
+            SELECT date_of_birth FROM patients WHERE user_id = ${id}::uuid LIMIT 1
+          `,
+      );
+      expect(rows[0]?.date_of_birth).toBeNull();
+    });
   });
 
   describe('getPrimaryRole', () => {

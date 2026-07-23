@@ -14,6 +14,7 @@ const makeUser = (): User =>
     emailConfirmed: true,
     failedLoginCount: 0,
     lockedUntil: null,
+    name: 'Jane Doe',
   });
 
 const makeTokens = (): jest.Mocked<TokenServicePort> => ({
@@ -116,13 +117,53 @@ describe('VerifyTwoFactorUseCase', () => {
       });
     });
 
-    it('returns { token, userId, role }', async () => {
+    it('returns { token, userId, role, name, email, clinicId }', async () => {
       tokens.issue.mockReturnValue('my-jwt');
       repo.getPrimaryRole.mockResolvedValue('patient');
+      repo.getClinicId.mockResolvedValue(null);
 
       const result = await useCase.execute({ email: 'user@example.com', code: '123456' });
 
-      expect(result).toEqual({ token: 'my-jwt', userId: 'user-id', role: 'patient' });
+      expect(result).toEqual({
+        token: 'my-jwt',
+        userId: 'user-id',
+        role: 'patient',
+        name: 'Jane Doe',
+        email: 'user@example.com',
+        clinicId: null,
+      });
+    });
+
+    it('includes the clinic user clinicId in the response alongside name/email', async () => {
+      const clinicId = 'c1d2e3f4-a5b6-7890-abcd-ef1234567890';
+      repo.getPrimaryRole.mockResolvedValue('clinic');
+      repo.getClinicId.mockResolvedValue(clinicId);
+
+      const result = await useCase.execute({ email: 'user@example.com', code: '123456' });
+
+      expect(result).toMatchObject({
+        name: 'Jane Doe',
+        email: 'user@example.com',
+        clinicId,
+      });
+    });
+
+    it('returns name: null when the user has no name on file', async () => {
+      repo.findByEmail.mockResolvedValue(
+        new User({
+          id: 'user-id',
+          email: 'user@example.com',
+          passwordHash: 'hash',
+          emailConfirmed: true,
+          failedLoginCount: 0,
+          lockedUntil: null,
+          name: null,
+        }),
+      );
+
+      const result = await useCase.execute({ email: 'user@example.com', code: '123456' });
+
+      expect(result.name).toBeNull();
     });
 
     it('records signin_succeeded audit event', async () => {

@@ -77,6 +77,8 @@ export class AuthController {
       email: dto.email,
       password: dto.password,
       ip: req.ip,
+      name: dto.name,
+      dob: dto.dob,
     });
     return { userId };
   }
@@ -121,21 +123,41 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Authentication successful — access_token cookie set',
-    schema: { example: { userId: 'uuid-here', role: 'patient' } },
+    schema: {
+      example: {
+        userId: 'uuid-here',
+        role: 'patient',
+        name: 'Jane Doe',
+        email: 'user@example.com',
+        clinicId: null,
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Invalid or expired OTP' })
   async verify(
     @Body() dto: Verify2faDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ userId: string; role: string }> {
+  ): Promise<{
+    userId: string;
+    role: string;
+    name: string | null;
+    email: string;
+    clinicId: string | null;
+  }> {
     const result = await this.verifyTwoFactor.execute({
       email: dto.email,
       code: dto.code,
       ip: req.ip,
     });
     setAuthCookie(res, result.token);
-    return { userId: result.userId, role: result.role };
+    return {
+      userId: result.userId,
+      role: result.role,
+      name: result.name,
+      email: result.email,
+      clinicId: result.clinicId,
+    };
   }
 
   @Public()

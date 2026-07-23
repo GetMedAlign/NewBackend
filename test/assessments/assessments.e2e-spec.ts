@@ -171,6 +171,30 @@ describe('Assessments (e2e)', () => {
       .expect(400);
   });
 
+  it('POST /assessments accepts otherChronicCondition without 400ing', async () => {
+    const res = await agent()
+      .post('/assessments')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ ...VALID_SUBMISSION, otherChronicCondition: 'Some rare condition' })
+      .expect(200);
+
+    expect(typeof res.body.sessionId).toBe('string');
+    sessionIds.push(res.body.sessionId as string);
+  });
+
+  it('POST /assessments accepts a null otherChronicCondition without 400ing', async () => {
+    const res = await agent()
+      .post('/assessments')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ ...VALID_SUBMISSION, otherChronicCondition: null })
+      .expect(200);
+
+    expect(typeof res.body.sessionId).toBe('string');
+    sessionIds.push(res.body.sessionId as string);
+  });
+
   it('POST /assessments with a symptom missing its severity returns 400', async () => {
     await agent()
       .post('/assessments')

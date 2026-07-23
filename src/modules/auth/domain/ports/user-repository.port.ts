@@ -1,7 +1,7 @@
 import type { User } from '../entities/user.entity';
 
 export interface UserRepositoryPort {
-  create(email: string, passwordHash: string): Promise<string>;
+  create(email: string, passwordHash: string, name?: string, dob?: string): Promise<string>;
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   getPrimaryRole(userId: string): Promise<string>;
