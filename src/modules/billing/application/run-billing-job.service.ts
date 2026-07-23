@@ -18,7 +18,7 @@ type BillingJob = GenerateInvoicesJob | SuspendOverdueAccountsJob | WeeklySummar
  * then runs the job and returns its `JobResult`.
  *
  * Used by both the shared-secret cron controller (`BillingJobsController`)
- * and the admin-JWT controller (Task 6) — the caller supplies the actor, so
+ * and the admin-JWT controller (Task 6). The caller supplies the actor, so
  * the cron passes `{ userId: null, role: 'system' }` while the admin
  * controller passes the authenticated admin's identity.
  */

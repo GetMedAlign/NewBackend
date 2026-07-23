@@ -14,11 +14,11 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Weekly job (spec §5): emails every `active` clinic that has opted into
- * `weekly_summary` its lead counts — this week and all-time — at its
+ * `weekly_summary` its lead counts (this week and all-time) at its
  * `business_email`.
  *
- * Runs entirely `asSystem` (via the repository) — it acts for no user. This
- * job is read-only (it counts leads and sends an email), so it needs no
+ * Runs entirely `asSystem` (via the repository) since it acts for no user.
+ * This job is read-only (it counts leads and sends an email), so it needs no
  * transaction.
  *
  * A clinic with no `business_email` is `skipped` (there is nothing to send
