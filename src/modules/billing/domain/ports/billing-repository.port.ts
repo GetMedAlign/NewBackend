@@ -136,8 +136,8 @@ export interface BillingRepositoryPort {
   /**
    * Cancels the clinic's subscription in a single guarded UPDATE (spec §6).
    * Returns 'already_cancelled' when the clinic's subscription_cancelled_at
-   * is already set (0 rows affected but the clinic exists — the ClinicGuard
-   * guarantees that); 'ok' otherwise.
+   * is already set (0 rows affected but the clinic exists, which the ClinicGuard
+   * guarantees); 'ok' otherwise.
    */
   cancelSubscription(
     ctx: ClinicCtx,
@@ -150,8 +150,8 @@ export interface BillingRepositoryPort {
   ): Promise<AdminClinicBillingResult | null>;
   /**
    * Stores a newly created Stripe customer id on the clinic row, under the
-   * caller's admin context (never `asSystem`) — the `clinics_admin_all` RLS
-   * policy permits this write.
+   * caller's admin context (never `asSystem`), which the `clinics_admin_all` RLS
+   * policy permits.
    */
   setClinicStripeCustomerId(
     ctx: AdminBillingCtx,
@@ -163,9 +163,9 @@ export interface BillingRepositoryPort {
    * Clinics due an invoice for [periodStart, periodEnd) (spec §3): active,
    * has a Stripe customer, created before periodEnd, subscription still
    * active through periodStart (or never cancelled), and with no existing
-   * invoices row for this exact period yet — this last clause is what makes
+   * invoices row for this exact period yet. This last clause is what makes
    * re-running `GenerateInvoicesJob` for an already-invoiced period a no-op.
-   * Runs `asSystem` — the job acts for no user.
+   * Runs `asSystem` since the job acts for no user.
    */
   listInvoiceEligibleClinics(periodStart: Date, periodEnd: Date): Promise<EligibleClinic[]>;
   /** Leads received within [periodStart, periodEnd) for one clinic. `asSystem`. */
@@ -174,7 +174,7 @@ export interface BillingRepositoryPort {
   countInvoicesForClinic(clinicId: string): Promise<number>;
   /**
    * Stores one generated invoice row (`status = 'open'`) in a single
-   * transaction. `asSystem` — the job acts for no user.
+   * transaction. `asSystem` since the job acts for no user.
    */
   insertGeneratedInvoice(row: {
     clinicId: string;
@@ -193,7 +193,7 @@ export interface BillingRepositoryPort {
   /**
    * Active clinics with an invoice ('open' or 'overdue') whose due_date is
    * 30+ days in the past (spec §4), one row per clinic (the most recent
-   * such invoice). `asSystem` — the job acts for no user. Idempotent by
+   * such invoice). `asSystem` since the job acts for no user. Idempotent by
    * construction: a clinic already suspended is no longer `active`, so a
    * re-run excludes it.
    */
@@ -202,7 +202,7 @@ export interface BillingRepositoryPort {
    * Suspends one clinic for non-payment in a single transaction: sets
    * `status = 'suspended'`, `suspension_reason = 'overdue_payment'`,
    * `notify_on_lead = false`, and marks that clinic's `open` invoices
-   * `overdue`. `asSystem` — the job acts for no user.
+   * `overdue`. `asSystem` since the job acts for no user.
    */
   suspendClinicForNonPayment(clinicId: string): Promise<void>;
 
@@ -218,7 +218,7 @@ export interface BillingRepositoryPort {
    * `billing_status='current'`, then conditionally reinstates the clinic
    * (`status='active'`, `suspension_reason=NULL`, `notify_on_lead=true`)
    * ONLY if it was suspended for `overdue_payment` AND its subscription was
-   * never cancelled — a cancelled clinic is never auto-reactivated, and a
+   * never cancelled. A cancelled clinic is never auto-reactivated, and a
    * clinic suspended for any other reason is left alone.
    */
   markInvoicePaid(stripeInvoiceId: string): Promise<void>;
@@ -231,7 +231,7 @@ export interface BillingRepositoryPort {
 
   /**
    * Active clinics that have opted into the weekly summary email (spec §5):
-   * `status = 'active' AND weekly_summary = true`. `asSystem` — the job acts
+   * `status = 'active' AND weekly_summary = true`. `asSystem` since the job acts
    * for no user.
    */
   listWeeklySummaryClinics(): Promise<WeeklySummaryClinic[]>;
