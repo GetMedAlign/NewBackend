@@ -111,6 +111,7 @@ import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/r
 import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
 import { GetRevenueStatsUseCase } from '../src/modules/billing/application/get-revenue-stats.use-case';
+import { GetRevenueClinicsUseCase } from '../src/modules/billing/application/get-revenue-clinics.use-case';
 import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
 import { RunBillingJobService } from '../src/modules/billing/application/run-billing-job.service';
 import { AdminRevenueController } from '../src/modules/billing/infrastructure/http/admin-revenue.controller';
@@ -218,6 +219,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
     stubProvider(GetRevenueStatsUseCase),
+    stubProvider(GetRevenueClinicsUseCase),
     stubProvider(HandleStripeWebhookUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),

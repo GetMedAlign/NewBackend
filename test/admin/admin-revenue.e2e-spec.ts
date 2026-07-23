@@ -82,6 +82,16 @@ interface RevenueStatsDtoShape {
   leadsThisMonth: number;
 }
 
+interface ClinicRevenueRowDtoShape {
+  clinicId: string;
+  clinicName: string;
+  leadsThisMonth: number;
+  leadRevenue: number;
+  monthlyFee: number;
+  total: number;
+  billingStatus: string;
+}
+
 describe('GET /admin/revenue/stats (e2e)', () => {
   let app: INestApplication;
   let tokenService: TokenServicePort;
@@ -185,6 +195,169 @@ describe('GET /admin/revenue/stats (e2e)', () => {
   it('returns 401 when called with no token', async () => {
     await agent()
       .get('/admin/revenue/stats')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(401);
+  });
+});
+
+/**
+ * E2E tests for GET /admin/revenue/clinics.
+ *
+ * Reuses the same app/token setup as the stats suite above. To assert the
+ * fee-zeroed suspended/paused case deterministically, one seeded demo clinic
+ * is flipped to billing_status = 'paused' for the duration of this suite and
+ * restored to its original values afterwards, so the shared local DB ends
+ * exactly at 6 clinics / 0 invoices with that clinic's original row intact.
+ */
+describe('GET /admin/revenue/clinics (e2e)', () => {
+  let app: INestApplication;
+  let tokenService: TokenServicePort;
+  let adminToken: string;
+  let patientToken: string;
+  let csrfToken: string;
+
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+  const adapter = new PrismaPg(pool);
+  const seedPrisma = new PrismaClient({ adapter });
+
+  let adminUserId: string;
+  let patientUserId: string;
+
+  let flippedClinicId: string;
+  let flippedClinicOriginalStatus: string;
+  let flippedClinicOriginalBillingStatus: string;
+
+  const unique = Date.now();
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(EMAIL_SENDER)
+      .useValue(new StubEmailSender())
+      .overrideProvider(WEBHOOK_SENDER)
+      .useValue(new StubWebhookSender())
+      .overrideProvider(STORAGE_PORT)
+      .useValue(mockStorage)
+      .overrideProvider(STRIPE_PORT)
+      .useValue(new FakeStripeAdapter())
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    app.use(cookieParser());
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
+    app.useGlobalFilters(new AllExceptionsFilter());
+    await app.init();
+
+    tokenService = moduleRef.get<TokenServicePort>(TOKEN_SERVICE);
+
+    const adminRows = await seedPrisma.$queryRaw<{ id: string }[]>`
+      SELECT u.id FROM users u
+      JOIN user_roles ur ON ur.user_id = u.id
+      WHERE u.email = 'superadmin@medalign-seed.example.com'::citext
+        AND ur.role = 'superadmin'
+      LIMIT 1
+    `;
+    if (adminRows.length === 0) {
+      throw new Error('Seeded superadmin not found. Run pnpm seed:pj against the test DB first.');
+    }
+    adminUserId = adminRows[0]!.id;
+
+    const patientEmail = `admin-revenue-clinics-e2e-patient-${unique.toString()}@test.example.com`;
+    const patientRows = await seedPrisma.$queryRaw<{ id: string }[]>`
+      SELECT create_user(${patientEmail}::citext, 'test-hash') AS id
+    `;
+    patientUserId = patientRows[0]!.id;
+
+    adminToken = tokenService.issue({ sub: adminUserId, role: 'superadmin' });
+    patientToken = tokenService.issue({ sub: patientUserId, role: 'patient' });
+
+    const csrfRes = await supertest(app.getHttpServer()).get('/health');
+    csrfToken = cookieValue(csrfRes.headers['set-cookie'] as unknown as string[], 'csrf_token')!;
+    expect(csrfToken).toBeTruthy();
+
+    // Snapshot one seeded demo clinic, then flip it to billing_status =
+    // 'paused' so this suite has a deterministic fee-zeroed row to assert on.
+    const snapshotRows = await seedPrisma.$queryRaw<
+      { id: string; status: string; billing_status: string }[]
+    >`
+      SELECT id, status, billing_status FROM clinics ORDER BY name ASC LIMIT 1
+    `;
+    const snapshot = snapshotRows[0];
+    if (!snapshot) {
+      throw new Error('No seeded clinics found. Run pnpm seed:pj against the test DB first.');
+    }
+    flippedClinicId = snapshot.id;
+    flippedClinicOriginalStatus = snapshot.status;
+    flippedClinicOriginalBillingStatus = snapshot.billing_status;
+
+    await seedPrisma.$executeRaw`
+      UPDATE clinics SET billing_status = 'paused' WHERE id = ${flippedClinicId}::uuid
+    `;
+  });
+
+  afterAll(async () => {
+    // Restore the flipped clinic's original values so the shared local DB
+    // ends exactly as it started.
+    await seedPrisma.$executeRaw`
+      UPDATE clinics
+         SET status = ${flippedClinicOriginalStatus},
+             billing_status = ${flippedClinicOriginalBillingStatus}
+       WHERE id = ${flippedClinicId}::uuid
+    `;
+    await seedPrisma.$executeRaw`DELETE FROM users WHERE id = ${patientUserId}::uuid`;
+    await app.close();
+    await seedPrisma.$disconnect();
+    await pool.end();
+  });
+
+  const agent = () => supertest(app.getHttpServer());
+
+  it('returns 200 with rows ordered by clinic name, correct arithmetic, and a fee-zeroed paused clinic', async () => {
+    const res = await agent()
+      .get('/admin/revenue/clinics')
+      .set('Cookie', `access_token=${adminToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(200);
+
+    const rows = res.body as ClinicRevenueRowDtoShape[];
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows.length).toBeGreaterThan(0);
+
+    const names = rows.map((row) => row.clinicName);
+    const sortedNames = [...names].sort((a, b) => a.localeCompare(b));
+    expect(names).toEqual(sortedNames);
+
+    for (const row of rows) {
+      expect(typeof row.clinicId).toBe('string');
+      expect(typeof row.clinicName).toBe('string');
+      expect(typeof row.leadsThisMonth).toBe('number');
+      expect(typeof row.leadRevenue).toBe('number');
+      expect(typeof row.monthlyFee).toBe('number');
+      expect(typeof row.total).toBe('number');
+      expect(typeof row.billingStatus).toBe('string');
+      expect(row.leadRevenue).toBe(row.leadsThisMonth * 90);
+      expect(row.total).toBe(row.leadRevenue + row.monthlyFee);
+    }
+
+    const flippedRow = rows.find((row) => row.clinicId === flippedClinicId);
+    expect(flippedRow).toBeDefined();
+    expect(flippedRow!.monthlyFee).toBe(0);
+    expect(flippedRow!.billingStatus).toBe('paused');
+  });
+
+  it('returns 403 when called with a patient token', async () => {
+    await agent()
+      .get('/admin/revenue/clinics')
+      .set('Cookie', `access_token=${patientToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(403);
+  });
+
+  it('returns 401 when called with no token', async () => {
+    await agent()
+      .get('/admin/revenue/clinics')
       .set('Cookie', `csrf_token=${csrfToken}`)
       .set('x-csrf-token', csrfToken)
       .expect(401);

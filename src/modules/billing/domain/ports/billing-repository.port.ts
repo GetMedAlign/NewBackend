@@ -105,6 +105,26 @@ export interface RevenueCounts {
   leadsThisMonth: number;
 }
 
+/** One raw clinic row behind `GET /admin/revenue/clinics` (spec §1.2/§4), before revenue-math mapping. */
+export interface ClinicRevenueRaw {
+  clinicId: string;
+  clinicName: string;
+  status: string; // clinics.status
+  billingStatus: string; // clinics.billing_status
+  leadsThisMonth: number;
+}
+
+/** One mapped clinic row for `GET /admin/revenue/clinics` (spec §1.2), after revenue-math mapping. */
+export interface AdminClinicRevenueRow {
+  clinicId: string;
+  clinicName: string;
+  leadsThisMonth: number;
+  leadRevenue: number;
+  monthlyFee: number;
+  total: number;
+  billingStatus: string;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -223,9 +243,17 @@ export interface BillingRepositoryPort {
   /**
    * Raw counts behind `GET /admin/revenue/stats` (spec §3): active clinics,
    * overdue-billing clinics, and this-month leads, in one query.
-   * `withUserContext({ userId, role })` — admin RLS, not `asSystem`.
+   * Runs under `withUserContext({ userId, role })` (admin RLS, not `asSystem`).
    */
   getRevenueCounts(ctx: AdminBillingCtx, now: Date): Promise<RevenueCounts>;
+
+  /**
+   * Raw per-clinic rows behind `GET /admin/revenue/clinics` (spec §4): every
+   * clinic joined to its this-month lead count (a single grouped query, no
+   * N+1), ordered by clinic name ascending.
+   * Runs under `withUserContext({ userId, role })` (admin RLS, not `asSystem`).
+   */
+  getClinicRevenueRows(ctx: AdminBillingCtx, now: Date): Promise<ClinicRevenueRaw[]>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');

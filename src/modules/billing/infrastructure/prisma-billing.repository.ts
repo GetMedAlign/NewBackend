@@ -17,6 +17,7 @@ import type {
   OverdueClinic,
   WeeklySummaryClinic,
   RevenueCounts,
+  ClinicRevenueRaw,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -45,6 +46,15 @@ type CountRow = { count: bigint };
 type RevenueCountsDbRow = {
   activeClinicCount: bigint;
   overdueCount: bigint;
+  leadsThisMonth: bigint;
+};
+
+/** Raw row shape from `getClinicRevenueRows`, before the Number(...) conversion. */
+type ClinicRevenueDbRow = {
+  clinicId: string;
+  clinicName: string;
+  status: string;
+  billingStatus: string;
   leadsThisMonth: bigint;
 };
 
@@ -542,6 +552,31 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           overdueCount: Number(row?.overdueCount ?? 0),
           leadsThisMonth: Number(row?.leadsThisMonth ?? 0),
         };
+      },
+    );
+  }
+
+  async getClinicRevenueRows(ctx: AdminBillingCtx, now: Date): Promise<ClinicRevenueRaw[]> {
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        const rows = await tx.$queryRaw<ClinicRevenueDbRow[]>`
+          SELECT c.id AS "clinicId", c.name AS "clinicName", c.status, c.billing_status AS "billingStatus",
+                 COALESCE(l.cnt, 0) AS "leadsThisMonth"
+            FROM clinics c
+            LEFT JOIN (
+              SELECT clinic_id, count(*) AS cnt FROM leads WHERE received_at >= ${monthStart} GROUP BY clinic_id
+            ) l ON l.clinic_id = c.id
+           ORDER BY c.name ASC
+        `;
+        return rows.map((row) => ({
+          clinicId: row.clinicId,
+          clinicName: row.clinicName,
+          status: row.status,
+          billingStatus: row.billingStatus,
+          leadsThisMonth: Number(row.leadsThisMonth),
+        }));
       },
     );
   }

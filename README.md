@@ -283,6 +283,12 @@ GET /admin/revenue/stats -> { mrr, leadRevenueMtd, totalRevenueMtd, activeClinic
      totalRevenueMtd = mrr + leadRevenueMtd
      activeClinicCount / overdueCount / leadsThisMonth are counted as of the request time,
      with leadsThisMonth measured from the start of the current calendar month (UTC).
+
+GET /admin/revenue/clinics -> [{ clinicId, clinicName, leadsThisMonth, leadRevenue, monthlyFee, total, billingStatus }]
+     ordered by clinic name ascending.
+     leadRevenue = leadsThisMonth * 90
+     monthlyFee = 0 when the clinic is status = 'suspended' or billing_status = 'paused', else 49
+     total = leadRevenue + monthlyFee
 ```
 
 ## Auth additions

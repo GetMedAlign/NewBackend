@@ -1837,6 +1837,26 @@
           "Admin — Revenue"
         ]
       }
+    },
+    "/admin/revenue/clinics": {
+      "get": {
+        "operationId": "AdminRevenueController_getClinics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get per-clinic revenue rows, ordered by clinic name (admin only)",
+        "tags": [
+          "Admin — Revenue"
+        ]
+      }
     }
   },
   "info": {
