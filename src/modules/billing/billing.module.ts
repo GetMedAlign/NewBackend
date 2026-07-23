@@ -13,18 +13,28 @@ import { SavePaymentMethodUseCase } from './application/save-payment-method.use-
 import { RemovePaymentMethodUseCase } from './application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from './application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from './application/get-admin-clinic-billing.use-case';
+import { GetRevenueStatsUseCase } from './application/get-revenue-stats.use-case';
+import { GetRevenueClinicsUseCase } from './application/get-revenue-clinics.use-case';
 import { GenerateInvoicesJob } from './application/generate-invoices.job';
 import { SuspendOverdueAccountsJob } from './application/suspend-overdue-accounts.job';
+import { WeeklySummaryJob } from './application/weekly-summary.job';
+import { RunBillingJobService } from './application/run-billing-job.service';
 import { HandleStripeWebhookUseCase } from './application/handle-stripe-webhook.use-case';
 import { ClinicBillingController } from './infrastructure/http/clinic-billing.controller';
 import { StripeWebhookController } from './infrastructure/http/stripe-webhook.controller';
 import { BillingJobsController } from './infrastructure/http/billing-jobs.controller';
+import { AdminRevenueController } from './infrastructure/http/admin-revenue.controller';
 import { JobTriggerGuard } from './infrastructure/http/job-trigger.guard';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [ClinicBillingController, StripeWebhookController, BillingJobsController],
+  controllers: [
+    ClinicBillingController,
+    StripeWebhookController,
+    BillingJobsController,
+    AdminRevenueController,
+  ],
   providers: [
     GetClinicBillingUseCase,
     UpdateClinicBillingUseCase,
@@ -33,8 +43,12 @@ import { AuthModule } from '../auth/auth.module';
     RemovePaymentMethodUseCase,
     CancelSubscriptionUseCase,
     GetAdminClinicBillingUseCase,
+    GetRevenueStatsUseCase,
+    GetRevenueClinicsUseCase,
     GenerateInvoicesJob,
     SuspendOverdueAccountsJob,
+    WeeklySummaryJob,
+    RunBillingJobService,
     HandleStripeWebhookUseCase,
     JobTriggerGuard,
     {
@@ -54,6 +68,7 @@ import { AuthModule } from '../auth/auth.module';
     GetAdminClinicBillingUseCase,
     GenerateInvoicesJob,
     SuspendOverdueAccountsJob,
+    WeeklySummaryJob,
     BILLING_REPOSITORY,
     STRIPE_PORT,
   ],

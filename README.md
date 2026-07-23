@@ -237,7 +237,7 @@ POST /stripe/webhook -> { received: true }
 
 ```
 POST /admin/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
-     jobName is invoice-generation | account-suspension (400 on anything else).
+     jobName is invoice-generation | account-suspension | weekly-summary (400 on anything else).
      Authenticated via the X-Job-Secret header (see JOB_TRIGGER_SECRET below)
      instead of an admin JWT, so an external cron can call it directly.
      - invoice-generation: invoices the previous calendar month for every eligible
@@ -248,6 +248,7 @@ POST /admin/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
        past due (status -> suspended, notify_on_lead -> false) and best-effort
        emails the clinic's billing contact. Idempotent; a suspended clinic is
        excluded from the next run.
+     - weekly-summary: see Billing API (Slice 8) below.
 ```
 
 ### New environment variables (Slice 7)
@@ -259,16 +260,48 @@ POST /admin/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
 
 ### Scheduled jobs
 
-The two billing jobs are not run in-process on a schedule; they are triggered externally (Railway cron or a scheduled GitHub Actions workflow) so the app stays a plain stateless HTTP service. Configure the scheduler to call:
+The billing jobs are not run in-process on a schedule; they are triggered externally (Railway cron or a scheduled GitHub Actions workflow) so the app stays a plain stateless HTTP service. Configure the scheduler to call:
 
 ```
 POST /admin/jobs/run/invoice-generation   cron: 0 0 1 * *  (UTC)  -- monthly, 1st of the month
 POST /admin/jobs/run/account-suspension   cron: 0 6 * * *  (UTC)  -- daily, 06:00 UTC
+POST /admin/jobs/run/weekly-summary       cron: 0 8 * * 1  (UTC)  -- weekly, Mondays 08:00 UTC
 ```
 
-Both calls must send header `X-Job-Secret: <JOB_TRIGGER_SECRET>`. Both jobs are idempotent, so a retried or duplicate run is safe.
+All three calls must send header `X-Job-Secret: <JOB_TRIGGER_SECRET>`. All three jobs are idempotent, so a retried or duplicate run is safe.
+
+An admin can also trigger any of the three jobs on demand from the dashboard via `POST /admin/revenue/jobs/run/:jobName`, gated by the admin session (JWT cookie + CSRF) instead of the shared secret. See Billing API (Slice 8) below.
 
 Also register the webhook URL (`POST https://<host>/stripe/webhook`) in the Stripe dashboard, subscribed to the `invoice.paid` and `invoice.payment_failed` events, and copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+## Billing API (Slice 8)
+
+Admin revenue reporting. This is billing subsystem 3.
+
+**Admin (roles: admin, superadmin):**
+
+```
+GET /admin/revenue/stats -> { mrr, leadRevenueMtd, totalRevenueMtd, activeClinicCount, overdueCount, leadsThisMonth }
+     mrr = activeClinicCount * 49 (flat headline MRR; not prorated, not the invoiced amount)
+     leadRevenueMtd = leadsThisMonth * 90
+     totalRevenueMtd = mrr + leadRevenueMtd
+     activeClinicCount / overdueCount / leadsThisMonth are counted as of the request time,
+     with leadsThisMonth measured from the start of the current calendar month (UTC).
+
+GET /admin/revenue/clinics -> [{ clinicId, clinicName, leadsThisMonth, leadRevenue, monthlyFee, total, billingStatus }]
+     ordered by clinic name ascending.
+     leadRevenue = leadsThisMonth * 90
+     monthlyFee = 0 when the clinic is status = 'suspended' or billing_status = 'paused', else 49
+     total = leadRevenue + monthlyFee
+
+POST /admin/revenue/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
+     Second trigger path for the same three billing jobs (invoice-generation, account-suspension,
+     weekly-summary), gated by the admin session (JWT cookie + CSRF) instead of the shared secret.
+     The audit_log job_triggered row records this admin's user id as the actor, versus null for
+     the shared-secret cron path. Unknown job name -> 400.
+```
+
+`weekly-summary` is the third billing job (alongside `invoice-generation` and `account-suspension`). It emails every `active` clinic that has opted into `weekly_summary` its lead counts (this week and all-time) at its `business_email`, and is triggerable via both job-run paths above. A clinic with no `business_email` is skipped, not failed.
 
 ## Auth additions
 
@@ -290,4 +323,5 @@ Password reset tokens are single-use, expire after 60 minutes, and stored only a
 5. Admin Clinics & Patients (Slice 5): admin clinic list/edit/notes/pause-delivery, admin patient list/edit/soft-delete, password reset/set for both.
 6. Billing subsystem 1 (Slice 6): billing profile, fee estimate, Stripe-backed default payment method, admin billing view.
 7. Billing subsystem 2 (Slice 7): monthly invoice generation job, daily overdue-account suspension job, an externally-triggered job endpoint, the Stripe webhook for invoice state reconciliation, and clinic-initiated subscription cancellation.
-8. Cutover: data migration from SQL Server, go-live. _(planned)_
+8. Billing subsystem 3 (Slice 8): admin revenue reporting (platform stats, per-clinic revenue), a weekly clinic-summary email job, and an admin-session job trigger alongside the shared-secret cron path.
+9. Cutover: data migration from SQL Server, go-live. _(planned)_

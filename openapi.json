@@ -1812,9 +1812,78 @@
             "description": ""
           }
         },
-        "summary": "Trigger a billing job (invoice-generation | account-suspension). Authenticated via the X-Job-Secret header, not a session cookie.",
+        "summary": "Trigger a billing job (invoice-generation | account-suspension | weekly-summary). Authenticated via the X-Job-Secret header, not a session cookie.",
         "tags": [
           "Admin — Jobs"
+        ]
+      }
+    },
+    "/admin/revenue/stats": {
+      "get": {
+        "operationId": "AdminRevenueController_getStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get platform-wide revenue stats (admin only)",
+        "tags": [
+          "Admin — Revenue"
+        ]
+      }
+    },
+    "/admin/revenue/clinics": {
+      "get": {
+        "operationId": "AdminRevenueController_getClinics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get per-clinic revenue rows, ordered by clinic name (admin only)",
+        "tags": [
+          "Admin — Revenue"
+        ]
+      }
+    },
+    "/admin/revenue/jobs/run/{jobName}": {
+      "post": {
+        "operationId": "AdminRevenueController_runJob",
+        "parameters": [
+          {
+            "name": "jobName",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Trigger a billing job (invoice-generation | account-suspension | weekly-summary) as the authenticated admin (admin only). The audit row records this admin as the actor.",
+        "tags": [
+          "Admin — Revenue"
         ]
       }
     }

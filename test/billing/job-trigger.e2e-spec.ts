@@ -6,6 +6,8 @@
  *     `invoice-generation` -> 200 with a JobResult (`job: 'invoice-generation'`),
  *     plus an audit_log row (action_type='job_triggered',
  *     affected_record='invoice-generation').
+ *   - Same for `account-suspension` and `weekly-summary` (Task 3), proving
+ *     the shared `RunBillingJobService` runner dispatches all three jobs.
  *   - No X-Job-Secret header -> 401.
  *   - Wrong X-Job-Secret -> 401.
  *   - Unknown jobName with the correct secret -> 400.
@@ -146,6 +148,29 @@ describe('POST /admin/jobs/run/:jobName (e2e)', () => {
     expect(auditRows[0]!.actor_user_id).toBeNull();
     expect(auditRows[0]!.actor_role).toBe('system');
     expect(auditRows[0]!.affected_record).toBe('account-suspension');
+  });
+
+  it('triggers weekly-summary with the correct secret: 200 + JobResult', async () => {
+    const res = await supertest(app.getHttpServer())
+      .post('/admin/jobs/run/weekly-summary')
+      .set('X-Job-Secret', CORRECT_SECRET)
+      .expect(200);
+
+    expect(res.body).toMatchObject({ job: 'weekly-summary' });
+    expect(typeof res.body.processed).toBe('number');
+    expect(typeof res.body.failed).toBe('number');
+
+    const auditRows = await seedPrisma.$queryRaw<AuditRow[]>`
+      SELECT actor_user_id, actor_role, action_type, affected_record
+      FROM audit_log
+      WHERE action_type = 'job_triggered' AND affected_record = 'weekly-summary'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    expect(auditRows).toHaveLength(1);
+    expect(auditRows[0]!.actor_user_id).toBeNull();
+    expect(auditRows[0]!.actor_role).toBe('system');
+    expect(auditRows[0]!.affected_record).toBe('weekly-summary');
   });
 
   it('rejects with 401 when the X-Job-Secret header is missing', async () => {

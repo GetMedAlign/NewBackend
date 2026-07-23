@@ -15,6 +15,9 @@ import type {
   AdminClinicBillingResult,
   EligibleClinic,
   OverdueClinic,
+  WeeklySummaryClinic,
+  RevenueCounts,
+  ClinicRevenueRaw,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -38,6 +41,22 @@ type BillingProfileDbRow = {
 };
 
 type CountRow = { count: bigint };
+
+/** Raw row shape from `getRevenueCounts`, before the Number(...) conversions. */
+type RevenueCountsDbRow = {
+  activeClinicCount: bigint;
+  overdueCount: bigint;
+  leadsThisMonth: bigint;
+};
+
+/** Raw row shape from `getClinicRevenueRows`, before the Number(...) conversion. */
+type ClinicRevenueDbRow = {
+  clinicId: string;
+  clinicName: string;
+  status: string;
+  billingStatus: string;
+  leadsThisMonth: bigint;
+};
 
 type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | null };
 
@@ -485,6 +504,80 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
           WHERE id = (SELECT clinic_id FROM invoices WHERE stripe_invoice_id = ${stripeInvoiceId})
         `;
       }),
+    );
+  }
+
+  async listWeeklySummaryClinics(): Promise<WeeklySummaryClinic[]> {
+    return this.prisma.asSystem(async (client) => {
+      return client.$queryRaw<WeeklySummaryClinic[]>`
+        SELECT id AS "clinicId", name AS "clinicName", business_email AS "businessEmail"
+          FROM clinics WHERE status = 'active' AND weekly_summary = true
+      `;
+    });
+  }
+
+  async countLeadsSince(clinicId: string, since: Date): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads
+        WHERE clinic_id = ${clinicId}::uuid AND received_at >= ${since}
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async countAllLeads(clinicId: string): Promise<number> {
+    return this.prisma.asSystem(async (client) => {
+      const rows = await client.$queryRaw<CountRow[]>`
+        SELECT count(*) AS count FROM leads WHERE clinic_id = ${clinicId}::uuid
+      `;
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async getRevenueCounts(ctx: AdminBillingCtx, now: Date): Promise<RevenueCounts> {
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        const rows = await tx.$queryRaw<RevenueCountsDbRow[]>`
+          SELECT
+            (SELECT count(*) FROM clinics WHERE status = 'active') AS "activeClinicCount",
+            (SELECT count(*) FROM clinics WHERE billing_status = 'overdue') AS "overdueCount",
+            (SELECT count(*) FROM leads WHERE received_at >= ${monthStart}) AS "leadsThisMonth"
+        `;
+        const row = rows[0];
+        return {
+          activeClinicCount: Number(row?.activeClinicCount ?? 0),
+          overdueCount: Number(row?.overdueCount ?? 0),
+          leadsThisMonth: Number(row?.leadsThisMonth ?? 0),
+        };
+      },
+    );
+  }
+
+  async getClinicRevenueRows(ctx: AdminBillingCtx, now: Date): Promise<ClinicRevenueRaw[]> {
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        const rows = await tx.$queryRaw<ClinicRevenueDbRow[]>`
+          SELECT c.id AS "clinicId", c.name AS "clinicName", c.status, c.billing_status AS "billingStatus",
+                 COALESCE(l.cnt, 0) AS "leadsThisMonth"
+            FROM clinics c
+            LEFT JOIN (
+              SELECT clinic_id, count(*) AS cnt FROM leads WHERE received_at >= ${monthStart} GROUP BY clinic_id
+            ) l ON l.clinic_id = c.id
+           ORDER BY c.name ASC
+        `;
+        return rows.map((row) => ({
+          clinicId: row.clinicId,
+          clinicName: row.clinicName,
+          status: row.status,
+          billingStatus: row.billingStatus,
+          leadsThisMonth: Number(row.leadsThisMonth),
+        }));
+      },
     );
   }
 }
