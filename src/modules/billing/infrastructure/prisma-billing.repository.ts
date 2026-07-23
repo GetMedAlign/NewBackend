@@ -16,6 +16,7 @@ import type {
   EligibleClinic,
   OverdueClinic,
   WeeklySummaryClinic,
+  RevenueCounts,
 } from '../domain/ports/billing-repository.port';
 
 type ClinicContextRow = {
@@ -39,6 +40,13 @@ type BillingProfileDbRow = {
 };
 
 type CountRow = { count: bigint };
+
+/** Raw row shape from `getRevenueCounts`, before the Number(...) conversions. */
+type RevenueCountsDbRow = {
+  activeClinicCount: bigint;
+  overdueCount: bigint;
+  leadsThisMonth: bigint;
+};
 
 type OldValueRow = { stripeCustomerId: string | null; billingEmail: string | null };
 
@@ -515,5 +523,26 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
       `;
       return Number(rows[0]?.count ?? 0);
     });
+  }
+
+  async getRevenueCounts(ctx: AdminBillingCtx, now: Date): Promise<RevenueCounts> {
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    return this.prisma.withUserContext(
+      { userId: ctx.userId, role: ctx.role, ip: null },
+      async (tx) => {
+        const rows = await tx.$queryRaw<RevenueCountsDbRow[]>`
+          SELECT
+            (SELECT count(*) FROM clinics WHERE status = 'active') AS "activeClinicCount",
+            (SELECT count(*) FROM clinics WHERE billing_status = 'overdue') AS "overdueCount",
+            (SELECT count(*) FROM leads WHERE received_at >= ${monthStart}) AS "leadsThisMonth"
+        `;
+        const row = rows[0];
+        return {
+          activeClinicCount: Number(row?.activeClinicCount ?? 0),
+          overdueCount: Number(row?.overdueCount ?? 0),
+          leadsThisMonth: Number(row?.leadsThisMonth ?? 0),
+        };
+      },
+    );
   }
 }

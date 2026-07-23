@@ -110,7 +110,10 @@ import { SavePaymentMethodUseCase } from '../src/modules/billing/application/sav
 import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
+import { GetRevenueStatsUseCase } from '../src/modules/billing/application/get-revenue-stats.use-case';
 import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
+import { RunBillingJobService } from '../src/modules/billing/application/run-billing-job.service';
+import { AdminRevenueController } from '../src/modules/billing/infrastructure/http/admin-revenue.controller';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -123,6 +126,9 @@ function stubProvider(token: InjectionToken): {
 } {
   return { provide: token, useValue: noopStub };
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stubJobRunner = { run: async () => ({}) as any };
 
 const stubGuard = { canActivate: () => true };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,6 +155,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     ClinicBillingController,
     StripeWebhookController,
     BillingJobsController,
+    AdminRevenueController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -210,9 +217,13 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(RemovePaymentMethodUseCase),
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
+    stubProvider(GetRevenueStatsUseCase),
     stubProvider(HandleStripeWebhookUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
+    // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so
+    // it needs its own stub shape rather than the generic stubProvider.
+    { provide: RunBillingJobService, useValue: stubJobRunner },
     // Real (cheap) provider: JobTriggerGuard only depends on ConfigService,
     // which ConfigModule.forRoot already provides above.
     JobTriggerGuard,

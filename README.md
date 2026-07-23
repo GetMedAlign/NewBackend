@@ -270,6 +270,21 @@ Both calls must send header `X-Job-Secret: <JOB_TRIGGER_SECRET>`. Both jobs are 
 
 Also register the webhook URL (`POST https://<host>/stripe/webhook`) in the Stripe dashboard, subscribed to the `invoice.paid` and `invoice.payment_failed` events, and copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 
+## Billing API (Slice 8)
+
+Admin revenue reporting. This is billing subsystem 3.
+
+**Admin (roles: admin, superadmin):**
+
+```
+GET /admin/revenue/stats -> { mrr, leadRevenueMtd, totalRevenueMtd, activeClinicCount, overdueCount, leadsThisMonth }
+     mrr = activeClinicCount * 49 (flat headline MRR; not prorated, not the invoiced amount)
+     leadRevenueMtd = leadsThisMonth * 90
+     totalRevenueMtd = mrr + leadRevenueMtd
+     activeClinicCount / overdueCount / leadsThisMonth are counted as of the request time,
+     with leadsThisMonth measured from the start of the current calendar month (UTC).
+```
+
 ## Auth additions
 
 Password reset endpoints added in Slice 4 (shared infrastructure, also used by future Admin-initiated resets):

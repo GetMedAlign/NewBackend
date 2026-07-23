@@ -98,6 +98,13 @@ export interface WeeklySummaryClinic {
   businessEmail: string | null;
 }
 
+/** Raw counts behind `GET /admin/revenue/stats` (spec §2/§3), before `computeRevenueStats`. */
+export interface RevenueCounts {
+  activeClinicCount: number;
+  overdueCount: number;
+  leadsThisMonth: number;
+}
+
 export interface BillingRepositoryPort {
   getClinicContext(ctx: ClinicCtx): Promise<ClinicBillingContext | null>;
   getProfile(ctx: ClinicCtx): Promise<BillingProfileRow | null>;
@@ -212,6 +219,13 @@ export interface BillingRepositoryPort {
   countLeadsSince(clinicId: string, since: Date): Promise<number>;
   /** All-time lead count for one clinic. `asSystem`. */
   countAllLeads(clinicId: string): Promise<number>;
+
+  /**
+   * Raw counts behind `GET /admin/revenue/stats` (spec §3): active clinics,
+   * overdue-billing clinics, and this-month leads, in one query.
+   * `withUserContext({ userId, role })` — admin RLS, not `asSystem`.
+   */
+  getRevenueCounts(ctx: AdminBillingCtx, now: Date): Promise<RevenueCounts>;
 }
 
 export const BILLING_REPOSITORY = Symbol('BillingRepositoryPort');
