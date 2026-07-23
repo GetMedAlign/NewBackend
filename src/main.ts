@@ -39,6 +39,14 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('docs', app, document);
 
   const config = app.get(ConfigService<Env, true>);
+
+  // Allow the frontend to call the API with the auth cookie. Credentialed
+  // cross-origin requests require an explicit origin (never a wildcard).
+  app.enableCors({
+    origin: config.get('FRONTEND_ORIGIN', { infer: true }),
+    credentials: true,
+  });
+
   const port = config.get('PORT', { infer: true });
   await app.listen(port);
 }
