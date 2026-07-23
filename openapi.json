@@ -1857,6 +1857,35 @@
           "Admin — Revenue"
         ]
       }
+    },
+    "/admin/revenue/jobs/run/{jobName}": {
+      "post": {
+        "operationId": "AdminRevenueController_runJob",
+        "parameters": [
+          {
+            "name": "jobName",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Trigger a billing job (invoice-generation | account-suspension | weekly-summary) as the authenticated admin (admin only). The audit row records this admin as the actor.",
+        "tags": [
+          "Admin — Revenue"
+        ]
+      }
     }
   },
   "info": {

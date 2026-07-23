@@ -289,6 +289,12 @@ GET /admin/revenue/clinics -> [{ clinicId, clinicName, leadsThisMonth, leadReven
      leadRevenue = leadsThisMonth * 90
      monthlyFee = 0 when the clinic is status = 'suspended' or billing_status = 'paused', else 49
      total = leadRevenue + monthlyFee
+
+POST /admin/revenue/jobs/run/:jobName -> { job, processed, skipped, failed, details? }
+     Second trigger path for the same three billing jobs (invoice-generation, account-suspension,
+     weekly-summary), gated by the admin session (JWT cookie + CSRF) instead of the shared secret.
+     The audit_log job_triggered row records this admin's user id as the actor, versus null for
+     the shared-secret cron path. Unknown job name -> 400.
 ```
 
 ## Auth additions

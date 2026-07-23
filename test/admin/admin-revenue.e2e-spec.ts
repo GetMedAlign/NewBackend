@@ -363,3 +363,141 @@ describe('GET /admin/revenue/clinics (e2e)', () => {
       .expect(401);
   });
 });
+
+/**
+ * E2E tests for POST /admin/revenue/jobs/run/:jobName (Task 6, spec §6.2).
+ *
+ * Reuses the same app/token setup as the suites above. Triggers only
+ * `account-suspension`, which on this clean DB (0 invoices, so nothing is
+ * overdue) suspends no clinic and mutates no clinic/invoice row - it only
+ * appends a `job_triggered` audit row, so no snapshot/restore is needed for
+ * clinics/invoices. The audit row this suite creates is deleted in afterAll.
+ */
+describe('POST /admin/revenue/jobs/run/:jobName (e2e)', () => {
+  let app: INestApplication;
+  let tokenService: TokenServicePort;
+  let adminToken: string;
+  let patientToken: string;
+  let csrfToken: string;
+
+  const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+  const adapter = new PrismaPg(pool);
+  const seedPrisma = new PrismaClient({ adapter });
+
+  let adminUserId: string;
+  let patientUserId: string;
+
+  const unique = Date.now();
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(EMAIL_SENDER)
+      .useValue(new StubEmailSender())
+      .overrideProvider(WEBHOOK_SENDER)
+      .useValue(new StubWebhookSender())
+      .overrideProvider(STORAGE_PORT)
+      .useValue(mockStorage)
+      .overrideProvider(STRIPE_PORT)
+      .useValue(new FakeStripeAdapter())
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    app.use(cookieParser());
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
+    app.useGlobalFilters(new AllExceptionsFilter());
+    await app.init();
+
+    tokenService = moduleRef.get<TokenServicePort>(TOKEN_SERVICE);
+
+    const adminRows = await seedPrisma.$queryRaw<{ id: string }[]>`
+      SELECT u.id FROM users u
+      JOIN user_roles ur ON ur.user_id = u.id
+      WHERE u.email = 'superadmin@medalign-seed.example.com'::citext
+        AND ur.role = 'superadmin'
+      LIMIT 1
+    `;
+    if (adminRows.length === 0) {
+      throw new Error('Seeded superadmin not found. Run pnpm seed:pj against the test DB first.');
+    }
+    adminUserId = adminRows[0]!.id;
+
+    const patientEmail = `admin-revenue-jobs-e2e-patient-${unique.toString()}@test.example.com`;
+    const patientRows = await seedPrisma.$queryRaw<{ id: string }[]>`
+      SELECT create_user(${patientEmail}::citext, 'test-hash') AS id
+    `;
+    patientUserId = patientRows[0]!.id;
+
+    adminToken = tokenService.issue({ sub: adminUserId, role: 'superadmin' });
+    patientToken = tokenService.issue({ sub: patientUserId, role: 'patient' });
+
+    const csrfRes = await supertest(app.getHttpServer()).get('/health');
+    csrfToken = cookieValue(csrfRes.headers['set-cookie'] as unknown as string[], 'csrf_token')!;
+    expect(csrfToken).toBeTruthy();
+  });
+
+  afterAll(async () => {
+    // Delete only the audit rows this suite created (matched on this admin
+    // actor + this job's affected_record), leaving unrelated audit history
+    // untouched.
+    await seedPrisma.$executeRaw`
+      DELETE FROM audit_log
+       WHERE actor_user_id = ${adminUserId}::uuid
+         AND action_type = 'job_triggered'
+         AND affected_record = 'account-suspension'
+    `;
+    await seedPrisma.$executeRaw`DELETE FROM users WHERE id = ${patientUserId}::uuid`;
+    await app.close();
+    await seedPrisma.$disconnect();
+    await pool.end();
+  });
+
+  const agent = () => supertest(app.getHttpServer());
+
+  it('admin token triggers account-suspension and gets a JobResult', async () => {
+    const res = await agent()
+      .post('/admin/revenue/jobs/run/account-suspension')
+      .set('Cookie', `access_token=${adminToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(200);
+
+    const body = res.body as { job: string; processed: number; skipped: number; failed: number };
+    expect(body.job).toBe('account-suspension');
+    expect(typeof body.processed).toBe('number');
+    expect(typeof body.skipped).toBe('number');
+    expect(typeof body.failed).toBe('number');
+
+    const auditRows = await seedPrisma.$queryRaw<{ actor_user_id: string }[]>`
+      SELECT actor_user_id FROM audit_log
+       WHERE action_type = 'job_triggered'
+         AND affected_record = 'account-suspension'
+         AND actor_user_id = ${adminUserId}::uuid
+    `;
+    expect(auditRows.length).toBeGreaterThan(0);
+  });
+
+  it('returns 403 when called with a patient token', async () => {
+    await agent()
+      .post('/admin/revenue/jobs/run/account-suspension')
+      .set('Cookie', `access_token=${patientToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(403);
+  });
+
+  it('returns 400 for an unknown job name', async () => {
+    await agent()
+      .post('/admin/revenue/jobs/run/nope')
+      .set('Cookie', `access_token=${adminToken}; csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(400);
+  });
+
+  it('returns 401 when called with no token', async () => {
+    await agent()
+      .post('/admin/revenue/jobs/run/account-suspension')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .expect(401);
+  });
+});
