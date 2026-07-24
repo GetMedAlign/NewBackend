@@ -179,6 +179,12 @@ describe('Patient journey (e2e)', () => {
       .send({ email: userEmail, password: PASSWORD })
       .expect(201);
 
+    // Confirm the freshly signed-up account so sign-in reaches the 2FA step.
+    await prisma.asSystem(
+      (c) =>
+        c.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${userEmail}::citext`,
+    );
+
     await agent()
       .post('/auth/signin')
       .set('Cookie', `csrf_token=${csrfToken}`)

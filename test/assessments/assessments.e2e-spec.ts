@@ -254,6 +254,11 @@ describe('Assessments (e2e)', () => {
         .send({ email: claimEmail, password: claimPassword })
         .expect(201);
 
+      await prisma.asSystem(
+        (client) =>
+          client.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${claimEmail}::citext`,
+      );
+
       await agent()
         .post('/auth/signin')
         .set('Cookie', `csrf_token=${csrfToken}`)
