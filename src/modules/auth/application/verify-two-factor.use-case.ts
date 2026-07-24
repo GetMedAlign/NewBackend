@@ -15,6 +15,9 @@ export interface VerifyTwoFactorOutput {
   token: string;
   userId: string;
   role: string;
+  name: string | null;
+  email: string;
+  clinicId: string | null;
 }
 
 @Injectable()
@@ -53,6 +56,6 @@ export class VerifyTwoFactorUseCase {
       affectedRecord: user.id,
     });
 
-    return { token, userId: user.id, role };
+    return { token, userId: user.id, role, name: user.name, email: user.email, clinicId };
   }
 }

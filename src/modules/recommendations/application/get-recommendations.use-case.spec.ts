@@ -101,6 +101,8 @@ function makeClinicRepo(clinics: ClinicReadModel[]): ClinicRepositoryPort {
     findMatchable: jest.fn().mockResolvedValue(clinics),
     findById: jest.fn(),
     findBySlug: jest.fn(),
+    findDirectory: jest.fn(),
+    findProfileBySlug: jest.fn(),
   };
 }
 

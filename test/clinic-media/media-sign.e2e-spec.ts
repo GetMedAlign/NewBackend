@@ -148,6 +148,10 @@ describe('Clinic Media (e2e)', () => {
       .send({ email: patientEmail, password: 'SeedClinic1!' })
       .expect(201);
 
+    await pool.query('UPDATE users SET email_confirmed = true WHERE email = $1::citext', [
+      patientEmail,
+    ]);
+
     await supertest(app.getHttpServer())
       .post('/auth/signin')
       .set('Cookie', `csrf_token=${csrfToken}`)

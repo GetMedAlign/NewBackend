@@ -44,9 +44,15 @@ import { GetMeUseCase } from '../src/modules/auth/application/get-me.use-case';
 import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-case';
 import { ForgotPasswordUseCase } from '../src/modules/auth/application/forgot-password.use-case';
 import { ResetPasswordUseCase } from '../src/modules/auth/application/reset-password.use-case';
+import { ChangePasswordUseCase } from '../src/modules/auth/application/change-password.use-case';
+import { ConfirmEmailUseCase } from '../src/modules/auth/application/confirm-email.use-case';
+import { ResendConfirmationUseCase } from '../src/modules/auth/application/resend-confirmation.use-case';
 import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
 import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
+import { ClinicsController } from '../src/modules/clinics/infrastructure/http/clinics.controller';
+import { GetClinicDirectoryUseCase } from '../src/modules/clinics/application/get-clinic-directory.use-case';
+import { GetClinicProfileUseCase as GetPublicClinicProfileUseCase } from '../src/modules/clinics/application/get-clinic-profile.use-case';
 import { RecommendationsController } from '../src/modules/recommendations/infrastructure/http/recommendations.controller';
 import { GetRecommendationsUseCase } from '../src/modules/recommendations/application/get-recommendations.use-case';
 import { LeadsController } from '../src/modules/leads/infrastructure/http/leads.controller';
@@ -55,6 +61,7 @@ import { PatientsController } from '../src/modules/patients/infrastructure/http/
 import { GetProfileUseCase } from '../src/modules/patients/application/get-profile.use-case';
 import { UpdateProfileUseCase } from '../src/modules/patients/application/update-profile.use-case';
 import { GetMyLeadsUseCase } from '../src/modules/patients/application/get-my-leads.use-case';
+import { DeleteAccountUseCase } from '../src/modules/patients/application/delete-account.use-case';
 import { ClinicPortalController } from '../src/modules/clinic-portal/infrastructure/http/clinic-portal.controller';
 import { GetClinicProfileUseCase } from '../src/modules/clinic-portal/application/get-clinic-profile.use-case';
 import { UpdateClinicProfileUseCase } from '../src/modules/clinic-portal/application/update-clinic-profile.use-case';
@@ -110,11 +117,17 @@ import { SavePaymentMethodUseCase } from '../src/modules/billing/application/sav
 import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
+import { GetClinicInvoicesUseCase } from '../src/modules/billing/application/get-clinic-invoices.use-case';
 import { GetRevenueStatsUseCase } from '../src/modules/billing/application/get-revenue-stats.use-case';
 import { GetRevenueClinicsUseCase } from '../src/modules/billing/application/get-revenue-clinics.use-case';
 import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
 import { RunBillingJobService } from '../src/modules/billing/application/run-billing-job.service';
 import { AdminRevenueController } from '../src/modules/billing/infrastructure/http/admin-revenue.controller';
+import { SuperadminController } from '../src/modules/superadmin/infrastructure/http/superadmin.controller';
+import { ListAdminsUseCase } from '../src/modules/superadmin/application/list-admins.use-case';
+import { CreateAdminUseCase } from '../src/modules/superadmin/application/create-admin.use-case';
+import { DeleteAdminUseCase } from '../src/modules/superadmin/application/delete-admin.use-case';
+import { SetAdminPasswordUseCase } from '../src/modules/superadmin/application/set-admin-password.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -144,6 +157,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     HealthController,
     AuthController,
     AssessmentsController,
+    ClinicsController,
     RecommendationsController,
     LeadsController,
     PatientsController,
@@ -157,6 +171,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     StripeWebhookController,
     BillingJobsController,
     AdminRevenueController,
+    SuperadminController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -168,13 +183,19 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(SignOutUseCase),
     stubProvider(ForgotPasswordUseCase),
     stubProvider(ResetPasswordUseCase),
+    stubProvider(ChangePasswordUseCase),
+    stubProvider(ConfirmEmailUseCase),
+    stubProvider(ResendConfirmationUseCase),
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
+    stubProvider(GetClinicDirectoryUseCase),
+    stubProvider(GetPublicClinicProfileUseCase),
     stubProvider(GetRecommendationsUseCase),
     stubProvider(SubmitLeadUseCase),
     stubProvider(GetProfileUseCase),
     stubProvider(UpdateProfileUseCase),
     stubProvider(GetMyLeadsUseCase),
+    stubProvider(DeleteAccountUseCase),
     stubProvider(GetClinicProfileUseCase),
     stubProvider(UpdateClinicProfileUseCase),
     stubProvider(ListClinicLeadsUseCase),
@@ -218,9 +239,14 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(RemovePaymentMethodUseCase),
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
+    stubProvider(GetClinicInvoicesUseCase),
     stubProvider(GetRevenueStatsUseCase),
     stubProvider(GetRevenueClinicsUseCase),
     stubProvider(HandleStripeWebhookUseCase),
+    stubProvider(ListAdminsUseCase),
+    stubProvider(CreateAdminUseCase),
+    stubProvider(DeleteAdminUseCase),
+    stubProvider(SetAdminPasswordUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
     // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so

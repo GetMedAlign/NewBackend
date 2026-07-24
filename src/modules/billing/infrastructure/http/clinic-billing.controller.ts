@@ -22,11 +22,13 @@ import { GetPaymentMethodUseCase } from '../../application/get-payment-method.us
 import { SavePaymentMethodUseCase } from '../../application/save-payment-method.use-case';
 import { RemovePaymentMethodUseCase } from '../../application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from '../../application/cancel-subscription.use-case';
+import { GetClinicInvoicesUseCase } from '../../application/get-clinic-invoices.use-case';
 import { ClinicBillingInfoDto } from './dto/clinic-billing-info.dto';
 import { UpdateClinicBillingDto } from './dto/update-clinic-billing.dto';
 import { PaymentMethodDto } from './dto/payment-method.dto';
 import { SavePaymentMethodDto } from './dto/save-payment-method.dto';
 import { CancelSubscriptionResponseDto } from './dto/cancel-subscription-response.dto';
+import { ClinicInvoiceDto } from './dto/clinic-invoice.dto';
 
 @ApiTags('Clinic Portal — Billing')
 @ApiCookieAuth('access_token')
@@ -41,6 +43,7 @@ export class ClinicBillingController {
     private readonly savePaymentMethod: SavePaymentMethodUseCase,
     private readonly removePaymentMethod: RemovePaymentMethodUseCase,
     private readonly cancelSubscription: CancelSubscriptionUseCase,
+    private readonly getClinicInvoices: GetClinicInvoicesUseCase,
   ) {}
 
   @Get('billing')
@@ -111,5 +114,12 @@ export class ClinicBillingController {
     @CurrentClinic() clinicId: string,
   ): Promise<CancelSubscriptionResponseDto> {
     return this.cancelSubscription.execute({ clinicId }, new Date());
+  }
+
+  @Get('invoices')
+  @ApiOperation({ summary: "Get the authenticated clinic's own invoices, most recent first" })
+  @ApiOkResponse({ type: [ClinicInvoiceDto] })
+  listInvoices(@CurrentClinic() clinicId: string): Promise<ClinicInvoiceDto[]> {
+    return this.getClinicInvoices.execute({ clinicId });
   }
 }

@@ -42,6 +42,11 @@ export type ClinicSeed = {
   notifyOnLead: boolean;
   categories: AssessmentCategory[];
   serviceCodes: string[];
+  /**
+   * Subset of `serviceCodes` flagged `is_top_service` (Task: public clinic
+   * directory/profile). Display order follows position within `serviceCodes`.
+   */
+  topServiceCodes: string[];
   // Clinic-portal additions (Task 3)
   /** Short text highlighting what sets this clinic apart. */
   differentiators: string | null;
@@ -102,6 +107,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     categories: ['hormone', 'wellness'],
     // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
     serviceCodes: ['trt', 'thyroid_management', 'hormone_panel', 'lab_work'],
+    topServiceCodes: ['trt', 'thyroid_management', 'hormone_panel'],
     differentiators: 'Board-certified hormone specialists; same-week appointments; in-house lab.',
     offersLabWork: true,
     insuranceNotes: null,
@@ -144,6 +150,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     categories: ['peptide'],
     // 'lab_work' is the canonical lab-work service code that scoring component 7 keys on.
     serviceCodes: ['bpc157', 'peptide_consult', 'recovery_protocol', 'lab_work'],
+    topServiceCodes: ['bpc157', 'peptide_consult', 'recovery_protocol'],
     differentiators: 'Nationwide telehealth; cutting-edge peptide protocols; DO-led team.',
     offersLabWork: true,
     insuranceNotes: null,
@@ -185,6 +192,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['med_spa'],
     serviceCodes: ['botox', 'dermal_fillers', 'body_contouring'],
+    topServiceCodes: ['botox', 'dermal_fillers', 'body_contouring'],
     differentiators: 'Top-rated aesthetic med spa; accepts most insurance; 300+ five-star reviews.',
     offersLabWork: false,
     insuranceNotes: 'Accepts PPO and most major carriers; prior authorization may be required.',
@@ -226,6 +234,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['wellness', 'med_spa'],
     serviceCodes: ['iv_therapy', 'longevity_program', 'nutrition_coaching'],
+    topServiceCodes: ['iv_therapy', 'longevity_program', 'nutrition_coaching'],
     differentiators: 'Integrative MD-led team; custom longevity programs; IV therapy lounge.',
     offersLabWork: false,
     insuranceNotes: 'Accepts some PPO plans for select services; contact for details.',
@@ -267,6 +276,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['hormone', 'wellness'],
     serviceCodes: ['trt', 'hormone_panel'],
+    topServiceCodes: ['trt', 'hormone_panel'],
     differentiators: 'Affordable hormone replacement; same-week availability in LA.',
     offersLabWork: false,
     insuranceNotes: null,
@@ -308,6 +318,7 @@ export const CLINICS: ReadonlyArray<ClinicSeed> = [
     notifyOnLead: false,
     categories: ['peptide'],
     serviceCodes: ['peptide_consult'],
+    topServiceCodes: ['peptide_consult'],
     differentiators: 'New clinic onboarding; innovative peptide therapy in the Pacific Northwest.',
     offersLabWork: false,
     insuranceNotes: null,

@@ -13,6 +13,7 @@ import { SavePaymentMethodUseCase } from './application/save-payment-method.use-
 import { RemovePaymentMethodUseCase } from './application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from './application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from './application/get-admin-clinic-billing.use-case';
+import { GetClinicInvoicesUseCase } from './application/get-clinic-invoices.use-case';
 import { GetRevenueStatsUseCase } from './application/get-revenue-stats.use-case';
 import { GetRevenueClinicsUseCase } from './application/get-revenue-clinics.use-case';
 import { GenerateInvoicesJob } from './application/generate-invoices.job';
@@ -43,6 +44,7 @@ import { AuthModule } from '../auth/auth.module';
     RemovePaymentMethodUseCase,
     CancelSubscriptionUseCase,
     GetAdminClinicBillingUseCase,
+    GetClinicInvoicesUseCase,
     GetRevenueStatsUseCase,
     GetRevenueClinicsUseCase,
     GenerateInvoicesJob,

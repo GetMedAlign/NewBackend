@@ -210,6 +210,11 @@ describe('Clinic Portal — full journey (e2e)', () => {
       .send({ email: patientEmail, password: 'SeedClinic1!' })
       .expect(201);
 
+    await prisma.asSystem(
+      (client) =>
+        client.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${patientEmail}::citext`,
+    );
+
     await supertest(app.getHttpServer())
       .post('/auth/signin')
       .set('Cookie', `csrf_token=${csrfToken}`)

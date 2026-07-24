@@ -102,6 +102,8 @@ function buildMocks(): Mocks {
       findMatchable: jest.fn(),
       findById: jest.fn(),
       findBySlug: jest.fn(),
+      findDirectory: jest.fn(),
+      findProfileBySlug: jest.fn(),
     },
     assessments: {
       create: jest.fn(),
@@ -125,6 +127,7 @@ function buildMocks(): Mocks {
       findProfile: jest.fn(),
       updateProfile: jest.fn(),
       findPatientIdByUserId: jest.fn().mockResolvedValue(null),
+      softDeleteSelf: jest.fn(),
     },
     claimTokens,
   };

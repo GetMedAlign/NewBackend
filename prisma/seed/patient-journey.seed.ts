@@ -275,7 +275,12 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     await prisma.$transaction([
       prisma.clinicService.deleteMany({ where: { clinicId: clinic.id } }),
       prisma.clinicService.createMany({
-        data: c.serviceCodes.map((serviceCode) => ({ clinicId: clinic.id, serviceCode })),
+        data: c.serviceCodes.map((serviceCode, index) => ({
+          clinicId: clinic.id,
+          serviceCode,
+          isTopService: c.topServiceCodes.includes(serviceCode),
+          displayOrder: index,
+        })),
       }),
     ]);
   }
@@ -924,6 +929,10 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
       }
     });
   }
+
+  // Seeded accounts are pre-verified so their logins work under the
+  // email-confirmation sign-in gate (create_user leaves email_confirmed false).
+  await prisma.$executeRaw`UPDATE users SET email_confirmed = true`;
 }
 
 /** CLI entry point: `pnpm seed:pj`. */

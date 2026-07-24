@@ -113,6 +113,10 @@ describe('Patients (e2e)', () => {
   });
 
   it('signs in (triggers 2FA email)', async () => {
+    // Confirm the freshly signed-up account so sign-in reaches the 2FA step.
+    await prisma.asSystem(
+      (c) => c.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${email}::citext`,
+    );
     const res = await agent()
       .post('/auth/signin')
       .set('Cookie', `csrf_token=${csrfToken}`)

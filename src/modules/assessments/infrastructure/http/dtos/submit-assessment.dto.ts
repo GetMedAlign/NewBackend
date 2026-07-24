@@ -193,6 +193,18 @@ export class SubmitAssessmentDto {
   @IsString({ each: true })
   chronicConditions!: string[];
 
+  /**
+   * Free-text "other" chronic condition. There is no matching column on
+   * patient_assessments yet (only the coded assessment_chronic_conditions
+   * join table exists), so this is accepted so the request stops 400ing but
+   * is not currently persisted. Persisting it needs a schema migration
+   * (e.g. an other_chronic_condition column), which is out of scope here.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  otherChronicCondition?: string;
+
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })

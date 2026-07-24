@@ -1,9 +1,25 @@
+import type { ConfigService } from '@nestjs/config';
 import { SignUpUseCase } from './sign-up.use-case';
 import type { PasswordHasherPort } from '../domain/ports/password-hasher.port';
 import type { UserRepositoryPort } from '../domain/ports/user-repository.port';
 import type { AuditPort } from '../domain/ports/audit.port';
+import type { EmailSenderPort } from '../infrastructure/adapters/email-sender.port';
+import { EmailConfirmTokenService } from '../domain/email-confirm-token.service';
 import { EmailAlreadyExistsError } from '../domain/errors/email-already-exists.error';
 import { InvalidEmailError } from '../domain/value-objects/email';
+
+const makeEmailSender = (): jest.Mocked<EmailSenderPort> => ({
+  send: jest.fn().mockResolvedValue(undefined),
+});
+
+const makeConfirmTokens = (): jest.Mocked<EmailConfirmTokenService> =>
+  ({
+    issue: jest.fn().mockReturnValue('confirm-token'),
+    verify: jest.fn(),
+  }) as unknown as jest.Mocked<EmailConfirmTokenService>;
+
+const makeConfig = (): ConfigService =>
+  ({ get: jest.fn().mockReturnValue('http://localhost:5173') }) as unknown as ConfigService;
 
 const makeHasher = (): jest.Mocked<PasswordHasherPort> => ({
   hash: jest.fn().mockResolvedValue('hashed-pw'),
@@ -14,6 +30,9 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   create: jest.fn().mockResolvedValue('new-user-id'),
   findByEmail: jest.fn(),
   findById: jest.fn(),
+  updatePasswordHash: jest.fn(),
+  setEmailConfirmed: jest.fn(),
+
   getPrimaryRole: jest.fn(),
   getClinicId: jest.fn().mockResolvedValue(null),
   recordFailedLogin: jest.fn(),
@@ -36,20 +55,49 @@ describe('SignUpUseCase', () => {
     hasher = makeHasher();
     repo = makeRepo();
     audit = makeAudit();
-    useCase = new SignUpUseCase(hasher, repo, audit);
+    useCase = new SignUpUseCase(
+      hasher,
+      repo,
+      audit,
+      makeEmailSender(),
+      makeConfirmTokens(),
+      makeConfig(),
+    );
   });
 
   it('hashes the password and passes the hash to repo.create', async () => {
     await useCase.execute({ email: 'user@example.com', password: 'secret' });
 
     expect(hasher.hash).toHaveBeenCalledWith('secret');
-    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw');
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
   });
 
   it('normalises email (trim + lowercase) before creating', async () => {
     await useCase.execute({ email: '  User@Example.COM  ', password: 'secret' });
 
-    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw');
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
+  });
+
+  it('passes name and dob through to repo.create', async () => {
+    await useCase.execute({
+      email: 'user@example.com',
+      password: 'secret',
+      name: 'Jane Doe',
+      dob: '1990-01-01',
+    });
+
+    expect(repo.create).toHaveBeenCalledWith(
+      'user@example.com',
+      'hashed-pw',
+      'Jane Doe',
+      '1990-01-01',
+    );
+  });
+
+  it('calls repo.create with undefined name/dob when the signup form omits them', async () => {
+    await useCase.execute({ email: 'user@example.com', password: 'secret' });
+
+    expect(repo.create).toHaveBeenCalledWith('user@example.com', 'hashed-pw', undefined, undefined);
   });
 
   it('returns the userId from repo.create', async () => {

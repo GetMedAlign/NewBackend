@@ -104,7 +104,7 @@
         },
         "responses": {
           "200": {
-            "description": "2FA code sent",
+            "description": "2FA code sent, or email confirmation required",
             "content": {
               "application/json": {
                 "schema": {
@@ -161,7 +161,10 @@
                 "schema": {
                   "example": {
                     "userId": "uuid-here",
-                    "role": "patient"
+                    "role": "patient",
+                    "name": "Jane Doe",
+                    "email": "user@example.com",
+                    "clinicId": null
                   }
                 }
               }
@@ -393,6 +396,145 @@
         ]
       }
     },
+    "/auth/change-password": {
+      "post": {
+        "description": "Verifies the current password and sets a new one. Requires an active session.",
+        "operationId": "AuthController_changePassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Current password is incorrect"
+          }
+        },
+        "summary": "Change the authenticated user password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/confirm-email": {
+      "post": {
+        "operationId": "AuthController_confirmEmail",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid confirmation token"
+          }
+        },
+        "summary": "Confirm an email address using the token from the confirmation email",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/resend-confirmation": {
+      "post": {
+        "operationId": "AuthController_resendConfirmation",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendConfirmationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resend the email-confirmation link (enumeration-safe)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/assessments": {
       "post": {
         "operationId": "AssessmentsController_submit",
@@ -445,6 +587,142 @@
         },
         "tags": [
           "Assessments"
+        ]
+      }
+    },
+    "/clinics": {
+      "get": {
+        "operationId": "ClinicsController_getDirectory",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "telehealth",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "serviceCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zipCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "rating",
+                "name",
+                "reviews",
+                "distance"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicDirectoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Public, paginated clinic directory",
+        "tags": [
+          "clinics"
+        ]
+      }
+    },
+    "/clinics/{slug}": {
+      "get": {
+        "operationId": "ClinicsController_getBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "description": "Clinic URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicProfileDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active clinic with billing current for that slug"
+          }
+        },
+        "summary": "Public single-clinic profile by slug",
+        "tags": [
+          "clinics"
         ]
       }
     },
@@ -559,6 +837,30 @@
           }
         ],
         "summary": "Update the authenticated patient profile",
+        "tags": [
+          "patients"
+        ]
+      },
+      "delete": {
+        "operationId": "PatientsController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Soft-delete the authenticated patient account and end the session",
         "tags": [
           "patients"
         ]
@@ -1770,6 +2072,36 @@
         ]
       }
     },
+    "/clinic/portal/invoices": {
+      "get": {
+        "operationId": "ClinicBillingController_listInvoices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClinicInvoiceDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic's own invoices, most recent first",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      }
+    },
     "/stripe/webhook": {
       "post": {
         "operationId": "StripeWebhookController_handle",
@@ -1886,6 +2218,123 @@
           "Admin — Revenue"
         ]
       }
+    },
+    "/superadmin/admins": {
+      "get": {
+        "operationId": "SuperadminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all admin/superadmin users (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      },
+      "post": {
+        "operationId": "SuperadminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create a new admin/superadmin user (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
+    },
+    "/superadmin/admins/{id}": {
+      "delete": {
+        "description": "Hard-deletes the user; user_roles cascades. A superadmin may not delete their own account.",
+        "operationId": "SuperadminController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Delete an admin/superadmin user (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
+    },
+    "/superadmin/admins/{id}/password": {
+      "put": {
+        "operationId": "SuperadminController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAdminPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set an admin/superadmin user's password (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
     }
   },
   "info": {
@@ -1918,6 +2367,17 @@
             "example": "MySecurePass1!",
             "description": "Password (min 8 characters)",
             "minLength": 8
+          },
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "description": "Full name of the patient signing up",
+            "maxLength": 200
+          },
+          "dob": {
+            "type": "string",
+            "example": "1990-01-01",
+            "description": "Date of birth as an ISO date string (YYYY-MM-DD). An unparseable value is ignored rather than rejected."
           }
         },
         "required": [
@@ -2014,9 +2474,292 @@
           "newPassword"
         ]
       },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "The user current password"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MyNewSecurePass1!",
+            "description": "New password (min 8 characters)"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "ConfirmEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to confirm"
+          },
+          "token": {
+            "type": "string",
+            "description": "Confirmation token from the email link"
+          }
+        },
+        "required": [
+          "email",
+          "token"
+        ]
+      },
+      "ResendConfirmationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to resend confirmation to"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
       "SubmitAssessmentDto": {
         "type": "object",
         "properties": {}
+      },
+      "ClinicDirectoryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "number"
+          },
+          "telehealth": {
+            "type": "boolean"
+          },
+          "topServices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "consultationFee": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "websiteUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceMiles": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "category",
+          "specialty",
+          "city",
+          "stateCode",
+          "rating",
+          "reviewCount",
+          "telehealth",
+          "topServices",
+          "consultationFee",
+          "logoUrl",
+          "websiteUrl",
+          "distanceMiles"
+        ]
+      },
+      "ClinicDirectoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicDirectoryItemDto"
+            }
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize",
+          "totalPages"
+        ]
+      },
+      "ClinicProfileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "zipCode": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "number"
+          },
+          "about": {
+            "type": "string"
+          },
+          "differentiators": {
+            "type": "string"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allServices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "waitTime": {
+            "type": "string"
+          },
+          "telehealth": {
+            "type": "boolean"
+          },
+          "offersLabWork": {
+            "type": "boolean"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "consultationFee": {
+            "type": "string"
+          },
+          "monthlyProgram": {
+            "type": "string"
+          },
+          "financing": {
+            "type": "boolean"
+          },
+          "insurance": {
+            "type": "boolean"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "string"
+          },
+          "photoCount": {
+            "type": "number"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "category",
+          "specialty",
+          "location",
+          "city",
+          "stateCode",
+          "zipCode",
+          "rating",
+          "reviewCount",
+          "about",
+          "differentiators",
+          "services",
+          "allServices",
+          "waitTime",
+          "telehealth",
+          "offersLabWork",
+          "websiteUrl",
+          "consultationFee",
+          "monthlyProgram",
+          "financing",
+          "insurance",
+          "providerName",
+          "credentials",
+          "photoCount",
+          "logoUrl",
+          "photoUrls"
+        ]
       },
       "SubmitLeadDto": {
         "type": "object",
@@ -2701,6 +3444,110 @@
         "required": [
           "cancelledAt",
           "activeThrough"
+        ]
+      },
+      "ClinicInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "lead_count": {
+            "type": "number"
+          },
+          "price_per_lead": {
+            "type": "number"
+          },
+          "platform_fee": {
+            "type": "number"
+          },
+          "total_amount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "description": "draft | open | paid | overdue | void"
+          },
+          "invoice_url": {
+            "type": "object",
+            "nullable": true
+          },
+          "pdf_url": {
+            "type": "object",
+            "nullable": true
+          },
+          "due_date": {
+            "type": "object",
+            "nullable": true
+          },
+          "paid_at": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "period_start",
+          "period_end",
+          "lead_count",
+          "price_per_lead",
+          "platform_fee",
+          "total_amount",
+          "status"
+        ]
+      },
+      "CreateAdminDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "description": "Admin's full name"
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@medalign.example.com",
+            "description": "Email address"
+          },
+          "password": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "description": "Password (min 8 characters)",
+            "minLength": 8
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "superadmin"
+            ],
+            "example": "admin"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ]
+      },
+      "SetAdminPasswordDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "newPassword"
         ]
       }
     }

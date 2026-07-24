@@ -30,6 +30,7 @@ function makePatientRepo(profile: PatientProfile | null): PatientRepositoryPort 
     findProfile: jest.fn().mockResolvedValue(profile),
     updateProfile: jest.fn().mockResolvedValue(undefined),
     findPatientIdByUserId: jest.fn().mockResolvedValue(null),
+    softDeleteSelf: jest.fn(),
   };
 }
 

@@ -16,6 +16,13 @@ export interface PatientRepositoryPort {
    * caller can only ever read their own patient row.
    */
   findPatientIdByUserId(userId: string): Promise<string | null>;
+  /**
+   * Soft-deletes the authenticated user's own patient record (is_deleted +
+   * deleted_at) and locks the user account, in one transaction scoped to the
+   * caller's own user id. Returns 'not_found' when the user has no patient
+   * record, 'already_deleted' if it was already soft-deleted, 'ok' otherwise.
+   */
+  softDeleteSelf(userId: string): Promise<'ok' | 'not_found' | 'already_deleted'>;
 }
 
 export const PATIENT_REPOSITORY = Symbol('PatientRepositoryPort');

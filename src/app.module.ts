@@ -6,6 +6,7 @@ import { AppConfigModule } from './infrastructure/config/config.module';
 import { HealthController } from './infrastructure/health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { ClinicsModule } from './modules/clinics/clinics.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { PatientsModule } from './modules/patients/patients.module';
@@ -15,6 +16,7 @@ import { ClinicApplicationsModule } from './modules/clinic-applications/clinic-a
 import { AdminClinicsModule } from './modules/admin-clinics/admin-clinics.module';
 import { AdminPatientsModule } from './modules/admin-patients/admin-patients.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { SuperadminModule } from './modules/superadmin/superadmin.module';
 
 import { JwtCookieGuard } from './infrastructure/security/jwt-cookie.guard';
 import { RolesGuard } from './infrastructure/security/roles.guard';
@@ -26,6 +28,7 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
     AppConfigModule,
     AuthModule,
     AssessmentsModule,
+    ClinicsModule,
     RecommendationsModule,
     LeadsModule,
     PatientsModule,
@@ -35,6 +38,7 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
     AdminClinicsModule,
     AdminPatientsModule,
     BillingModule,
+    SuperadminModule,
     // Global default rate limit; auth POST routes tighten it via @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],

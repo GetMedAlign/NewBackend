@@ -10,6 +10,7 @@ describe('GetClinicBillingUseCase', () => {
     getClinicStripeCustomerId: jest.fn(),
     setBillingStatus: jest.fn(),
     getAdminClinicBilling: jest.fn(),
+    listClinicInvoices: jest.fn(),
     setClinicStripeCustomerId: jest.fn(),
     cancelSubscription: jest.fn(),
     listInvoiceEligibleClinics: jest.fn(),
