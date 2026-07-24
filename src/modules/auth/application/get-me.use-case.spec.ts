@@ -24,6 +24,7 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   setRecoveryPhone: jest.fn(),
   getRecoveryPhone: jest.fn(),
   updatePasswordHash: jest.fn(),
+  setEmailConfirmed: jest.fn(),
 });
 
 describe('GetMeUseCase', () => {

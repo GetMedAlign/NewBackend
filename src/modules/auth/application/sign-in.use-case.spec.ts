@@ -33,6 +33,8 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   findByEmail: jest.fn().mockResolvedValue(null),
   findById: jest.fn(),
   updatePasswordHash: jest.fn(),
+  setEmailConfirmed: jest.fn(),
+
   getPrimaryRole: jest.fn(),
   getClinicId: jest.fn().mockResolvedValue(null),
   recordFailedLogin: jest.fn().mockResolvedValue(undefined),
@@ -132,6 +134,15 @@ describe('SignInUseCase', () => {
 
       expect(result).toEqual({ requiresTwoFactor: true });
       expect(result).not.toHaveProperty('token');
+    });
+
+    it('requires email confirmation (and skips 2FA) for an unconfirmed account', async () => {
+      repo.findByEmail.mockResolvedValue(makeUser({ emailConfirmed: false }));
+
+      const result = await useCase.execute({ email: 'user@example.com', password: 'correct' });
+
+      expect(result).toEqual({ requiresEmailConfirmation: true });
+      expect(twoFactor.issueCode).not.toHaveBeenCalled();
     });
 
     it('records a signin_2fa_issued audit event', async () => {

@@ -32,6 +32,8 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   findByEmail: jest.fn().mockResolvedValue(makeUser()),
   findById: jest.fn(),
   updatePasswordHash: jest.fn(),
+  setEmailConfirmed: jest.fn(),
+
   getPrimaryRole: jest.fn().mockResolvedValue('patient'),
   getClinicId: jest.fn().mockResolvedValue(null),
   recordFailedLogin: jest.fn(),

@@ -30,6 +30,14 @@ class CapturingEmailSender implements EmailSenderPort {
     if (!match) throw new Error(`No 6-digit code in email body: ${body}`);
     return match[1];
   }
+
+  confirmTokenFor(email: string): string {
+    const body = this.lastBodyByEmail.get(email.toLowerCase());
+    if (!body) throw new Error(`No email captured for ${email}`);
+    const match = body.match(/[?&]token=([^&\s]+)/);
+    if (!match) throw new Error(`No confirmation token in email body: ${body}`);
+    return decodeURIComponent(match[1]);
+  }
 }
 
 /** Extracts a single cookie value by name from a Set-Cookie header array. */
@@ -147,6 +155,29 @@ describe('Auth (e2e)', () => {
       `,
     );
     expect(patientRows[0]?.date_of_birth?.toISOString().slice(0, 10)).toBe(dob);
+  });
+
+  it('POST /auth/signin on an unconfirmed account returns requiresEmailConfirmation', async () => {
+    const res = await agent()
+      .post('/auth/signin')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ email, password })
+      .expect(200);
+
+    expect(res.body).toEqual({ requiresEmailConfirmation: true });
+  });
+
+  it('POST /auth/confirm-email confirms the account with the emailed token', async () => {
+    const token = emailSender.confirmTokenFor(email);
+    const res = await agent()
+      .post('/auth/confirm-email')
+      .set('Cookie', `csrf_token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({ email, token })
+      .expect(200);
+
+    expect(res.body).toEqual({ success: true });
   });
 
   it('POST /auth/signin returns requiresTwoFactor and sets NO access_token cookie', async () => {

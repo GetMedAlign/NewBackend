@@ -134,6 +134,13 @@ export class PrismaUserRepository implements UserRepositoryPort {
     );
   }
 
+  async setEmailConfirmed(email: string): Promise<void> {
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${email}::citext`,
+    );
+  }
+
   async findById(id: string): Promise<User | null> {
     const rows = await this.prisma.asSystem(
       (client) =>

@@ -104,7 +104,7 @@
         },
         "responses": {
           "200": {
-            "description": "2FA code sent",
+            "description": "2FA code sent, or email confirmation required",
             "content": {
               "application/json": {
                 "schema": {
@@ -439,6 +439,97 @@
           }
         },
         "summary": "Change the authenticated user password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/confirm-email": {
+      "post": {
+        "operationId": "AuthController_confirmEmail",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid confirmation token"
+          }
+        },
+        "summary": "Confirm an email address using the token from the confirmation email",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/resend-confirmation": {
+      "post": {
+        "operationId": "AuthController_resendConfirmation",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendConfirmationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resend the email-confirmation link (enumeration-safe)",
         "tags": [
           "Auth"
         ]
@@ -2399,6 +2490,37 @@
         "required": [
           "currentPassword",
           "newPassword"
+        ]
+      },
+      "ConfirmEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to confirm"
+          },
+          "token": {
+            "type": "string",
+            "description": "Confirmation token from the email link"
+          }
+        },
+        "required": [
+          "email",
+          "token"
+        ]
+      },
+      "ResendConfirmationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com",
+            "description": "Email address to resend confirmation to"
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "SubmitAssessmentDto": {

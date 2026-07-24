@@ -37,6 +37,9 @@ import { SignOutUseCase } from './application/sign-out.use-case';
 import { ForgotPasswordUseCase } from './application/forgot-password.use-case';
 import { ResetPasswordUseCase } from './application/reset-password.use-case';
 import { ChangePasswordUseCase } from './application/change-password.use-case';
+import { ConfirmEmailUseCase } from './application/confirm-email.use-case';
+import { ResendConfirmationUseCase } from './application/resend-confirmation.use-case';
+import { EmailConfirmTokenService } from './domain/email-confirm-token.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, CryptoModule, JwtModule.register({})],
@@ -52,6 +55,9 @@ import { ChangePasswordUseCase } from './application/change-password.use-case';
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
     ChangePasswordUseCase,
+    ConfirmEmailUseCase,
+    ResendConfirmationUseCase,
+    EmailConfirmTokenService,
 
     // Concrete email sender classes — both registered so the factory can pick
     SendGridEmailSender,

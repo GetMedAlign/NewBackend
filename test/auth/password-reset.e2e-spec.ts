@@ -144,6 +144,12 @@ describe('Password Reset (e2e)', () => {
 
     expect(resetRes.body).toEqual({ success: true });
 
+    // The account was created unconfirmed; confirm it so sign-in reaches the 2FA
+    // step (password reset does not itself confirm the email).
+    await prisma.asSystem(
+      (c) => c.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${email}::citext`,
+    );
+
     // 5. Sign in with new password → triggers 2FA
     const signinRes = await agent()
       .post('/auth/signin')

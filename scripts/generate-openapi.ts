@@ -45,6 +45,8 @@ import { SignOutUseCase } from '../src/modules/auth/application/sign-out.use-cas
 import { ForgotPasswordUseCase } from '../src/modules/auth/application/forgot-password.use-case';
 import { ResetPasswordUseCase } from '../src/modules/auth/application/reset-password.use-case';
 import { ChangePasswordUseCase } from '../src/modules/auth/application/change-password.use-case';
+import { ConfirmEmailUseCase } from '../src/modules/auth/application/confirm-email.use-case';
+import { ResendConfirmationUseCase } from '../src/modules/auth/application/resend-confirmation.use-case';
 import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
 import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
@@ -182,6 +184,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ForgotPasswordUseCase),
     stubProvider(ResetPasswordUseCase),
     stubProvider(ChangePasswordUseCase),
+    stubProvider(ConfirmEmailUseCase),
+    stubProvider(ResendConfirmationUseCase),
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
     stubProvider(GetClinicDirectoryUseCase),

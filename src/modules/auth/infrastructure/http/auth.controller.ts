@@ -19,6 +19,9 @@ import { SignOutUseCase } from '../../application/sign-out.use-case';
 import { ForgotPasswordUseCase } from '../../application/forgot-password.use-case';
 import { ResetPasswordUseCase } from '../../application/reset-password.use-case';
 import { ChangePasswordUseCase } from '../../application/change-password.use-case';
+import { ConfirmEmailUseCase } from '../../application/confirm-email.use-case';
+import { ResendConfirmationUseCase } from '../../application/resend-confirmation.use-case';
+import type { SignInOutput } from '../../application/sign-in.use-case';
 
 import { Public } from '../../../../infrastructure/security/public.decorator';
 import { CurrentUser } from '../../../../infrastructure/security/current-user.decorator';
@@ -32,6 +35,8 @@ import { Resend2faDto } from './dtos/resend-2fa.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
+import { ConfirmEmailDto } from './dtos/confirm-email.dto';
+import { ResendConfirmationDto } from './dtos/resend-confirmation.dto';
 
 /** Stricter per-IP throttle for the unauthenticated auth surface. */
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
@@ -56,6 +61,8 @@ export class AuthController {
     private readonly forgotPassword_uc: ForgotPasswordUseCase,
     private readonly resetPassword_uc: ResetPasswordUseCase,
     private readonly changePassword_uc: ChangePasswordUseCase,
+    private readonly confirmEmail_uc: ConfirmEmailUseCase,
+    private readonly resendConfirmation_uc: ResendConfirmationUseCase,
   ) {}
 
   @Public()
@@ -99,12 +106,12 @@ export class AuthController {
   @ApiBody({ type: SigninDto })
   @ApiResponse({
     status: 200,
-    description: '2FA code sent',
+    description: '2FA code sent, or email confirmation required',
     schema: { example: { requiresTwoFactor: true } },
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 403, description: 'Account locked' })
-  async signin(@Body() dto: SigninDto, @Req() req: Request): Promise<{ requiresTwoFactor: true }> {
+  async signin(@Body() dto: SigninDto, @Req() req: Request): Promise<SignInOutput> {
     return this.signIn.execute({
       email: dto.email,
       password: dto.password,
@@ -279,5 +286,30 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ): Promise<{ success: true }> {
     return this.changePassword_uc.execute(user.sub, dto.currentPassword, dto.newPassword);
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @Post('confirm-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirm an email address using the token from the confirmation email' })
+  @ApiHeader(CSRF_HEADER)
+  @ApiBody({ type: ConfirmEmailDto })
+  @ApiResponse({ status: 200, schema: { example: { success: true } } })
+  @ApiResponse({ status: 400, description: 'Invalid confirmation token' })
+  async confirmEmail(@Body() dto: ConfirmEmailDto): Promise<{ success: true }> {
+    return this.confirmEmail_uc.execute(dto.email, dto.token);
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @Post('resend-confirmation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend the email-confirmation link (enumeration-safe)' })
+  @ApiHeader(CSRF_HEADER)
+  @ApiBody({ type: ResendConfirmationDto })
+  @ApiResponse({ status: 200, schema: { example: { success: true } } })
+  async resendConfirmation(@Body() dto: ResendConfirmationDto): Promise<{ success: true }> {
+    return this.resendConfirmation_uc.execute(dto.email);
   }
 }

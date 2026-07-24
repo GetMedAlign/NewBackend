@@ -25,9 +25,7 @@ export interface SignInInput {
   ip?: string;
 }
 
-export interface SignInOutput {
-  requiresTwoFactor: true;
-}
+export type SignInOutput = { requiresTwoFactor: true } | { requiresEmailConfirmation: true };
 
 @Injectable()
 export class SignInUseCase {
@@ -55,6 +53,12 @@ export class SignInUseCase {
     if (!valid) {
       await this.repo.recordFailedLogin(user.id);
       throw new InvalidCredentialsError();
+    }
+
+    // Credentials are valid, but an unconfirmed email must confirm before the
+    // 2FA/session flow proceeds. Signal the frontend to show the confirm screen.
+    if (!user.emailConfirmed) {
+      return { requiresEmailConfirmation: true };
     }
 
     await this.twoFactor.issueCode(user.id);

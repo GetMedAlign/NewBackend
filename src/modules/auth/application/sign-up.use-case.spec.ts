@@ -1,9 +1,25 @@
+import type { ConfigService } from '@nestjs/config';
 import { SignUpUseCase } from './sign-up.use-case';
 import type { PasswordHasherPort } from '../domain/ports/password-hasher.port';
 import type { UserRepositoryPort } from '../domain/ports/user-repository.port';
 import type { AuditPort } from '../domain/ports/audit.port';
+import type { EmailSenderPort } from '../infrastructure/adapters/email-sender.port';
+import { EmailConfirmTokenService } from '../domain/email-confirm-token.service';
 import { EmailAlreadyExistsError } from '../domain/errors/email-already-exists.error';
 import { InvalidEmailError } from '../domain/value-objects/email';
+
+const makeEmailSender = (): jest.Mocked<EmailSenderPort> => ({
+  send: jest.fn().mockResolvedValue(undefined),
+});
+
+const makeConfirmTokens = (): jest.Mocked<EmailConfirmTokenService> =>
+  ({
+    issue: jest.fn().mockReturnValue('confirm-token'),
+    verify: jest.fn(),
+  }) as unknown as jest.Mocked<EmailConfirmTokenService>;
+
+const makeConfig = (): ConfigService =>
+  ({ get: jest.fn().mockReturnValue('http://localhost:5173') }) as unknown as ConfigService;
 
 const makeHasher = (): jest.Mocked<PasswordHasherPort> => ({
   hash: jest.fn().mockResolvedValue('hashed-pw'),
@@ -15,6 +31,8 @@ const makeRepo = (): jest.Mocked<UserRepositoryPort> => ({
   findByEmail: jest.fn(),
   findById: jest.fn(),
   updatePasswordHash: jest.fn(),
+  setEmailConfirmed: jest.fn(),
+
   getPrimaryRole: jest.fn(),
   getClinicId: jest.fn().mockResolvedValue(null),
   recordFailedLogin: jest.fn(),
@@ -37,7 +55,14 @@ describe('SignUpUseCase', () => {
     hasher = makeHasher();
     repo = makeRepo();
     audit = makeAudit();
-    useCase = new SignUpUseCase(hasher, repo, audit);
+    useCase = new SignUpUseCase(
+      hasher,
+      repo,
+      audit,
+      makeEmailSender(),
+      makeConfirmTokens(),
+      makeConfig(),
+    );
   });
 
   it('hashes the password and passes the hash to repo.create', async () => {

@@ -929,6 +929,10 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
       }
     });
   }
+
+  // Seeded accounts are pre-verified so their logins work under the
+  // email-confirmation sign-in gate (create_user leaves email_confirmed false).
+  await prisma.$executeRaw`UPDATE users SET email_confirmed = true`;
 }
 
 /** CLI entry point: `pnpm seed:pj`. */

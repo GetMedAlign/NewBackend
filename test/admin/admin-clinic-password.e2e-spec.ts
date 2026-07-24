@@ -326,6 +326,9 @@ describe('Admin clinic password routes (e2e)', () => {
       expect(auditRows[0]!.actor_role).toBe('superadmin');
       expect(auditRows[0]!.affected_record).toBe(userId);
 
+      // Ensure the account is confirmed so sign-in reaches the 2FA step.
+      await seedPrisma.$executeRaw`UPDATE users SET email_confirmed = true WHERE email = ${email}::citext`;
+
       // Real sign-in flow with the new password: signin -> 2FA code -> verify -> session cookie.
       const signinRes = await agent()
         .post('/auth/signin')
