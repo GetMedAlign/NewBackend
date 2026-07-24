@@ -488,4 +488,140 @@ describe('GET /clinic/portal/billing (e2e)', () => {
         .expect(403);
     });
   });
+
+  describe('GET /clinic/portal/invoices', () => {
+    let vitalityClinicId: string;
+    let apexClinicId: string;
+    const insertedInvoiceIds: string[] = [];
+
+    beforeAll(async () => {
+      const vitality = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { slug: clinicUser.clinicSlug },
+      });
+      vitalityClinicId = vitality.id;
+
+      const apexUser = SEEDED_CLINIC_USERS[1]!;
+      const apex = await seedPrisma.clinic.findUniqueOrThrow({
+        where: { slug: apexUser.clinicSlug },
+      });
+      apexClinicId = apex.id;
+    });
+
+    afterEach(async () => {
+      if (insertedInvoiceIds.length > 0) {
+        await seedPrisma.invoice.deleteMany({ where: { id: { in: insertedInvoiceIds } } });
+        insertedInvoiceIds.length = 0;
+      }
+    });
+
+    it('returns an empty array when the clinic has no invoices', async () => {
+      const res = await supertest(app.getHttpServer())
+        .get('/clinic/portal/invoices')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it('returns the clinic invoices, most recent period first', async () => {
+      const older = await seedPrisma.invoice.create({
+        data: {
+          clinicId: vitalityClinicId,
+          periodStart: new Date('2026-05-01T00:00:00Z'),
+          periodEnd: new Date('2026-06-01T00:00:00Z'),
+          leadCount: 3,
+          pricePerLead: 90,
+          platformFee: 49,
+          totalAmount: 319,
+          status: 'paid',
+          dueDate: new Date('2026-06-15T00:00:00Z'),
+          paidAt: new Date('2026-06-10T00:00:00Z'),
+          invoiceUrl: 'https://stripe.test/i/older',
+          pdfUrl: 'https://stripe.test/i/older.pdf',
+        },
+      });
+      const newer = await seedPrisma.invoice.create({
+        data: {
+          clinicId: vitalityClinicId,
+          periodStart: new Date('2026-06-01T00:00:00Z'),
+          periodEnd: new Date('2026-07-01T00:00:00Z'),
+          leadCount: 5,
+          pricePerLead: 90,
+          platformFee: 49,
+          totalAmount: 499,
+          status: 'open',
+          dueDate: new Date('2026-07-15T00:00:00Z'),
+          paidAt: null,
+          invoiceUrl: 'https://stripe.test/i/newer',
+          pdfUrl: 'https://stripe.test/i/newer.pdf',
+        },
+      });
+      insertedInvoiceIds.push(older.id, newer.id);
+
+      const res = await supertest(app.getHttpServer())
+        .get('/clinic/portal/invoices')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(2);
+      expect(res.body[0]).toEqual({
+        id: newer.id,
+        period_start: '2026-06-01T00:00:00.000Z',
+        period_end: '2026-07-01T00:00:00.000Z',
+        lead_count: 5,
+        price_per_lead: 90,
+        platform_fee: 49,
+        total_amount: 499,
+        status: 'open',
+        invoice_url: 'https://stripe.test/i/newer',
+        pdf_url: 'https://stripe.test/i/newer.pdf',
+        due_date: '2026-07-15T00:00:00.000Z',
+        paid_at: null,
+      });
+      expect(res.body[1]).toEqual({
+        id: older.id,
+        period_start: '2026-05-01T00:00:00.000Z',
+        period_end: '2026-06-01T00:00:00.000Z',
+        lead_count: 3,
+        price_per_lead: 90,
+        platform_fee: 49,
+        total_amount: 319,
+        status: 'paid',
+        invoice_url: 'https://stripe.test/i/older',
+        pdf_url: 'https://stripe.test/i/older.pdf',
+        due_date: '2026-06-15T00:00:00.000Z',
+        paid_at: '2026-06-10T00:00:00.000Z',
+      });
+    });
+
+    it('does not leak another clinic invoice (RLS isolation)', async () => {
+      const apexInvoice = await seedPrisma.invoice.create({
+        data: {
+          clinicId: apexClinicId,
+          periodStart: new Date('2026-06-01T00:00:00Z'),
+          periodEnd: new Date('2026-07-01T00:00:00Z'),
+          leadCount: 2,
+          pricePerLead: 90,
+          platformFee: 49,
+          totalAmount: 229,
+          status: 'open',
+        },
+      });
+      insertedInvoiceIds.push(apexInvoice.id);
+
+      const res = await supertest(app.getHttpServer())
+        .get('/clinic/portal/invoices')
+        .set('Cookie', [`access_token=${clinicCookie}`, `csrf_token=${csrfToken}`])
+        .expect(200);
+
+      expect(res.body).toEqual([]);
+    });
+
+    it('rejects a non-clinic (patient) caller with 403', async () => {
+      await supertest(app.getHttpServer())
+        .get('/clinic/portal/invoices')
+        .set('Cookie', [`access_token=${patientCookie}`, `csrf_token=${csrfToken}`])
+        .expect(403);
+    });
+  });
 });

@@ -1909,6 +1909,36 @@
         ]
       }
     },
+    "/clinic/portal/invoices": {
+      "get": {
+        "operationId": "ClinicBillingController_listInvoices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClinicInvoiceDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated clinic's own invoices, most recent first",
+        "tags": [
+          "Clinic Portal — Billing"
+        ]
+      }
+    },
     "/stripe/webhook": {
       "post": {
         "operationId": "StripeWebhookController_handle",
@@ -3085,6 +3115,62 @@
         "required": [
           "cancelledAt",
           "activeThrough"
+        ]
+      },
+      "ClinicInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "lead_count": {
+            "type": "number"
+          },
+          "price_per_lead": {
+            "type": "number"
+          },
+          "platform_fee": {
+            "type": "number"
+          },
+          "total_amount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "description": "draft | open | paid | overdue | void"
+          },
+          "invoice_url": {
+            "type": "object",
+            "nullable": true
+          },
+          "pdf_url": {
+            "type": "object",
+            "nullable": true
+          },
+          "due_date": {
+            "type": "object",
+            "nullable": true
+          },
+          "paid_at": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "period_start",
+          "period_end",
+          "lead_count",
+          "price_per_lead",
+          "platform_fee",
+          "total_amount",
+          "status"
         ]
       }
     }

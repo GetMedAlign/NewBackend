@@ -75,6 +75,22 @@ export interface AdminClinicBillingResult {
   invoices: AdminInvoiceRow[];
 }
 
+/** One row of `invoices`, snake_case per the frontend `ClinicInvoice` type. */
+export interface ClinicInvoiceRow {
+  id: string;
+  period_start: string;
+  period_end: string;
+  lead_count: number;
+  price_per_lead: number;
+  platform_fee: number;
+  total_amount: number;
+  status: string;
+  invoice_url: string | null;
+  pdf_url: string | null;
+  due_date: string | null;
+  paid_at: string | null;
+}
+
 /** A clinic due an invoice for the given period (spec §3 eligibility SQL). */
 export interface EligibleClinic {
   clinicId: string;
@@ -150,6 +166,12 @@ export interface BillingRepositoryPort {
     ctx: AdminBillingCtx,
     clinicId: string,
   ): Promise<AdminClinicBillingResult | null>;
+  /**
+   * The authenticated clinic's own invoices, most recent period first.
+   * Runs under `withUserContext({ role: 'clinic', clinicId })` (not
+   * `asSystem`), which the `invoices_clinic_select` RLS policy governs.
+   */
+  listClinicInvoices(ctx: ClinicCtx): Promise<ClinicInvoiceRow[]>;
   /**
    * Stores a newly created Stripe customer id on the clinic row, under the
    * caller's admin context (never `asSystem`), which the `clinics_admin_all` RLS

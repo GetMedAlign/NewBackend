@@ -13,6 +13,7 @@ import type {
   AdminBillingRow,
   AdminInvoiceRow,
   AdminClinicBillingResult,
+  ClinicInvoiceRow,
   EligibleClinic,
   OverdueClinic,
   WeeklySummaryClinic,
@@ -95,6 +96,22 @@ type AdminInvoiceDbRow = {
   due_date: Date | null;
   paid_at: Date | null;
   invoice_url: string | null;
+};
+
+/** Raw row shape from `listClinicInvoices`, before the ISO-string/Number conversions. */
+type ClinicInvoiceDbRow = {
+  id: string;
+  period_start: Date;
+  period_end: Date;
+  lead_count: number;
+  price_per_lead: number;
+  platform_fee: number;
+  total_amount: number;
+  status: string;
+  invoice_url: string | null;
+  pdf_url: string | null;
+  due_date: Date | null;
+  paid_at: Date | null;
 };
 
 @Injectable()
@@ -337,6 +354,47 @@ export class PrismaBillingRepository implements BillingRepositoryPort {
         }));
 
         return { row, invoices };
+      },
+    );
+  }
+
+  async listClinicInvoices(ctx: ClinicCtx): Promise<ClinicInvoiceRow[]> {
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId: ctx.clinicId },
+      async (tx) => {
+        const rows = await tx.$queryRaw<ClinicInvoiceDbRow[]>`
+          SELECT
+            id,
+            period_start,
+            period_end,
+            lead_count,
+            price_per_lead,
+            platform_fee,
+            total_amount,
+            status,
+            invoice_url,
+            pdf_url,
+            due_date,
+            paid_at
+          FROM invoices
+          WHERE clinic_id = ${ctx.clinicId}::uuid
+          ORDER BY period_start DESC
+        `;
+
+        return rows.map((row): ClinicInvoiceRow => ({
+          id: row.id,
+          period_start: row.period_start.toISOString(),
+          period_end: row.period_end.toISOString(),
+          lead_count: Number(row.lead_count),
+          price_per_lead: Number(row.price_per_lead),
+          platform_fee: Number(row.platform_fee),
+          total_amount: Number(row.total_amount),
+          status: row.status,
+          invoice_url: row.invoice_url,
+          pdf_url: row.pdf_url,
+          due_date: row.due_date ? row.due_date.toISOString() : null,
+          paid_at: row.paid_at ? row.paid_at.toISOString() : null,
+        }));
       },
     );
   }

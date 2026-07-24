@@ -113,6 +113,7 @@ import { SavePaymentMethodUseCase } from '../src/modules/billing/application/sav
 import { RemovePaymentMethodUseCase } from '../src/modules/billing/application/remove-payment-method.use-case';
 import { CancelSubscriptionUseCase } from '../src/modules/billing/application/cancel-subscription.use-case';
 import { GetAdminClinicBillingUseCase } from '../src/modules/billing/application/get-admin-clinic-billing.use-case';
+import { GetClinicInvoicesUseCase } from '../src/modules/billing/application/get-clinic-invoices.use-case';
 import { GetRevenueStatsUseCase } from '../src/modules/billing/application/get-revenue-stats.use-case';
 import { GetRevenueClinicsUseCase } from '../src/modules/billing/application/get-revenue-clinics.use-case';
 import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
@@ -224,6 +225,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(RemovePaymentMethodUseCase),
     stubProvider(CancelSubscriptionUseCase),
     stubProvider(GetAdminClinicBillingUseCase),
+    stubProvider(GetClinicInvoicesUseCase),
     stubProvider(GetRevenueStatsUseCase),
     stubProvider(GetRevenueClinicsUseCase),
     stubProvider(HandleStripeWebhookUseCase),
