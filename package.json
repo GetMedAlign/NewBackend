@@ -24,6 +24,7 @@
     "seed:pj": "ts-node -P tsconfig.json prisma/seed/patient-journey.seed.ts",
     "cleanup:demo": "ts-node -r dotenv/config -P tsconfig.json prisma/seed/cleanup-demo.ts",
     "backfill:stripe": "ts-node -r dotenv/config -P tsconfig.json prisma/scripts/backfill-stripe-customers.ts",
+    "backfill:confirm-emails": "ts-node -r dotenv/config -P tsconfig.json prisma/scripts/confirm-existing-emails.ts",
     "prisma": "prisma",
     "prepare": "prisma generate"
   },
