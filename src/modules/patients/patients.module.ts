@@ -8,6 +8,7 @@ import { PrismaPatientRepository } from './infrastructure/prisma-patient.reposit
 import { GetProfileUseCase } from './application/get-profile.use-case';
 import { UpdateProfileUseCase } from './application/update-profile.use-case';
 import { GetMyLeadsUseCase } from './application/get-my-leads.use-case';
+import { DeleteAccountUseCase } from './application/delete-account.use-case';
 import { PatientsController } from './infrastructure/http/patients.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { PatientsController } from './infrastructure/http/patients.controller';
     GetProfileUseCase,
     UpdateProfileUseCase,
     GetMyLeadsUseCase,
+    DeleteAccountUseCase,
     {
       provide: PATIENT_REPOSITORY,
       useClass: PrismaPatientRepository,

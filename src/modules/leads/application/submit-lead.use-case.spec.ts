@@ -127,6 +127,7 @@ function buildMocks(): Mocks {
       findProfile: jest.fn(),
       updateProfile: jest.fn(),
       findPatientIdByUserId: jest.fn().mockResolvedValue(null),
+      softDeleteSelf: jest.fn(),
     },
     claimTokens,
   };

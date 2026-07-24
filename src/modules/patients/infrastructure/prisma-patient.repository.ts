@@ -6,6 +6,12 @@ import type {
 } from '../domain/ports/patient-repository.port';
 import { PatientNotFoundError } from '../domain/errors/patient-not-found.error';
 
+// Sentinel far-future lock applied to a deleted account's user (mirrors the
+// admin soft-delete), preventing the account from being used again.
+const DELETED_LOCK_UNTIL = new Date('9999-12-31T23:59:59.000Z');
+
+type SoftDeleteResult = 'ok' | 'not_found' | 'already_deleted';
+
 interface UserRow {
   id: string;
   name: string | null;
@@ -123,5 +129,25 @@ export class PrismaPatientRepository implements PatientRepositoryPort {
         }
       }
     }
+  }
+
+  async softDeleteSelf(userId: string): Promise<SoftDeleteResult> {
+    // Scoped explicitly to the caller's own user id, so asSystem is safe: both
+    // writes (patient soft-delete + account lock) run in one transaction.
+    return this.prisma.asSystem((client) =>
+      client.$transaction(async (tx): Promise<SoftDeleteResult> => {
+        const rows = await tx.$queryRaw<{ is_deleted: boolean }[]>`
+          SELECT is_deleted FROM patients WHERE user_id = ${userId}::uuid`;
+        const patient = rows[0];
+        if (!patient) return 'not_found';
+        if (patient.is_deleted) return 'already_deleted';
+
+        await tx.$executeRaw`
+          UPDATE patients SET is_deleted = true, deleted_at = now() WHERE user_id = ${userId}::uuid`;
+        await tx.$executeRaw`
+          UPDATE users SET locked_until = ${DELETED_LOCK_UNTIL} WHERE id = ${userId}::uuid`;
+        return 'ok';
+      }),
+    );
   }
 }

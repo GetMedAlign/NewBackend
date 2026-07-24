@@ -749,6 +749,30 @@
         "tags": [
           "patients"
         ]
+      },
+      "delete": {
+        "operationId": "PatientsController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Soft-delete the authenticated patient account and end the session",
+        "tags": [
+          "patients"
+        ]
       }
     },
     "/patients/me/leads": {
