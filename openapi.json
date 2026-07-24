@@ -2127,6 +2127,123 @@
           "Admin — Revenue"
         ]
       }
+    },
+    "/superadmin/admins": {
+      "get": {
+        "operationId": "SuperadminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List all admin/superadmin users (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      },
+      "post": {
+        "operationId": "SuperadminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Create a new admin/superadmin user (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
+    },
+    "/superadmin/admins/{id}": {
+      "delete": {
+        "description": "Hard-deletes the user; user_roles cascades. A superadmin may not delete their own account.",
+        "operationId": "SuperadminController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Delete an admin/superadmin user (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
+    },
+    "/superadmin/admins/{id}/password": {
+      "put": {
+        "operationId": "SuperadminController_setPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAdminPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Directly set an admin/superadmin user's password (superadmin only)",
+        "tags": [
+          "Superadmin — Team"
+        ]
+      }
     }
   },
   "info": {
@@ -3261,6 +3378,54 @@
           "platform_fee",
           "total_amount",
           "status"
+        ]
+      },
+      "CreateAdminDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Jane Doe",
+            "description": "Admin's full name"
+          },
+          "email": {
+            "type": "string",
+            "example": "jane@medalign.example.com",
+            "description": "Email address"
+          },
+          "password": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "description": "Password (min 8 characters)",
+            "minLength": 8
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "superadmin"
+            ],
+            "example": "admin"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ]
+      },
+      "SetAdminPasswordDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "example": "NewPassw0rd!",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "newPassword"
         ]
       }
     }

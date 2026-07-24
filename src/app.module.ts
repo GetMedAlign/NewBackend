@@ -16,6 +16,7 @@ import { ClinicApplicationsModule } from './modules/clinic-applications/clinic-a
 import { AdminClinicsModule } from './modules/admin-clinics/admin-clinics.module';
 import { AdminPatientsModule } from './modules/admin-patients/admin-patients.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { SuperadminModule } from './modules/superadmin/superadmin.module';
 
 import { JwtCookieGuard } from './infrastructure/security/jwt-cookie.guard';
 import { RolesGuard } from './infrastructure/security/roles.guard';
@@ -37,6 +38,7 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
     AdminClinicsModule,
     AdminPatientsModule,
     BillingModule,
+    SuperadminModule,
     // Global default rate limit; auth POST routes tighten it via @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],

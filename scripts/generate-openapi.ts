@@ -121,6 +121,11 @@ import { GetRevenueClinicsUseCase } from '../src/modules/billing/application/get
 import { HandleStripeWebhookUseCase } from '../src/modules/billing/application/handle-stripe-webhook.use-case';
 import { RunBillingJobService } from '../src/modules/billing/application/run-billing-job.service';
 import { AdminRevenueController } from '../src/modules/billing/infrastructure/http/admin-revenue.controller';
+import { SuperadminController } from '../src/modules/superadmin/infrastructure/http/superadmin.controller';
+import { ListAdminsUseCase } from '../src/modules/superadmin/application/list-admins.use-case';
+import { CreateAdminUseCase } from '../src/modules/superadmin/application/create-admin.use-case';
+import { DeleteAdminUseCase } from '../src/modules/superadmin/application/delete-admin.use-case';
+import { SetAdminPasswordUseCase } from '../src/modules/superadmin/application/set-admin-password.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -164,6 +169,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     StripeWebhookController,
     BillingJobsController,
     AdminRevenueController,
+    SuperadminController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -233,6 +239,10 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(GetRevenueStatsUseCase),
     stubProvider(GetRevenueClinicsUseCase),
     stubProvider(HandleStripeWebhookUseCase),
+    stubProvider(ListAdminsUseCase),
+    stubProvider(CreateAdminUseCase),
+    stubProvider(DeleteAdminUseCase),
+    stubProvider(SetAdminPasswordUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
     // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so
