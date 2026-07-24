@@ -451,6 +451,142 @@
         ]
       }
     },
+    "/clinics": {
+      "get": {
+        "operationId": "ClinicsController_getDirectory",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "telehealth",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "serviceCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zipCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "rating",
+                "name",
+                "reviews",
+                "distance"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicDirectoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Public, paginated clinic directory",
+        "tags": [
+          "clinics"
+        ]
+      }
+    },
+    "/clinics/{slug}": {
+      "get": {
+        "operationId": "ClinicsController_getBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "description": "Clinic URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicProfileDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active clinic with billing current for that slug"
+          }
+        },
+        "summary": "Public single-clinic profile by slug",
+        "tags": [
+          "clinics"
+        ]
+      }
+    },
     "/recommendations/{sessionId}": {
       "get": {
         "operationId": "RecommendationsController_getRecommendationsForSession",
@@ -2031,6 +2167,240 @@
       "SubmitAssessmentDto": {
         "type": "object",
         "properties": {}
+      },
+      "ClinicDirectoryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "number"
+          },
+          "telehealth": {
+            "type": "boolean"
+          },
+          "topServices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "consultationFee": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "websiteUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceMiles": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "category",
+          "specialty",
+          "city",
+          "stateCode",
+          "rating",
+          "reviewCount",
+          "telehealth",
+          "topServices",
+          "consultationFee",
+          "logoUrl",
+          "websiteUrl",
+          "distanceMiles"
+        ]
+      },
+      "ClinicDirectoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicDirectoryItemDto"
+            }
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize",
+          "totalPages"
+        ]
+      },
+      "ClinicProfileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "zipCode": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "number"
+          },
+          "about": {
+            "type": "string"
+          },
+          "differentiators": {
+            "type": "string"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allServices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "waitTime": {
+            "type": "string"
+          },
+          "telehealth": {
+            "type": "boolean"
+          },
+          "offersLabWork": {
+            "type": "boolean"
+          },
+          "websiteUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "consultationFee": {
+            "type": "string"
+          },
+          "monthlyProgram": {
+            "type": "string"
+          },
+          "financing": {
+            "type": "boolean"
+          },
+          "insurance": {
+            "type": "boolean"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "string"
+          },
+          "photoCount": {
+            "type": "number"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "category",
+          "specialty",
+          "location",
+          "city",
+          "stateCode",
+          "zipCode",
+          "rating",
+          "reviewCount",
+          "about",
+          "differentiators",
+          "services",
+          "allServices",
+          "waitTime",
+          "telehealth",
+          "offersLabWork",
+          "websiteUrl",
+          "consultationFee",
+          "monthlyProgram",
+          "financing",
+          "insurance",
+          "providerName",
+          "credentials",
+          "photoCount",
+          "logoUrl",
+          "photoUrls"
+        ]
       },
       "SubmitLeadDto": {
         "type": "object",

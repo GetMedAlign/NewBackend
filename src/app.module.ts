@@ -6,6 +6,7 @@ import { AppConfigModule } from './infrastructure/config/config.module';
 import { HealthController } from './infrastructure/health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { ClinicsModule } from './modules/clinics/clinics.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { PatientsModule } from './modules/patients/patients.module';
@@ -26,6 +27,7 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
     AppConfigModule,
     AuthModule,
     AssessmentsModule,
+    ClinicsModule,
     RecommendationsModule,
     LeadsModule,
     PatientsModule,

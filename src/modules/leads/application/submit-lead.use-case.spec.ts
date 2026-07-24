@@ -102,6 +102,8 @@ function buildMocks(): Mocks {
       findMatchable: jest.fn(),
       findById: jest.fn(),
       findBySlug: jest.fn(),
+      findDirectory: jest.fn(),
+      findProfileBySlug: jest.fn(),
     },
     assessments: {
       create: jest.fn(),

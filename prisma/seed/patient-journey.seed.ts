@@ -275,7 +275,12 @@ export async function seedPatientJourney(prisma: PrismaClient): Promise<void> {
     await prisma.$transaction([
       prisma.clinicService.deleteMany({ where: { clinicId: clinic.id } }),
       prisma.clinicService.createMany({
-        data: c.serviceCodes.map((serviceCode) => ({ clinicId: clinic.id, serviceCode })),
+        data: c.serviceCodes.map((serviceCode, index) => ({
+          clinicId: clinic.id,
+          serviceCode,
+          isTopService: c.topServiceCodes.includes(serviceCode),
+          displayOrder: index,
+        })),
       }),
     ]);
   }

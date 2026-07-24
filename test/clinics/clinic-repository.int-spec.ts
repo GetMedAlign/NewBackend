@@ -136,4 +136,131 @@ describe('PrismaClinicRepository', () => {
       expect(clinic).toBeNull();
     });
   });
+
+  describe('findDirectory', () => {
+    const baseFilter = {
+      sortBy: 'rating' as const,
+      page: 1,
+      pageSize: 50,
+      patientLat: null,
+      patientLng: null,
+    };
+
+    it('includes active + listed + billing-current clinics and excludes overdue/pending ones', async () => {
+      const { items } = await repo.findDirectory(baseFilter);
+      const slugs = items.map((i) => i.slug);
+
+      expect(slugs).toContain('vitality-hormone-nyc');
+      expect(slugs).toContain('apex-peptide-telehealth');
+      expect(slugs).toContain('glow-med-spa-miami');
+      expect(slugs).toContain('thrive-wellness-chicago');
+      expect(slugs).not.toContain('balance-hormone-la'); // billing_status = overdue
+      expect(slugs).not.toContain('renew-peptide-seattle'); // status = pending
+    });
+
+    it('filters by category', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, category: 'med_spa' });
+      const slugs = items.map((i) => i.slug);
+
+      expect(slugs).toContain('glow-med-spa-miami');
+      expect(slugs).toContain('thrive-wellness-chicago');
+      expect(slugs).not.toContain('vitality-hormone-nyc');
+      expect(slugs).not.toContain('apex-peptide-telehealth');
+    });
+
+    it('returns an empty result for an unrecognised category instead of throwing', async () => {
+      const result = await repo.findDirectory({ ...baseFilter, category: 'not-a-real-category' });
+      expect(result).toEqual({ items: [], totalCount: 0 });
+    });
+
+    it('filters by state', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, state: 'NY' });
+      const slugs = items.map((i) => i.slug);
+
+      expect(slugs).toContain('vitality-hormone-nyc');
+      expect(slugs).not.toContain('glow-med-spa-miami');
+    });
+
+    it('filters by telehealth availability', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, telehealth: false });
+      const slugs = items.map((i) => i.slug);
+
+      expect(slugs).not.toContain('apex-peptide-telehealth'); // telehealth-only
+      expect(slugs).toContain('glow-med-spa-miami'); // in-person only
+    });
+
+    it('filters by search (case-insensitive clinic name match)', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, search: 'glow' });
+      const slugs = items.map((i) => i.slug);
+
+      expect(slugs).toEqual(['glow-med-spa-miami']);
+    });
+
+    it('sorts by name ascending', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, sortBy: 'name' });
+      const names = items.map((i) => i.name);
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      expect(names).toEqual(sorted);
+    });
+
+    it('paginates: pageSize=1 returns a single item and totalCount matches the unpaginated count', async () => {
+      const full = await repo.findDirectory(baseFilter);
+      const page1 = await repo.findDirectory({ ...baseFilter, pageSize: 1, page: 1 });
+
+      expect(page1.items.length).toBe(1);
+      expect(page1.totalCount).toBe(full.totalCount);
+      expect(page1.items[0]!.slug).toBe(full.items[0]!.slug);
+    });
+
+    it('caps topServices at 3 and only includes is_top_service rows', async () => {
+      const { items } = await repo.findDirectory({ ...baseFilter, category: 'hormone' });
+      const vitality = items.find((i) => i.slug === 'vitality-hormone-nyc');
+
+      expect(vitality).toBeDefined();
+      expect(vitality!.topServices.length).toBeLessThanOrEqual(3);
+      expect(vitality!.topServices).not.toContain('lab_work');
+      expect(vitality!.topServices).toContain('trt');
+    });
+  });
+
+  describe('findProfileBySlug', () => {
+    it('returns the full public profile for an active, billing-current clinic', async () => {
+      const profile = await repo.findProfileBySlug('vitality-hormone-nyc');
+
+      expect(profile).not.toBeNull();
+      expect(profile!.name).toBe('Vitality Hormone Health NYC');
+      expect(profile!.category).toBe('hormone');
+      expect(profile!.city).toBe('New York');
+      expect(profile!.stateCode).toBe('NY');
+      // topServiceCodes for this clinic excludes 'lab_work'.
+      expect(profile!.topServices).not.toContain('lab_work');
+      expect(profile!.allServices).toContain('lab_work');
+      expect(profile!.allServices.length).toBeGreaterThan(profile!.topServices.length);
+    });
+
+    it('returns seeded photoUrls ordered by display_order for glow-med-spa-miami', async () => {
+      const profile = await repo.findProfileBySlug('glow-med-spa-miami');
+
+      expect(profile).not.toBeNull();
+      expect(profile!.photoUrls).toEqual([
+        'https://images.medalign-seed.example.com/glow-med-spa-miami/exterior.jpg',
+        'https://images.medalign-seed.example.com/glow-med-spa-miami/treatment-room.jpg',
+      ]);
+    });
+
+    it('returns null for an overdue-billing clinic (still "active" status)', async () => {
+      const profile = await repo.findProfileBySlug('balance-hormone-la');
+      expect(profile).toBeNull();
+    });
+
+    it('returns null for a non-active (pending) clinic', async () => {
+      const profile = await repo.findProfileBySlug('renew-peptide-seattle');
+      expect(profile).toBeNull();
+    });
+
+    it('returns null for an unknown slug', async () => {
+      const profile = await repo.findProfileBySlug('does-not-exist-xyz');
+      expect(profile).toBeNull();
+    });
+  });
 });

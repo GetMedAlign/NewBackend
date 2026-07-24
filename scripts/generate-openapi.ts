@@ -47,6 +47,9 @@ import { ResetPasswordUseCase } from '../src/modules/auth/application/reset-pass
 import { AssessmentsController } from '../src/modules/assessments/infrastructure/http/assessments.controller';
 import { SubmitAssessmentUseCase } from '../src/modules/assessments/application/submit-assessment.use-case';
 import { GetLatestAssessmentUseCase } from '../src/modules/assessments/application/get-latest-assessment.use-case';
+import { ClinicsController } from '../src/modules/clinics/infrastructure/http/clinics.controller';
+import { GetClinicDirectoryUseCase } from '../src/modules/clinics/application/get-clinic-directory.use-case';
+import { GetClinicProfileUseCase as GetPublicClinicProfileUseCase } from '../src/modules/clinics/application/get-clinic-profile.use-case';
 import { RecommendationsController } from '../src/modules/recommendations/infrastructure/http/recommendations.controller';
 import { GetRecommendationsUseCase } from '../src/modules/recommendations/application/get-recommendations.use-case';
 import { LeadsController } from '../src/modules/leads/infrastructure/http/leads.controller';
@@ -144,6 +147,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     HealthController,
     AuthController,
     AssessmentsController,
+    ClinicsController,
     RecommendationsController,
     LeadsController,
     PatientsController,
@@ -170,6 +174,8 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ResetPasswordUseCase),
     stubProvider(SubmitAssessmentUseCase),
     stubProvider(GetLatestAssessmentUseCase),
+    stubProvider(GetClinicDirectoryUseCase),
+    stubProvider(GetPublicClinicProfileUseCase),
     stubProvider(GetRecommendationsUseCase),
     stubProvider(SubmitLeadUseCase),
     stubProvider(GetProfileUseCase),

@@ -18,6 +18,7 @@ import { ConsentRequiredError } from '../../modules/assessments/domain/errors/co
 import { InvalidConsentVersionError } from '../../modules/assessments/domain/errors/invalid-consent-version.error';
 import { RecommendationNotFoundError } from '../../modules/recommendations/domain/errors/recommendation-not-found.error';
 import { ClinicNotFoundError } from '../../modules/leads/domain/errors/clinic-not-found.error';
+import { ClinicNotFoundError as PublicClinicNotFoundError } from '../../modules/clinics/domain/errors/clinic-not-found.error';
 import { PatientNotFoundError } from '../../modules/patients/domain/errors/patient-not-found.error';
 
 /** HTTP 423 Locked — not present in this NestJS HttpStatus enum. */
@@ -119,7 +120,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    if (exception instanceof ClinicNotFoundError) {
+    if (
+      exception instanceof ClinicNotFoundError ||
+      exception instanceof PublicClinicNotFoundError
+    ) {
       return {
         status: HttpStatus.NOT_FOUND,
         code: 'NOT_FOUND',
