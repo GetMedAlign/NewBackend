@@ -21,6 +21,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Remove the throwaway clinic created by the getClinicId test so the shared
+  // local DB stays at the seeded 6 clinics.
+  await prisma.asSystem(
+    (c) => c.$executeRaw`DELETE FROM clinics WHERE slug = 'test-clinic-int-getclinicid'`,
+  );
   await prisma.onModuleDestroy();
 });
 
