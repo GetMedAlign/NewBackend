@@ -18,6 +18,7 @@ import { GetMeUseCase } from '../../application/get-me.use-case';
 import { SignOutUseCase } from '../../application/sign-out.use-case';
 import { ForgotPasswordUseCase } from '../../application/forgot-password.use-case';
 import { ResetPasswordUseCase } from '../../application/reset-password.use-case';
+import { ChangePasswordUseCase } from '../../application/change-password.use-case';
 
 import { Public } from '../../../../infrastructure/security/public.decorator';
 import { CurrentUser } from '../../../../infrastructure/security/current-user.decorator';
@@ -30,6 +31,7 @@ import { Verify2faDto } from './dtos/verify-2fa.dto';
 import { Resend2faDto } from './dtos/resend-2fa.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { ChangePasswordDto } from './dtos/change-password.dto';
 
 /** Stricter per-IP throttle for the unauthenticated auth surface. */
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
@@ -53,6 +55,7 @@ export class AuthController {
     private readonly signOut: SignOutUseCase,
     private readonly forgotPassword_uc: ForgotPasswordUseCase,
     private readonly resetPassword_uc: ResetPasswordUseCase,
+    private readonly changePassword_uc: ChangePasswordUseCase,
   ) {}
 
   @Public()
@@ -255,5 +258,26 @@ export class AuthController {
       token: dto.token,
       newPassword: dto.newPassword,
     });
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Change the authenticated user password',
+    description: 'Verifies the current password and sets a new one. Requires an active session.',
+  })
+  @ApiHeader(CSRF_HEADER)
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password updated successfully',
+    schema: { example: { success: true } },
+  })
+  @ApiResponse({ status: 400, description: 'Current password is incorrect' })
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ success: true }> {
+    return this.changePassword_uc.execute(user.sub, dto.currentPassword, dto.newPassword);
   }
 }

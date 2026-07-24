@@ -36,6 +36,7 @@ import { GetMeUseCase } from './application/get-me.use-case';
 import { SignOutUseCase } from './application/sign-out.use-case';
 import { ForgotPasswordUseCase } from './application/forgot-password.use-case';
 import { ResetPasswordUseCase } from './application/reset-password.use-case';
+import { ChangePasswordUseCase } from './application/change-password.use-case';
 
 @Module({
   imports: [ConfigModule, PrismaModule, CryptoModule, JwtModule.register({})],
@@ -50,6 +51,7 @@ import { ResetPasswordUseCase } from './application/reset-password.use-case';
     SignOutUseCase,
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
+    ChangePasswordUseCase,
 
     // Concrete email sender classes — both registered so the factory can pick
     SendGridEmailSender,

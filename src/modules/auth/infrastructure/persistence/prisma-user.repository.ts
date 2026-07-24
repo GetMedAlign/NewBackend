@@ -126,6 +126,14 @@ export class PrismaUserRepository implements UserRepositoryPort {
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
 
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    // asSystem by design: the auth layer owns user records (same as the reads above).
+    await this.prisma.asSystem(
+      (client) =>
+        client.$executeRaw`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}::uuid`,
+    );
+  }
+
   async findById(id: string): Promise<User | null> {
     const rows = await this.prisma.asSystem(
       (client) =>

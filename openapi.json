@@ -396,6 +396,54 @@
         ]
       }
     },
+    "/auth/change-password": {
+      "post": {
+        "description": "Verifies the current password and sets a new one. Requires an active session.",
+        "operationId": "AuthController_changePassword",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "description": "CSRF token — required on all non-GET requests. Value is provided by the server.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Current password is incorrect"
+          }
+        },
+        "summary": "Change the authenticated user password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/assessments": {
       "post": {
         "operationId": "AssessmentsController_submit",
@@ -2191,6 +2239,24 @@
         "required": [
           "email",
           "token",
+          "newPassword"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "The user current password"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MyNewSecurePass1!",
+            "description": "New password (min 8 characters)"
+          }
+        },
+        "required": [
+          "currentPassword",
           "newPassword"
         ]
       },
