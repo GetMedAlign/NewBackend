@@ -5,4 +5,6 @@ export interface ClinicPhotoRepositoryPort {
   setLogoUrl(clinicId: string, url: string): Promise<void>;
   listPhotoUrls(clinicId: string): Promise<string[]>;
   replacePhotos(clinicId: string, urls: string[]): Promise<void>;
+  getTourVideoUrl(clinicId: string): Promise<string | null>;
+  setTourVideoUrl(clinicId: string, url: string): Promise<void>;
 }

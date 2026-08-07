@@ -1262,6 +1262,66 @@
         ]
       }
     },
+    "/clinic/portal/media/video/sign": {
+      "post": {
+        "operationId": "ClinicMediaController_signVideo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignVideoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Get a signed upload URL for a clinic tour video",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
+    "/clinic/portal/media/video": {
+      "post": {
+        "operationId": "ClinicMediaController_confirmVideoUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmVideoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Confirm a clinic tour video after upload",
+        "tags": [
+          "Clinic Media"
+        ]
+      }
+    },
     "/clinic-applications": {
       "post": {
         "operationId": "ClinicApplicationsController_submit",
@@ -2969,6 +3029,35 @@
         },
         "required": [
           "paths"
+        ]
+      },
+      "SignVideoUploadDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "video/mp4",
+              "video/webm",
+              "video/quicktime"
+            ],
+            "description": "MIME type of the clinic tour video"
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "ConfirmVideoDto": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Storage path returned by the sign endpoint, e.g. videos/<clinicId>/file.mp4"
+          }
+        },
+        "required": [
+          "path"
         ]
       },
       "SubmitApplicationServiceDto": {

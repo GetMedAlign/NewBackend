@@ -64,4 +64,29 @@ export class PrismaClinicPhotoRepository implements ClinicPhotoRepositoryPort {
       },
     );
   }
+
+  async getTourVideoUrl(clinicId: string): Promise<string | null> {
+    return this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId },
+      async (tx) => {
+        const clinic = await tx.clinic.findUnique({
+          where: { id: clinicId },
+          select: { tourVideoUrl: true },
+        });
+        return clinic?.tourVideoUrl ?? null;
+      },
+    );
+  }
+
+  async setTourVideoUrl(clinicId: string, url: string): Promise<void> {
+    await this.prisma.withUserContext(
+      { userId: null, role: 'clinic', ip: null, clinicId },
+      async (tx) => {
+        await tx.clinic.update({
+          where: { id: clinicId },
+          data: { tourVideoUrl: url },
+        });
+      },
+    );
+  }
 }

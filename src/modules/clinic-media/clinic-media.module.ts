@@ -8,8 +8,10 @@ import { SupabaseStorageAdapter } from './infrastructure/supabase-storage.adapte
 import { PrismaClinicPhotoRepository } from './infrastructure/prisma-clinic-photo.repository';
 import { SignLogoUploadUseCase } from './application/sign-logo-upload.use-case';
 import { SignPhotoUploadsUseCase } from './application/sign-photo-uploads.use-case';
+import { SignVideoUploadUseCase } from './application/sign-video-upload.use-case';
 import { ConfirmLogoUseCase } from './application/confirm-logo.use-case';
 import { ConfirmPhotosUseCase } from './application/confirm-photos.use-case';
+import { ConfirmVideoUseCase } from './application/confirm-video.use-case';
 import { ListPhotosUseCase } from './application/list-photos.use-case';
 import { ClinicMediaController } from './infrastructure/http/clinic-media.controller';
 
@@ -19,8 +21,10 @@ import { ClinicMediaController } from './infrastructure/http/clinic-media.contro
   providers: [
     SignLogoUploadUseCase,
     SignPhotoUploadsUseCase,
+    SignVideoUploadUseCase,
     ConfirmLogoUseCase,
     ConfirmPhotosUseCase,
+    ConfirmVideoUseCase,
     ListPhotosUseCase,
     {
       provide: STORAGE_PORT,
