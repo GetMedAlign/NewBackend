@@ -75,8 +75,10 @@ import { TestWebhookUseCase } from '../src/modules/clinic-portal/application/tes
 import { ClinicMediaController } from '../src/modules/clinic-media/infrastructure/http/clinic-media.controller';
 import { SignLogoUploadUseCase } from '../src/modules/clinic-media/application/sign-logo-upload.use-case';
 import { SignPhotoUploadsUseCase } from '../src/modules/clinic-media/application/sign-photo-uploads.use-case';
+import { SignVideoUploadUseCase } from '../src/modules/clinic-media/application/sign-video-upload.use-case';
 import { ConfirmLogoUseCase } from '../src/modules/clinic-media/application/confirm-logo.use-case';
 import { ConfirmPhotosUseCase } from '../src/modules/clinic-media/application/confirm-photos.use-case';
+import { ConfirmVideoUseCase } from '../src/modules/clinic-media/application/confirm-video.use-case';
 import { ListPhotosUseCase } from '../src/modules/clinic-media/application/list-photos.use-case';
 import { ClinicApplicationsController } from '../src/modules/clinic-applications/infrastructure/http/clinic-applications.controller';
 import { AdminApplicationsController } from '../src/modules/clinic-applications/infrastructure/http/admin-applications.controller';
@@ -207,8 +209,10 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(TestWebhookUseCase),
     stubProvider(SignLogoUploadUseCase),
     stubProvider(SignPhotoUploadsUseCase),
+    stubProvider(SignVideoUploadUseCase),
     stubProvider(ConfirmLogoUseCase),
     stubProvider(ConfirmPhotosUseCase),
+    stubProvider(ConfirmVideoUseCase),
     stubProvider(ListPhotosUseCase),
     stubProvider(SignApplicationLogoUseCase),
     stubProvider(SignApplicationPhotosUseCase),

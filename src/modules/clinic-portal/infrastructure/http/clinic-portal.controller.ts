@@ -115,6 +115,7 @@ export class ClinicPortalController {
     dto.npiNumber = profile.npiNumber;
     dto.stateLicenseNumber = profile.stateLicenseNumber;
     dto.logoUrl = profile.logoUrl;
+    dto.tourVideoUrl = profile.tourVideoUrl;
     dto.photoCount = profile.photoCount;
     dto.weeklySummary = profile.weeklySummary;
     dto.webhookHealth = profile.webhookHealth;

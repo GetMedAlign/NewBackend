@@ -29,6 +29,8 @@ describe('ConfirmPhotosUseCase', () => {
       setLogoUrl: jest.fn().mockResolvedValue(undefined),
       listPhotoUrls: jest.fn().mockResolvedValue([]),
       replacePhotos: jest.fn().mockResolvedValue(undefined),
+      getTourVideoUrl: jest.fn().mockResolvedValue(null),
+      setTourVideoUrl: jest.fn().mockResolvedValue(undefined),
     };
 
     const module = await Test.createTestingModule({

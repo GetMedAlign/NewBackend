@@ -30,6 +30,7 @@ function makeProfile(overrides: Partial<ClinicProfileView> = {}): ClinicProfileV
     npiNumber: null,
     stateLicenseNumber: null,
     logoUrl: null,
+    tourVideoUrl: null,
     photoCount: 0,
     weeklySummary: false,
     webhookHealth: 'unknown',

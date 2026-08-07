@@ -29,6 +29,7 @@ type ClinicRow = {
   npiNumber: string | null;
   stateLicenseNumber: string | null;
   logoUrl: string | null;
+  tourVideoUrl: string | null;
   photoCount: number;
   weeklySummary: boolean;
   webhookHealth: string;
@@ -77,6 +78,7 @@ export class PrismaClinicWriteRepository implements ClinicWriteRepositoryPort {
             npi_number             AS "npiNumber",
             state_license_number   AS "stateLicenseNumber",
             logo_url               AS "logoUrl",
+            tour_video_url         AS "tourVideoUrl",
             photo_count            AS "photoCount",
             weekly_summary         AS "weeklySummary",
             webhook_health         AS "webhookHealth",
@@ -146,6 +148,7 @@ export class PrismaClinicWriteRepository implements ClinicWriteRepositoryPort {
           npiNumber: clinic.npiNumber,
           stateLicenseNumber: clinic.stateLicenseNumber,
           logoUrl: clinic.logoUrl,
+          tourVideoUrl: clinic.tourVideoUrl,
           photoCount: Number(clinic.photoCount),
           weeklySummary: clinic.weeklySummary,
           webhookHealth: clinic.webhookHealth,

@@ -1,15 +1,15 @@
 import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
-import { ConfirmLogoUseCase } from '../confirm-logo.use-case';
-import { STORAGE_PORT } from '../../domain/ports/storage.port';
+import { ConfirmVideoUseCase } from '../confirm-video.use-case';
+import { VIDEO_STORAGE_PORT } from '../../domain/ports/storage.port';
 import type { StoragePort } from '../../domain/ports/storage.port';
 import { CLINIC_PHOTO_REPOSITORY } from '../../domain/ports/clinic-photo-repository.port';
 import type { ClinicPhotoRepositoryPort } from '../../domain/ports/clinic-photo-repository.port';
 
 const CLINIC_ID = 'clinic-abc';
 
-describe('ConfirmLogoUseCase', () => {
-  let useCase: ConfirmLogoUseCase;
+describe('ConfirmVideoUseCase', () => {
+  let useCase: ConfirmVideoUseCase;
   let mockStorage: jest.Mocked<StoragePort>;
   let mockRepo: jest.Mocked<ClinicPhotoRepositoryPort>;
 
@@ -35,47 +35,53 @@ describe('ConfirmLogoUseCase', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        ConfirmLogoUseCase,
-        { provide: STORAGE_PORT, useValue: mockStorage },
+        ConfirmVideoUseCase,
+        { provide: VIDEO_STORAGE_PORT, useValue: mockStorage },
         { provide: CLINIC_PHOTO_REPOSITORY, useValue: mockRepo },
       ],
     }).compile();
 
-    useCase = module.get(ConfirmLogoUseCase);
+    useCase = module.get(ConfirmVideoUseCase);
   });
 
-  it('computes new public URL and calls setLogoUrl', async () => {
-    const path = `logos/${CLINIC_ID}/test.png`;
+  it('computes new public URL and calls setTourVideoUrl', async () => {
+    const path = `videos/${CLINIC_ID}/test.mp4`;
     const result = await useCase.execute({ clinicId: CLINIC_ID, path });
     expect(mockStorage.publicUrl).toHaveBeenCalledWith(path);
-    expect(mockRepo.setLogoUrl).toHaveBeenCalledWith(CLINIC_ID, `https://storage.test/${path}`);
+    expect(mockRepo.setTourVideoUrl).toHaveBeenCalledWith(
+      CLINIC_ID,
+      `https://storage.test/${path}`,
+    );
     expect(result.url).toBe(`https://storage.test/${path}`);
   });
 
-  it('calls remove with old path when there is a prior logo', async () => {
-    const oldUrl = `https://storage.test/logos/${CLINIC_ID}/old.png`;
-    mockRepo.getLogoUrl.mockResolvedValue(oldUrl);
+  it('calls remove with old path when there is a prior video', async () => {
+    const oldUrl = `https://storage.test/videos/${CLINIC_ID}/old.mp4`;
+    mockRepo.getTourVideoUrl.mockResolvedValue(oldUrl);
 
-    const path = `logos/${CLINIC_ID}/new.png`;
+    const path = `videos/${CLINIC_ID}/new.mp4`;
     await useCase.execute({ clinicId: CLINIC_ID, path });
 
     expect(mockStorage.pathFromPublicUrl).toHaveBeenCalledWith(oldUrl);
-    expect(mockStorage.remove).toHaveBeenCalledWith([`logos/${CLINIC_ID}/old.png`]);
+    expect(mockStorage.remove).toHaveBeenCalledWith([`videos/${CLINIC_ID}/old.mp4`]);
   });
 
   it('throws ForbiddenException for a foreign clinic prefix', async () => {
     await expect(
-      useCase.execute({ clinicId: CLINIC_ID, path: 'logos/other-clinic/file.png' }),
+      useCase.execute({ clinicId: CLINIC_ID, path: 'videos/other-clinic/file.mp4' }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('still sets logo url even if remove throws (best-effort)', async () => {
-    const oldUrl = `https://storage.test/logos/${CLINIC_ID}/old.png`;
-    mockRepo.getLogoUrl.mockResolvedValue(oldUrl);
+  it('still sets video url even if remove throws (best-effort)', async () => {
+    const oldUrl = `https://storage.test/videos/${CLINIC_ID}/old.mp4`;
+    mockRepo.getTourVideoUrl.mockResolvedValue(oldUrl);
     mockStorage.remove.mockRejectedValue(new Error('storage down'));
 
-    const path = `logos/${CLINIC_ID}/new.png`;
+    const path = `videos/${CLINIC_ID}/new.mp4`;
     await expect(useCase.execute({ clinicId: CLINIC_ID, path })).resolves.toBeDefined();
-    expect(mockRepo.setLogoUrl).toHaveBeenCalledWith(CLINIC_ID, `https://storage.test/${path}`);
+    expect(mockRepo.setTourVideoUrl).toHaveBeenCalledWith(
+      CLINIC_ID,
+      `https://storage.test/${path}`,
+    );
   });
 });

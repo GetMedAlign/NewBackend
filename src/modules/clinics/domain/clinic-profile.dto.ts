@@ -96,4 +96,7 @@ export class ClinicProfileDto {
 
   @ApiProperty({ type: [String] })
   photoUrls!: string[];
+
+  @ApiProperty({ type: String, nullable: true })
+  tourVideoUrl!: string | null;
 }
