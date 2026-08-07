@@ -237,6 +237,7 @@ model Clinic {
   npiNumber                 String?   @map("npi_number")
   stateLicenseNumber        String?   @map("state_license_number")
   logoUrl                   String?   @map("logo_url")
+  tourVideoUrl              String?   @map("tour_video_url")
   photoCount                Int       @default(0) @map("photo_count")
   weeklySummary             Boolean   @default(false) @map("weekly_summary")
   location                  String?

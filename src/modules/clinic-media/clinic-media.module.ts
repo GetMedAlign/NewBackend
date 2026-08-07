@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { Env } from '../../infrastructure/config/env.schema';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
-import { STORAGE_PORT } from './domain/ports/storage.port';
+import { STORAGE_PORT, VIDEO_STORAGE_PORT } from './domain/ports/storage.port';
 import { CLINIC_PHOTO_REPOSITORY } from './domain/ports/clinic-photo-repository.port';
 import { SupabaseStorageAdapter } from './infrastructure/supabase-storage.adapter';
 import { PrismaClinicPhotoRepository } from './infrastructure/prisma-clinic-photo.repository';
@@ -33,10 +33,20 @@ import { ClinicMediaController } from './infrastructure/http/clinic-media.contro
         }),
     },
     {
+      provide: VIDEO_STORAGE_PORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) =>
+        new SupabaseStorageAdapter({
+          url: config.getOrThrow<string>('SUPABASE_URL'),
+          serviceRoleKey: config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY'),
+          bucket: config.getOrThrow<string>('SUPABASE_VIDEO_BUCKET'),
+        }),
+    },
+    {
       provide: CLINIC_PHOTO_REPOSITORY,
       useClass: PrismaClinicPhotoRepository,
     },
   ],
-  exports: [STORAGE_PORT],
+  exports: [STORAGE_PORT, VIDEO_STORAGE_PORT],
 })
 export class ClinicMediaModule {}

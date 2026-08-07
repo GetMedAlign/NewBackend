@@ -27,6 +27,7 @@ export type ClinicProfileView = {
   npiNumber: string | null;
   stateLicenseNumber: string | null;
   logoUrl: string | null;
+  tourVideoUrl: string | null;
   photoCount: number;
   weeklySummary: boolean;
   webhookHealth: string;

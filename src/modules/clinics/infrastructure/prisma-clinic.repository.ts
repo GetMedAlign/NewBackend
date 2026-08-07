@@ -68,6 +68,7 @@ type RawProfileRow = {
   acceptsInsurance: boolean;
   photoCount: number;
   logoUrl: string | null;
+  tourVideoUrl: string | null;
 };
 
 @Injectable()
@@ -299,7 +300,8 @@ export class PrismaClinicRepository implements ClinicRepositoryPort {
                c.monthly_program_band AS "monthlyProgramBand",
                c.financing_available AS "financingAvailable",
                c.accepts_insurance AS "acceptsInsurance",
-               c.photo_count AS "photoCount", c.logo_url AS "logoUrl"
+               c.photo_count AS "photoCount", c.logo_url AS "logoUrl",
+               c.tour_video_url AS "tourVideoUrl"
           FROM clinics c
          WHERE c.slug = ${slug}
            AND c.status = 'active'
@@ -364,6 +366,7 @@ export class PrismaClinicRepository implements ClinicRepositoryPort {
       acceptsInsurance: row.acceptsInsurance,
       photoCount: row.photoCount,
       logoUrl: row.logoUrl,
+      tourVideoUrl: row.tourVideoUrl,
       photoUrls: photoRows.map((p) => p.url),
     };
   }

@@ -75,6 +75,9 @@ export class ClinicPortalProfileDto {
   @ApiPropertyOptional({ nullable: true })
   logoUrl!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  tourVideoUrl!: string | null;
+
   @ApiProperty()
   photoCount!: number;
 

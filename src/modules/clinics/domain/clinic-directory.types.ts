@@ -80,6 +80,7 @@ export interface ClinicProfileReadModel {
   acceptsInsurance: boolean;
   photoCount: number;
   logoUrl: string | null;
+  tourVideoUrl: string | null;
   /** Photo URLs ordered by `display_order`. */
   photoUrls: string[];
 }

@@ -2728,6 +2728,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "tourVideoUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -2758,7 +2762,8 @@
           "credentials",
           "photoCount",
           "logoUrl",
-          "photoUrls"
+          "photoUrls",
+          "tourVideoUrl"
         ]
       },
       "SubmitLeadDto": {

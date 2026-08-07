@@ -48,6 +48,8 @@ const envSchema = z.object({
 
   SUPABASE_STORAGE_BUCKET: z.string().default('clinic-media'),
 
+  SUPABASE_VIDEO_BUCKET: z.string().default('clinic-videos'),
+
   STRIPE_SECRET_KEY: z.string().min(1),
 
   STRIPE_WEBHOOK_SECRET: z.string().min(1),

@@ -61,6 +61,7 @@ export class GetClinicProfileUseCase {
       photoCount: clinic.photoCount,
       logoUrl: clinic.logoUrl,
       photoUrls: clinic.photoUrls,
+      tourVideoUrl: clinic.tourVideoUrl,
     };
   }
 }
