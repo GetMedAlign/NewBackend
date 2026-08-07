@@ -7,6 +7,7 @@
 **Repos/branches:** Backend = `NewBackend` on `feat/clinic-video-upload` (Tasks B*). Frontend = `Medalign-frontend` on `feat/frontend-tweaks` (Tasks F*). Backend ships first (the frontend consumes its endpoints).
 
 ## Global Constraints
+
 - One tour video per clinic; max 50 MB; content types `video/mp4`, `video/webm`, `video/quicktime`. Bucket `clinic-videos` (public, separate from the image bucket).
 - Reuse the existing signed-URL pattern (`clinic-media` module: sign -> browser PUT to Supabase -> confirm). Reuse ownership guards (`assertOwnedPath`) and the `SupabaseStorageAdapter` (which already accepts a bucket).
 - No em dashes in code/comments. Keep the committed OpenAPI spec updated (`npm run openapi`). Tests run in CI (jest works in subagent shells).
@@ -53,6 +54,7 @@
 - [ ] **Step 3:** Verify `npm run typecheck` and `npm run build`. Manual: a clinic with a `tourVideoUrl` shows a playable video on `/clinic/:slug`; one without shows the placeholder. Commit `feat(clinic): play tour video on the public clinic profile`.
 
 ## Self-Review Notes
+
 - Videos use a separate public bucket `clinic-videos`; images are untouched.
 - One video per clinic (confirm replaces the previous file + URL).
 - 50 MB + mime enforced client-side and validated server-side (content type).
