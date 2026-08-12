@@ -29,6 +29,19 @@ export type SetCalendlyConnectionInput = {
   signingKeyEncrypted: string;
 };
 
+/**
+ * The minimal state the webhook receiver needs to verify an inbound
+ * Calendly delivery: whether the clinic is connected, and the encrypted
+ * signing key to check the signature against. Deliberately excludes every
+ * other scheduling field (access token, webhook URI, etc.) — this MUST
+ * never be exposed on any DTO.
+ */
+export type WebhookVerificationState = {
+  provider: SchedulingProvider;
+  /** Raw AES-GCM ciphertext from `calendly_webhook_signing_key_encrypted`. Never decrypted here. */
+  signingKeyEncrypted: string | null;
+};
+
 export interface SchedulingRepositoryPort {
   /** Returns the current scheduling state for a clinic, defaulting to disconnected. */
   getSchedulingState(clinicId: string): Promise<SchedulingStateRecord>;
@@ -38,6 +51,14 @@ export interface SchedulingRepositoryPort {
 
   /** Resets scheduling_provider to 'none' and nulls out every Calendly field. */
   clearScheduling(clinicId: string): Promise<void>;
+
+  /**
+   * Returns just enough state to verify a webhook delivery for a clinic
+   * (provider + encrypted signing key), system-scoped (`asSystem`) since the
+   * webhook request carries no clinic session. Defaults to `{ provider:
+   * 'none', signingKeyEncrypted: null }` for an unknown clinic id.
+   */
+  getWebhookVerificationState(clinicId: string): Promise<WebhookVerificationState>;
 }
 
 export const SCHEDULING_REPOSITORY = Symbol('SchedulingRepositoryPort');

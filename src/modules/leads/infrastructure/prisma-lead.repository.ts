@@ -154,4 +154,38 @@ export class PrismaLeadRepository implements LeadRepositoryPort {
       }));
     });
   }
+
+  async setBookedScheduled(leadId: string, scheduledAt: Date): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.lead.update({
+        where: { leadId },
+        data: { clinicStatus: 'booked', scheduledAt },
+      }),
+    );
+  }
+
+  async revertBooking(leadId: string): Promise<void> {
+    // Reverts to 'contacted', not 'new': a lead that reached booking had
+    // already been engaged by the clinic, so 'new' would misrepresent its
+    // history (see the port doc comment).
+    await this.prisma.asSystem((client) =>
+      client.lead.update({
+        where: { leadId },
+        data: { clinicStatus: 'contacted', scheduledAt: null },
+      }),
+    );
+  }
+
+  async findLatestByClinicAndEmail(
+    clinicId: string,
+    patientEmail: string,
+  ): Promise<{ leadId: string } | null> {
+    return this.prisma.asSystem((client) =>
+      client.lead.findFirst({
+        where: { clinicId, patientEmail },
+        orderBy: { receivedAt: 'desc' },
+        select: { leadId: true },
+      }),
+    );
+  }
 }

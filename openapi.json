@@ -2513,6 +2513,31 @@
           "Clinic Portal Scheduling"
         ]
       }
+    },
+    "/scheduling/calendly/webhook/{clinicId}": {
+      "post": {
+        "operationId": "CalendlyWebhookController_handle",
+        "parameters": [
+          {
+            "name": "clinicId",
+            "required": true,
+            "in": "path",
+            "description": "Clinic id the webhook subscription was registered for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Calendly invitee webhook (invitee.created / invitee.canceled). Authenticated via the calendly-webhook-signature header, not a session cookie.",
+        "tags": [
+          "Calendly Webhook"
+        ]
+      }
     }
   },
   "info": {

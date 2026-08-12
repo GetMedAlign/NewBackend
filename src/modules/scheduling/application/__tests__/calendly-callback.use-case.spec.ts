@@ -51,6 +51,7 @@ function makeRepo(overrides: Partial<SchedulingRepositoryPort> = {}): Scheduling
     getSchedulingState: jest.fn(),
     setCalendlyConnection: jest.fn().mockResolvedValue(undefined),
     clearScheduling: jest.fn(),
+    getWebhookVerificationState: jest.fn(),
     ...overrides,
   };
 }

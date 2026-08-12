@@ -135,6 +135,8 @@ import { GetSchedulingStatusUseCase } from '../src/modules/scheduling/applicatio
 import { ConnectAuthorizeUrlUseCase } from '../src/modules/scheduling/application/connect-authorize-url.use-case';
 import { CalendlyCallbackUseCase } from '../src/modules/scheduling/application/calendly-callback.use-case';
 import { DisconnectSchedulingUseCase } from '../src/modules/scheduling/application/disconnect-scheduling.use-case';
+import { CalendlyWebhookController } from '../src/modules/scheduling/infrastructure/http/calendly-webhook.controller';
+import { HandleCalendlyWebhookUseCase } from '../src/modules/scheduling/application/handle-calendly-webhook.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -180,6 +182,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     AdminRevenueController,
     SuperadminController,
     SchedulingController,
+    CalendlyWebhookController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -261,6 +264,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ConnectAuthorizeUrlUseCase),
     stubProvider(CalendlyCallbackUseCase),
     stubProvider(DisconnectSchedulingUseCase),
+    stubProvider(HandleCalendlyWebhookUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
     // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so

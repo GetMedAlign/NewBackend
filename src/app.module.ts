@@ -58,7 +58,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(CsrfMiddleware)
-      .exclude('stripe/webhook', 'admin/jobs/run/:jobName')
+      .exclude('stripe/webhook', 'admin/jobs/run/:jobName', 'scheduling/calendly/webhook/:clinicId')
       .forRoutes('*');
   }
 }

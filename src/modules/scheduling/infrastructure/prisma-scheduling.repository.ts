@@ -4,6 +4,7 @@ import type {
   SchedulingRepositoryPort,
   SchedulingStateRecord,
   SetCalendlyConnectionInput,
+  WebhookVerificationState,
 } from '../domain/ports/scheduling-repository.port';
 
 type StateRow = {
@@ -11,6 +12,11 @@ type StateRow = {
   schedulingUrl: string | null;
   accessTokenEncrypted: string | null;
   webhookUri: string | null;
+};
+
+type WebhookVerificationRow = {
+  provider: 'none' | 'calendly';
+  signingKeyEncrypted: string | null;
 };
 
 @Injectable()
@@ -82,5 +88,27 @@ export class PrismaSchedulingRepository implements SchedulingRepositoryPort {
           WHERE id = ${clinicId}::uuid
         `,
     );
+  }
+
+  async getWebhookVerificationState(clinicId: string): Promise<WebhookVerificationState> {
+    // System-scoped: the inbound webhook request carries no clinic session,
+    // only the clinicId path segment, so this can't run through
+    // withUserContext's clinic-role RLS the way getSchedulingState does.
+    const rows = await this.prisma.asSystem(
+      (client) =>
+        client.$queryRaw<WebhookVerificationRow[]>`
+          SELECT
+            scheduling_provider                    AS "provider",
+            calendly_webhook_signing_key_encrypted  AS "signingKeyEncrypted"
+          FROM clinics
+          WHERE id = ${clinicId}::uuid
+        `,
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return { provider: 'none', signingKeyEncrypted: null };
+    }
+    return row;
   }
 }

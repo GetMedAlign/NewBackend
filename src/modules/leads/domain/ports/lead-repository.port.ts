@@ -65,6 +65,29 @@ export interface LeadRepositoryPort {
 
   /** Returns the caller's own leads, RLS-scoped via `withUserContext`. */
   findByPatientUser(userId: string): Promise<PatientLeadView[]>;
+
+  /**
+   * Marks a lead booked from the Calendly webhook: sets `clinicStatus =
+   * 'booked'` and `scheduledAt`. Runs via `asSystem` (the webhook request
+   * carries no user/clinic session).
+   */
+  setBookedScheduled(leadId: string, scheduledAt: Date): Promise<void>;
+
+  /**
+   * Reverts a booking when Calendly reports `invitee.canceled`: clears
+   * `scheduledAt` and sets `clinicStatus` back to `'contacted'` (not
+   * `'new'`) — a lead that reached booking had already been engaged by the
+   * clinic, so `'new'` would misrepresent its history. Runs via `asSystem`.
+   */
+  revertBooking(leadId: string): Promise<void>;
+
+  /**
+   * Fallback lead resolution for the Calendly webhook when the booking's
+   * tracking token is absent or unresolvable: the most recently received
+   * lead for this clinic + invitee email, or null if none. Runs via
+   * `asSystem`.
+   */
+  findLatestByClinicAndEmail(clinicId: string, patientEmail: string): Promise<{ leadId: string } | null>;
 }
 
 export const LEAD_REPOSITORY = Symbol('LeadRepositoryPort');
