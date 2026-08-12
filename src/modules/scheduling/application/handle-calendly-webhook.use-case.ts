@@ -33,7 +33,7 @@ type CalendlyWebhookBody = {
  * (Scheduling Slice 2 §3): verifies the signature first, then processes
  * `invitee.created` (creates the appointment, books the linked lead) and
  * `invitee.canceled` (cancels the appointment, reverts the lead). Every
- * other event, and every unconnected/unknown clinic, is ignored quietly —
+ * other event, and every unconnected/unknown clinic, is ignored quietly:
  * this never throws for anything except a bad signature, so Calendly never
  * sees a retry storm for events it doesn't need to redeliver.
  *
@@ -113,10 +113,12 @@ export class HandleCalendlyWebhookUseCase {
     const endTime = endTimeRaw ? new Date(endTimeRaw) : null;
 
     const leadId = await this.resolveLeadId(clinicId, payload);
+    const patientId = leadId ? await this.leads.findPatientIdByLeadId(leadId) : null;
 
     await this.appointments.createIfAbsent({
       clinicId,
       leadId,
+      patientId,
       inviteeEmail,
       inviteeName: payload.name ?? null,
       calendlyEventUri,
@@ -150,7 +152,7 @@ export class HandleCalendlyWebhookUseCase {
 
   /**
    * Resolves the lead a booking belongs to: prefer the tracking token (only
-   * when it decodes AND its clinicId matches the URL clinicId — an
+   * when it decodes AND its clinicId matches the URL clinicId, an
    * unforgeable, cross-clinic-safe signal), else fall back to the most
    * recent lead for this clinic + invitee email.
    */

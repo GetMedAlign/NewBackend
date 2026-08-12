@@ -10,8 +10,8 @@ export type DecodedTrackingToken = {
  * booking embed (Slice 4): `EncryptionPort.encrypt(\`${leadId}:${clinicId}\`)`.
  * Splits the decrypted plaintext on the first `:` into `{ leadId, clinicId }`.
  *
- * Returns null on any failure — missing value, decrypt error, or a
- * plaintext that isn't `<leadId>:<clinicId>` — never throws. A malformed or
+ * Returns null on any failure (missing value, decrypt error, or a
+ * plaintext that isn't `<leadId>:<clinicId>`), never throws. A malformed or
  * tampered token must fall back to email matching (see
  * `HandleCalendlyWebhookUseCase`), not fail the webhook.
  */

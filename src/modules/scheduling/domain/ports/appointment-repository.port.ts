@@ -8,6 +8,12 @@ export type CreateAppointmentInput = {
    * (no/mismatched tracking token and no matching lead by email).
    */
   leadId: string | null;
+  /**
+   * The patient's internal id, resolved from the linked lead's `patientId`
+   * attribution link. Null when the lead couldn't be resolved or the lead
+   * itself has no patientId (anonymous submission).
+   */
+  patientId?: string | null;
   inviteeEmail: string;
   inviteeName: string | null;
   calendlyEventUri: string;

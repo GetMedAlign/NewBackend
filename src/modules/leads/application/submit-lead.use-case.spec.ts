@@ -121,6 +121,7 @@ function buildMocks(): Mocks {
       setBookedScheduled: jest.fn(),
       revertBooking: jest.fn(),
       findLatestByClinicAndEmail: jest.fn(),
+      findPatientIdByLeadId: jest.fn(),
     },
     webhook: { send: jest.fn() },
     email: { send: jest.fn().mockResolvedValue(undefined) },

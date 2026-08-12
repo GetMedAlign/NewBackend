@@ -76,7 +76,7 @@ export interface LeadRepositoryPort {
   /**
    * Reverts a booking when Calendly reports `invitee.canceled`: clears
    * `scheduledAt` and sets `clinicStatus` back to `'contacted'` (not
-   * `'new'`) — a lead that reached booking had already been engaged by the
+   * `'new'`): a lead that reached booking had already been engaged by the
    * clinic, so `'new'` would misrepresent its history. Runs via `asSystem`.
    */
   revertBooking(leadId: string): Promise<void>;
@@ -88,6 +88,13 @@ export interface LeadRepositoryPort {
    * `asSystem`.
    */
   findLatestByClinicAndEmail(clinicId: string, patientEmail: string): Promise<{ leadId: string } | null>;
+
+  /**
+   * Returns the `patientId` attribution link stored on the lead, or null if
+   * the lead has none (anonymous submission) or doesn't exist. Runs via
+   * `asSystem`.
+   */
+  findPatientIdByLeadId(leadId: string): Promise<string | null>;
 }
 
 export const LEAD_REPOSITORY = Symbol('LeadRepositoryPort');

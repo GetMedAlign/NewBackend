@@ -43,6 +43,7 @@ function makeLeadRepo(leads: PatientLeadView[]): LeadRepositoryPort {
     setBookedScheduled: jest.fn(),
     revertBooking: jest.fn(),
     findLatestByClinicAndEmail: jest.fn(),
+    findPatientIdByLeadId: jest.fn(),
   };
 }
 

@@ -20,14 +20,15 @@ export class PrismaAppointmentRepository implements AppointmentRepositoryPort {
     // Upsert on the unique calendly_invitee_uri: a redelivery of the same
     // invitee.created event hits the (no-op) update branch instead of
     // failing on the unique constraint or duplicating the row. Runs via
-    // asSystem — appointments has no app-authenticated INSERT policy
-    // (Task 1), only asSystem (the postgres role, which bypasses RLS) can
+    // asSystem, since appointments has no app-authenticated INSERT policy
+    // (Task 1); only asSystem (the postgres role, which bypasses RLS) can
     // write here.
     await this.prisma.asSystem((client) =>
       client.appointment.upsert({
         where: { calendlyInviteeUri: input.calendlyInviteeUri },
         create: {
           clinic: { connect: { id: input.clinicId } },
+          patientId: input.patientId ?? null,
           inviteeEmail: input.inviteeEmail,
           inviteeName: input.inviteeName,
           calendlyEventUri: input.calendlyEventUri,

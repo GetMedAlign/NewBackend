@@ -33,7 +33,7 @@ export type SetCalendlyConnectionInput = {
  * The minimal state the webhook receiver needs to verify an inbound
  * Calendly delivery: whether the clinic is connected, and the encrypted
  * signing key to check the signature against. Deliberately excludes every
- * other scheduling field (access token, webhook URI, etc.) — this MUST
+ * other scheduling field (access token, webhook URI, etc.); this MUST
  * never be exposed on any DTO.
  */
 export type WebhookVerificationState = {

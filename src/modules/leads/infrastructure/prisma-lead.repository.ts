@@ -24,7 +24,7 @@ export class PrismaLeadRepository implements LeadRepositoryPort {
     const leadId = `lead_${randomBytes(16).toString('hex')}`;
     const patientPhone = data.patientPhone ? this.encryption.encrypt(data.patientPhone) : null;
 
-    // Leads can be anonymous — run as system so the insert isn't RLS-blocked.
+    // Leads can be anonymous, so run as system: the insert isn't RLS-blocked.
     const lead = await this.prisma.asSystem((client) =>
       client.lead.create({
         data: {
@@ -187,5 +187,15 @@ export class PrismaLeadRepository implements LeadRepositoryPort {
         select: { leadId: true },
       }),
     );
+  }
+
+  async findPatientIdByLeadId(leadId: string): Promise<string | null> {
+    const lead = await this.prisma.asSystem((client) =>
+      client.lead.findUnique({
+        where: { leadId },
+        select: { patientId: true },
+      }),
+    );
+    return lead?.patientId ?? null;
   }
 }

@@ -67,6 +67,7 @@ function makeLeads(overrides: Partial<LeadRepositoryPort> = {}): jest.Mocked<Lea
     setBookedScheduled: jest.fn().mockResolvedValue(undefined),
     revertBooking: jest.fn().mockResolvedValue(undefined),
     findLatestByClinicAndEmail: jest.fn().mockResolvedValue(null),
+    findPatientIdByLeadId: jest.fn().mockResolvedValue(null),
     ...overrides,
   } as jest.Mocked<LeadRepositoryPort>;
 }
@@ -140,7 +141,9 @@ function makeUseCase(deps: {
 
 describe('HandleCalendlyWebhookUseCase', () => {
   it('creates the appointment and books the lead for invitee.created with a valid tracking token', async () => {
-    const { useCase, verifier, appointments, leads } = makeUseCase();
+    const { useCase, verifier, appointments, leads } = makeUseCase({
+      leads: makeLeads({ findPatientIdByLeadId: jest.fn().mockResolvedValue(null) }),
+    });
     const token = `enc(lead_abc:${CLINIC_ID})`;
 
     await useCase.handle(CLINIC_ID, inviteeCreatedBody({ utmContent: token }), 'sig');
@@ -149,6 +152,7 @@ describe('HandleCalendlyWebhookUseCase', () => {
     expect(appointments.createIfAbsent).toHaveBeenCalledWith({
       clinicId: CLINIC_ID,
       leadId: 'lead_abc',
+      patientId: null,
       inviteeEmail: 'patient@example.com',
       inviteeName: 'Jane Doe',
       calendlyEventUri: 'https://api.calendly.com/scheduled_events/event-1',
@@ -160,6 +164,20 @@ describe('HandleCalendlyWebhookUseCase', () => {
     expect(leads.setBookedScheduled).toHaveBeenCalledWith(
       'lead_abc',
       new Date('2026-08-20T15:00:00.000000Z'),
+    );
+  });
+
+  it('includes the resolved patientId on the appointment when the lead has one', async () => {
+    const { useCase, appointments, leads } = makeUseCase({
+      leads: makeLeads({ findPatientIdByLeadId: jest.fn().mockResolvedValue('patient-xyz') }),
+    });
+    const token = `enc(lead_abc:${CLINIC_ID})`;
+
+    await useCase.handle(CLINIC_ID, inviteeCreatedBody({ utmContent: token }), 'sig');
+
+    expect(leads.findPatientIdByLeadId).toHaveBeenCalledWith('lead_abc');
+    expect(appointments.createIfAbsent).toHaveBeenCalledWith(
+      expect.objectContaining({ leadId: 'lead_abc', patientId: 'patient-xyz' }),
     );
   });
 
@@ -191,12 +209,15 @@ describe('HandleCalendlyWebhookUseCase', () => {
     );
   });
 
-  it('leaves the lead unset when neither the token nor an email match resolves one', async () => {
+  it('leaves the lead and patientId unset when neither the token nor an email match resolves one', async () => {
     const { useCase, appointments, leads } = makeUseCase();
 
     await useCase.handle(CLINIC_ID, inviteeCreatedBody({ utmContent: undefined }), 'sig');
 
-    expect(appointments.createIfAbsent).toHaveBeenCalledWith(expect.objectContaining({ leadId: null }));
+    expect(leads.findPatientIdByLeadId).not.toHaveBeenCalled();
+    expect(appointments.createIfAbsent).toHaveBeenCalledWith(
+      expect.objectContaining({ leadId: null, patientId: null }),
+    );
     expect(leads.setBookedScheduled).not.toHaveBeenCalled();
   });
 
