@@ -399,6 +399,8 @@ export class PrismaClinicRepository implements ClinicRepositoryPort {
       webhookSecretEncrypted: row.webhookSecret,
       categories: row.categories.map((c) => String(c.category)),
       services: row.services.map((s) => s.serviceCode),
+      schedulingProvider: row.schedulingProvider,
+      calendlySchedulingUrl: row.calendlySchedulingUrl,
     };
   }
 }

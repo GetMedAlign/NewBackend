@@ -36,6 +36,13 @@ enum AssessmentCategory {
   @@map("assessment_category")
 }
 
+enum SchedulingProvider {
+  none
+  calendly
+
+  @@map("scheduling_provider")
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -249,6 +256,16 @@ model Clinic {
   stripeCustomerId          String?   @map("stripe_customer_id")
   subscriptionActiveThrough DateTime? @map("subscription_active_through") @db.Timestamptz
   subscriptionCancelledAt   DateTime? @map("subscription_cancelled_at") @db.Timestamptz
+
+  schedulingProvider                 SchedulingProvider @default(none) @map("scheduling_provider")
+  calendlyUserUri                    String?            @map("calendly_user_uri")
+  calendlyOrgUri                     String?            @map("calendly_org_uri")
+  calendlySchedulingUrl              String?            @map("calendly_scheduling_url")
+  calendlyAccessTokenEncrypted       String?            @map("calendly_access_token_encrypted")
+  calendlyRefreshTokenEncrypted      String?            @map("calendly_refresh_token_encrypted")
+  calendlyTokenExpiresAt             DateTime?          @map("calendly_token_expires_at") @db.Timestamptz
+  calendlyWebhookUri                 String?            @map("calendly_webhook_uri")
+  calendlyWebhookSigningKeyEncrypted String?            @map("calendly_webhook_signing_key_encrypted")
 
   categories     ClinicCategory[]
   services       ClinicService[]

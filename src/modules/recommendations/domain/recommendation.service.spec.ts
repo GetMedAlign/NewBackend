@@ -76,6 +76,8 @@ function makeClinic(overrides: Partial<ClinicReadModel> = {}): ClinicReadModel {
     webhookSecretEncrypted: null,
     categories: ['hormone'],
     services: ['trt', 'bhrt'],
+    schedulingProvider: 'none',
+    calendlySchedulingUrl: null,
     ...overrides,
   };
 }

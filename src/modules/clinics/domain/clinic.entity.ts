@@ -40,4 +40,8 @@ export type ClinicReadModel = {
   categories: string[];
   /** Service codes from the `clinic_services` join table. */
   services: string[];
+  /** Which scheduling integration (if any) the clinic has connected. */
+  schedulingProvider: 'none' | 'calendly';
+  /** Public Calendly booking link, present once Calendly is connected. */
+  calendlySchedulingUrl: string | null;
 };
