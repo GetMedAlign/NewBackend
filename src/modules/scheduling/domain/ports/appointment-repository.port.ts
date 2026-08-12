@@ -26,6 +26,7 @@ export type CreateAppointmentInput = {
 export type AppointmentRecord = {
   id: string;
   clinicId: string;
+  clinicName: string;
   /** The lead's public identifier (`Lead.leadId`), or null if unlinked. */
   leadId: string | null;
   patientId: string | null;

@@ -16,10 +16,12 @@ import { GetSchedulingStatusUseCase } from '../../application/get-scheduling-sta
 import { ConnectAuthorizeUrlUseCase } from '../../application/connect-authorize-url.use-case';
 import { CalendlyCallbackUseCase } from '../../application/calendly-callback.use-case';
 import { DisconnectSchedulingUseCase } from '../../application/disconnect-scheduling.use-case';
+import { ListClinicAppointmentsUseCase } from '../../application/list-clinic-appointments.use-case';
 import { SchedulingStatusDto } from './dto/scheduling-status.dto';
 import { AuthorizeUrlDto } from './dto/authorize-url.dto';
 import { CalendlyCallbackDto, CalendlyCallbackResponseDto } from './dto/calendly-callback.dto';
 import { DisconnectSchedulingResponseDto } from './dto/disconnect-scheduling.dto';
+import { AppointmentDto } from './dto/appointment.dto';
 
 @ApiTags('Clinic Portal Scheduling')
 @ApiCookieAuth('access_token')
@@ -31,6 +33,7 @@ export class SchedulingController {
     private readonly connectAuthorizeUrlUseCase: ConnectAuthorizeUrlUseCase,
     private readonly calendlyCallbackUseCase: CalendlyCallbackUseCase,
     private readonly disconnectUseCase: DisconnectSchedulingUseCase,
+    private readonly listClinicAppointmentsUseCase: ListClinicAppointmentsUseCase,
   ) {}
 
   @Get()
@@ -67,5 +70,13 @@ export class SchedulingController {
   @ApiOkResponse({ type: DisconnectSchedulingResponseDto })
   async disconnect(@CurrentClinic() clinicId: string): Promise<DisconnectSchedulingResponseDto> {
     return this.disconnectUseCase.execute(clinicId);
+  }
+
+  @Get('appointments')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List appointments booked with the authenticated clinic' })
+  @ApiOkResponse({ type: AppointmentDto, isArray: true })
+  async listAppointments(@CurrentClinic() clinicId: string): Promise<AppointmentDto[]> {
+    return this.listClinicAppointmentsUseCase.execute(clinicId);
   }
 }

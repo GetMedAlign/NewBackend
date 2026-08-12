@@ -8,7 +8,10 @@ import type {
 } from '../domain/ports/appointment-repository.port';
 
 const withLead = {
-  include: { lead: { select: { leadId: true } } },
+  include: {
+    lead: { select: { leadId: true } },
+    clinic: { select: { name: true } },
+  },
 } satisfies Prisma.AppointmentDefaultArgs;
 type AppointmentWithLead = Prisma.AppointmentGetPayload<typeof withLead>;
 
@@ -92,6 +95,7 @@ export class PrismaAppointmentRepository implements AppointmentRepositoryPort {
     return {
       id: row.id,
       clinicId: row.clinicId,
+      clinicName: row.clinic.name,
       leadId: row.lead?.leadId ?? null,
       patientId: row.patientId,
       sessionId: row.sessionId,

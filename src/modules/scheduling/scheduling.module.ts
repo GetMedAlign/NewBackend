@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { CryptoModule } from '../../infrastructure/crypto/crypto.module';
 import { LeadsModule } from '../leads/leads.module';
+import { PatientsModule } from '../patients/patients.module';
 import { CALENDLY_PORT } from './domain/ports/calendly.port';
 import { CalendlyHttpAdapter } from './infrastructure/calendly.adapter';
 import { CALENDLY_WEBHOOK_VERIFIER } from './domain/ports/calendly-webhook-verifier.port';
@@ -16,12 +17,15 @@ import { ConnectAuthorizeUrlUseCase } from './application/connect-authorize-url.
 import { CalendlyCallbackUseCase } from './application/calendly-callback.use-case';
 import { DisconnectSchedulingUseCase } from './application/disconnect-scheduling.use-case';
 import { HandleCalendlyWebhookUseCase } from './application/handle-calendly-webhook.use-case';
+import { ListClinicAppointmentsUseCase } from './application/list-clinic-appointments.use-case';
+import { ListPatientAppointmentsUseCase } from './application/list-patient-appointments.use-case';
 import { SchedulingController } from './infrastructure/http/scheduling.controller';
 import { CalendlyWebhookController } from './infrastructure/http/calendly-webhook.controller';
+import { PatientAppointmentsController } from './infrastructure/http/patient-appointments.controller';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, CryptoModule, LeadsModule],
-  controllers: [SchedulingController, CalendlyWebhookController],
+  imports: [ConfigModule, PrismaModule, CryptoModule, LeadsModule, PatientsModule],
+  controllers: [SchedulingController, CalendlyWebhookController, PatientAppointmentsController],
   providers: [
     {
       provide: CALENDLY_PORT,
@@ -44,6 +48,8 @@ import { CalendlyWebhookController } from './infrastructure/http/calendly-webhoo
     CalendlyCallbackUseCase,
     DisconnectSchedulingUseCase,
     HandleCalendlyWebhookUseCase,
+    ListClinicAppointmentsUseCase,
+    ListPatientAppointmentsUseCase,
   ],
   exports: [CALENDLY_PORT, CALENDLY_WEBHOOK_VERIFIER, APPOINTMENT_REPOSITORY],
 })

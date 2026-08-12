@@ -2514,6 +2514,36 @@
         ]
       }
     },
+    "/clinic/portal/scheduling/appointments": {
+      "get": {
+        "operationId": "SchedulingController_listAppointments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List appointments booked with the authenticated clinic",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
     "/scheduling/calendly/webhook/{clinicId}": {
       "post": {
         "operationId": "CalendlyWebhookController_handle",
@@ -2536,6 +2566,36 @@
         "summary": "Calendly invitee webhook (invitee.created / invitee.canceled). Authenticated via the calendly-webhook-signature header, not a session cookie.",
         "tags": [
           "Calendly Webhook"
+        ]
+      }
+    },
+    "/patients/me/appointments": {
+      "get": {
+        "operationId": "PatientAppointmentsController_getMyAppointments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient appointment history",
+        "tags": [
+          "patients"
         ]
       }
     }
@@ -3870,6 +3930,65 @@
         },
         "required": [
           "connected"
+        ]
+      },
+      "AppointmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Appointment id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "canceled"
+            ],
+            "description": "Appointment status"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Appointment start time (ISO 8601)"
+          },
+          "endTime": {
+            "type": "string",
+            "nullable": true,
+            "description": "Appointment end time (ISO 8601)"
+          },
+          "inviteeName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Name given at booking"
+          },
+          "inviteeEmail": {
+            "type": "string",
+            "description": "Email given at booking"
+          },
+          "clinicId": {
+            "type": "string",
+            "description": "Clinic id"
+          },
+          "clinicName": {
+            "type": "string",
+            "description": "Clinic name"
+          },
+          "leadId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The linked lead's public id, or null if the appointment could not be linked to a lead"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startTime",
+          "endTime",
+          "inviteeName",
+          "inviteeEmail",
+          "clinicId",
+          "clinicName",
+          "leadId"
         ]
       }
     }
