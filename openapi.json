@@ -2402,7 +2402,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingStatusDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2422,7 +2429,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizeUrlDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2452,7 +2466,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendlyCallbackResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2472,7 +2493,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisconnectSchedulingResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3734,6 +3762,45 @@
           "newPassword"
         ]
       },
+      "SchedulingStatusDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "none",
+              "calendly"
+            ],
+            "description": "Connected scheduling provider"
+          },
+          "connected": {
+            "type": "boolean",
+            "description": "Whether a scheduling provider is currently connected"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public Calendly booking link, present once connected"
+          }
+        },
+        "required": [
+          "provider",
+          "connected",
+          "schedulingUrl"
+        ]
+      },
+      "AuthorizeUrlDto": {
+        "type": "object",
+        "properties": {
+          "authorizeUrl": {
+            "type": "string",
+            "description": "Calendly OAuth authorize URL to redirect the clinic user to"
+          }
+        },
+        "required": [
+          "authorizeUrl"
+        ]
+      },
       "CalendlyCallbackDto": {
         "type": "object",
         "properties": {
@@ -3749,6 +3816,35 @@
         "required": [
           "code",
           "state"
+        ]
+      },
+      "CalendlyCallbackResponseDto": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Always true on success"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "description": "Public Calendly booking link for the now-connected clinic"
+          }
+        },
+        "required": [
+          "connected",
+          "schedulingUrl"
+        ]
+      },
+      "DisconnectSchedulingResponseDto": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Always false on success"
+          }
+        },
+        "required": [
+          "connected"
         ]
       }
     }

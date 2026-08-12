@@ -3,7 +3,7 @@ export type SchedulingProvider = 'none' | 'calendly';
 /**
  * Raw scheduling connection state for a clinic. Includes the encrypted
  * access token and webhook URI needed internally to disconnect the
- * integration — callers that expose this to the client (status endpoints,
+ * integration: callers that expose this to the client (status endpoints,
  * DTOs) MUST strip those two fields and never return ciphertext.
  */
 export type SchedulingStateRecord = {
@@ -19,13 +19,13 @@ export type SetCalendlyConnectionInput = {
   userUri: string;
   orgUri: string;
   schedulingUrl: string;
-  /** Raw AES-GCM ciphertext — already encrypted by the caller. */
+  /** Raw AES-GCM ciphertext, already encrypted by the caller. */
   accessTokenEncrypted: string;
-  /** Raw AES-GCM ciphertext — already encrypted by the caller. */
+  /** Raw AES-GCM ciphertext, already encrypted by the caller. */
   refreshTokenEncrypted: string;
   tokenExpiresAt: Date;
   webhookUri: string;
-  /** Raw AES-GCM ciphertext — already encrypted by the caller. */
+  /** Raw AES-GCM ciphertext, already encrypted by the caller. */
   signingKeyEncrypted: string;
 };
 

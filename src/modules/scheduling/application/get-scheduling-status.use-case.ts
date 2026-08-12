@@ -14,7 +14,7 @@ export type SchedulingStatus = {
 /**
  * Returns the scheduling connection status for a clinic. Deliberately
  * strips the encrypted access token and webhook URI from the repository's
- * read model — this is the only shape ever returned to the client.
+ * read model: this is the only shape ever returned to the client.
  */
 @Injectable()
 export class GetSchedulingStatusUseCase {

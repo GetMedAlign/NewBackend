@@ -9,7 +9,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClinicGuard } from '../../../../infrastructure/security/clinic.guard';
 import { CurrentClinic } from '../../../../infrastructure/security/current-clinic.decorator';
 import { GetSchedulingStatusUseCase } from '../../application/get-scheduling-status.use-case';
@@ -36,6 +36,7 @@ export class SchedulingController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get the scheduling connection status for the authenticated clinic' })
+  @ApiOkResponse({ type: SchedulingStatusDto })
   async getStatus(@CurrentClinic() clinicId: string): Promise<SchedulingStatusDto> {
     return this.getStatusUseCase.execute(clinicId);
   }
@@ -43,6 +44,7 @@ export class SchedulingController {
   @Get('calendly/authorize-url')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Build the Calendly OAuth authorize URL for the authenticated clinic' })
+  @ApiOkResponse({ type: AuthorizeUrlDto })
   getAuthorizeUrl(@CurrentClinic() clinicId: string): AuthorizeUrlDto {
     return this.connectAuthorizeUrlUseCase.execute(clinicId);
   }
@@ -50,6 +52,7 @@ export class SchedulingController {
   @Post('calendly/callback')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Complete the Calendly OAuth flow and persist the connection' })
+  @ApiOkResponse({ type: CalendlyCallbackResponseDto })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async calendlyCallback(
     @CurrentClinic() clinicId: string,
@@ -61,6 +64,7 @@ export class SchedulingController {
   @Post('disconnect')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Disconnect the scheduling provider for the authenticated clinic' })
+  @ApiOkResponse({ type: DisconnectSchedulingResponseDto })
   async disconnect(@CurrentClinic() clinicId: string): Promise<DisconnectSchedulingResponseDto> {
     return this.disconnectUseCase.execute(clinicId);
   }

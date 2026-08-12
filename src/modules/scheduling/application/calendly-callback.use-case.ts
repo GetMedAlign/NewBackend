@@ -20,7 +20,7 @@ export type CalendlyCallbackResult = {
  *
  * Nothing is written to the repository until every Calendly call has
  * succeeded, so a failure at any step (bad code, network error, webhook
- * creation failure) leaves the clinic's scheduling state untouched — no
+ * creation failure) leaves the clinic's scheduling state untouched: no
  * partial connection is ever persisted.
  */
 @Injectable()

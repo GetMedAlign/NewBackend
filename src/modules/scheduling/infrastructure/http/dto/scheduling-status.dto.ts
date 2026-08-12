@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** Never includes ciphertext or tokens — safe to return to the client as-is. */
+/** Never includes ciphertext or tokens: safe to return to the client as-is. */
 export class SchedulingStatusDto {
   @ApiProperty({ enum: ['none', 'calendly'], description: 'Connected scheduling provider' })
   provider!: 'none' | 'calendly';
