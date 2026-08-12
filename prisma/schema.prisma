@@ -43,6 +43,13 @@ enum SchedulingProvider {
   @@map("scheduling_provider")
 }
 
+enum AppointmentStatus {
+  booked
+  canceled
+
+  @@map("appointment_status")
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -276,6 +283,7 @@ model Clinic {
   notes          AdminNote[]
   billingProfile BillingProfile?
   invoices       Invoice[]
+  appointments   Appointment[]
 
   @@map("clinics")
 }
@@ -380,14 +388,40 @@ model Lead {
   clinicStatus          String    @map("clinic_status")
   receivedAt            DateTime  @map("received_at") @db.Timestamptz
   deliveredAt           DateTime? @map("delivered_at") @db.Timestamptz
+  scheduledAt           DateTime? @map("scheduled_at") @db.Timestamptz
 
   clinic     Clinic             @relation(fields: [clinicId], references: [id])
   assessment PatientAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
   patient    Patient?           @relation(fields: [patientId], references: [id], onDelete: SetNull)
 
   webhookDeliveries WebhookDelivery[]
+  appointments      Appointment[]
 
   @@map("leads")
+}
+
+model Appointment {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicId           String            @map("clinic_id") @db.Uuid
+  leadId             String?           @map("lead_id") @db.Uuid
+  patientId          String?           @map("patient_id") @db.Uuid
+  sessionId          String?           @map("session_id")
+  inviteeEmail       String            @map("invitee_email")
+  inviteeName        String?           @map("invitee_name")
+  calendlyEventUri   String            @map("calendly_event_uri")
+  calendlyInviteeUri String            @unique @map("calendly_invitee_uri")
+  startTime          DateTime          @map("start_time") @db.Timestamptz
+  endTime            DateTime?         @map("end_time") @db.Timestamptz
+  status             AppointmentStatus @default(booked)
+  provider           String            @default("calendly")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  lead   Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId])
+  @@map("appointments")
 }
 
 model WebhookDelivery {
