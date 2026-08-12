@@ -13,6 +13,7 @@ export interface CalendlyPort {
     accessToken: string,
     orgUri: string,
     signingKey: string,
+    clinicId: string,
   ): Promise<{ webhookUri: string }>;
   deleteWebhookSubscription(accessToken: string, webhookUri: string): Promise<void>;
 }

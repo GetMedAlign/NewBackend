@@ -75,6 +75,7 @@ describe('CalendlyCallbackUseCase', () => {
       TOKENS.accessToken,
       ME.orgUri,
       expect.any(String),
+      CLINIC_ID,
     );
 
     const [, connectionInput] = (repo.setCalendlyConnection as jest.Mock).mock.calls[0] as [
@@ -98,7 +99,7 @@ describe('CalendlyCallbackUseCase', () => {
     const signingKeyEncrypted = connectionInput['signingKeyEncrypted'] as string;
     expect(signingKeyEncrypted.startsWith('enc:')).toBe(true);
     const [, , signingKeyArg] = (calendly.createWebhookSubscription as jest.Mock).mock
-      .calls[0] as [string, string, string];
+      .calls[0] as [string, string, string, string];
     expect(signingKeyEncrypted).toBe(`enc:${signingKeyArg}`);
 
     expect(result).toEqual({ connected: true, schedulingUrl: ME.schedulingUrl });

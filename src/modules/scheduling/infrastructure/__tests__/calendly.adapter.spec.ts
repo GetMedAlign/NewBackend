@@ -198,6 +198,7 @@ describe('CalendlyHttpAdapter', () => {
         'access-token-1',
         'https://api.calendly.com/organizations/ORG123',
         'signing-key-1',
+        'clinic-123',
       );
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -209,7 +210,7 @@ describe('CalendlyHttpAdapter', () => {
         'Content-Type': 'application/json',
       });
       expect(JSON.parse(init.body)).toEqual({
-        url: 'https://api.medalign.test/scheduling/calendly/webhook',
+        url: 'https://api.medalign.test/scheduling/calendly/webhook/clinic-123',
         events: ['invitee.created', 'invitee.canceled'],
         organization: 'https://api.calendly.com/organizations/ORG123',
         scope: 'organization',
@@ -219,11 +220,43 @@ describe('CalendlyHttpAdapter', () => {
       expect(result).toEqual({ webhookUri: 'https://api.calendly.com/webhook_subscriptions/WH123' });
     });
 
+    it('builds the per-clinic URL without a double slash when the base URL has a trailing slash', async () => {
+      fetchMock.mockResolvedValue(
+        jsonResponse(201, {
+          resource: { uri: 'https://api.calendly.com/webhook_subscriptions/WH123' },
+        }),
+      );
+      const trailingSlashConfig = makeConfigService();
+      const adapterWithTrailingSlash = new CalendlyHttpAdapter(
+        {
+          getOrThrow: (key: string) => {
+            if (key === 'CALENDLY_WEBHOOK_URL') {
+              return 'https://api.medalign.test/scheduling/calendly/webhook/';
+            }
+            return trailingSlashConfig.getOrThrow(key as never);
+          },
+        } as unknown as ConfigService<Env, true>,
+        fetchMock as unknown as typeof fetch,
+      );
+
+      await adapterWithTrailingSlash.createWebhookSubscription(
+        'access-token-1',
+        'https://api.calendly.com/organizations/ORG123',
+        'signing-key-1',
+        'clinic-123',
+      );
+
+      const [, init] = fetchMock.mock.calls[0];
+      expect(JSON.parse(init.body).url).toBe(
+        'https://api.medalign.test/scheduling/calendly/webhook/clinic-123',
+      );
+    });
+
     it('throws InternalServerErrorException on a non-2xx response', async () => {
       fetchMock.mockResolvedValue(jsonResponse(422, { error: 'invalid' }));
 
       await expect(
-        adapter.createWebhookSubscription('access-token-1', 'org-uri', 'signing-key'),
+        adapter.createWebhookSubscription('access-token-1', 'org-uri', 'signing-key', 'clinic-123'),
       ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
   });

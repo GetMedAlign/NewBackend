@@ -88,8 +88,10 @@ export class CalendlyHttpAdapter implements CalendlyPort {
     accessToken: string,
     orgUri: string,
     signingKey: string,
+    clinicId: string,
   ): Promise<{ webhookUri: string }> {
     const apiBase = this.config.getOrThrow<string>('CALENDLY_API_BASE');
+    const webhookBaseUrl = this.config.getOrThrow<string>('CALENDLY_WEBHOOK_URL');
     const response = await this.fetchImpl(`${apiBase}/webhook_subscriptions`, {
       method: 'POST',
       headers: {
@@ -97,7 +99,7 @@ export class CalendlyHttpAdapter implements CalendlyPort {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: this.config.getOrThrow<string>('CALENDLY_WEBHOOK_URL'),
+        url: `${webhookBaseUrl.replace(/\/$/, '')}/${clinicId}`,
         events: ['invitee.created', 'invitee.canceled'],
         organization: orgUri,
         scope: 'organization',

@@ -45,6 +45,7 @@ export class CalendlyCallbackUseCase {
       tokens.accessToken,
       me.orgUri,
       signingKey,
+      clinicId,
     );
 
     await this.repo.setCalendlyConnection(clinicId, {
