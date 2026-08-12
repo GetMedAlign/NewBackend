@@ -50,8 +50,8 @@ function makeAppointments(
 ): jest.Mocked<AppointmentRepositoryPort> {
   return {
     createIfAbsent: jest.fn().mockResolvedValue(undefined),
-    cancelByInviteeUri: jest.fn().mockResolvedValue(undefined),
-    findLeadIdByInviteeUri: jest.fn().mockResolvedValue(null),
+    cancelByInviteeUri: jest.fn().mockResolvedValue(null),
+    hasOtherBookedAppointment: jest.fn().mockResolvedValue(false),
     listForClinic: jest.fn().mockResolvedValue([]),
     listForPatient: jest.fn().mockResolvedValue([]),
     ...overrides,
@@ -231,30 +231,88 @@ describe('HandleCalendlyWebhookUseCase', () => {
     expect(appointments.createIfAbsent).toHaveBeenCalledTimes(2);
   });
 
-  it('cancels the appointment and reverts the lead for invitee.canceled with a valid tracking token', async () => {
-    const { useCase, appointments, leads } = makeUseCase();
+  it('cancels the appointment and reverts the lead for invitee.canceled, scoped to the clinic', async () => {
+    const { useCase, appointments, leads } = makeUseCase({
+      appointments: makeAppointments({ cancelByInviteeUri: jest.fn().mockResolvedValue('lead_abc') }),
+    });
     const token = `enc(lead_abc:${CLINIC_ID})`;
 
     await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: token }), 'sig');
 
     expect(appointments.cancelByInviteeUri).toHaveBeenCalledWith(
+      CLINIC_ID,
       'https://api.calendly.com/invitees/invitee-1',
     );
     expect(leads.revertBooking).toHaveBeenCalledWith('lead_abc');
-    expect(appointments.findLeadIdByInviteeUri).not.toHaveBeenCalled();
   });
 
-  it('falls back to the appointment lookup for invitee.canceled when no tracking token is present', async () => {
+  it('cancels and reverts for invitee.canceled even with no tracking token, using the leadId the scoped cancel returns', async () => {
     const { useCase, appointments, leads } = makeUseCase({
-      appointments: makeAppointments({ findLeadIdByInviteeUri: jest.fn().mockResolvedValue('lead_linked') }),
+      appointments: makeAppointments({ cancelByInviteeUri: jest.fn().mockResolvedValue('lead_linked') }),
     });
 
     await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: undefined }), 'sig');
 
-    expect(appointments.findLeadIdByInviteeUri).toHaveBeenCalledWith(
+    expect(appointments.cancelByInviteeUri).toHaveBeenCalledWith(
+      CLINIC_ID,
       'https://api.calendly.com/invitees/invitee-1',
     );
     expect(leads.revertBooking).toHaveBeenCalledWith('lead_linked');
+  });
+
+  it('does not cancel or revert clinic B data when the invitee URI belongs to a different clinic (tenant isolation)', async () => {
+    // The repo's scoped cancelByInviteeUri only matches (clinicId,
+    // calendlyInviteeUri) together, so an invitee URI owned by clinic B
+    // returns null when a validly-signed webhook for clinic A tries to
+    // cancel it, even if the (forged/stale) tracking token claims clinic A.
+    const { useCase, appointments, leads } = makeUseCase({
+      appointments: makeAppointments({ cancelByInviteeUri: jest.fn().mockResolvedValue(null) }),
+    });
+    const tokenForOtherClinic = `enc(lead_b:${OTHER_CLINIC_ID})`;
+
+    await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: tokenForOtherClinic }), 'sig');
+
+    expect(appointments.cancelByInviteeUri).toHaveBeenCalledWith(
+      CLINIC_ID,
+      'https://api.calendly.com/invitees/invitee-1',
+    );
+    expect(leads.revertBooking).not.toHaveBeenCalled();
+    expect(appointments.hasOtherBookedAppointment).not.toHaveBeenCalled();
+  });
+
+  it('does not revert the lead on cancel when it has another booked appointment (Calendly reschedule)', async () => {
+    // Calendly reschedules fire invitee.created (new invitee URI, same
+    // lead) then invitee.canceled (old invitee URI): the lead is still
+    // booked via the new appointment, so the old one canceling must not
+    // revert it back to 'contacted'.
+    const { useCase, appointments, leads } = makeUseCase({
+      appointments: makeAppointments({
+        cancelByInviteeUri: jest.fn().mockResolvedValue('lead_abc'),
+        hasOtherBookedAppointment: jest.fn().mockResolvedValue(true),
+      }),
+    });
+
+    await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: undefined }), 'sig');
+
+    expect(appointments.hasOtherBookedAppointment).toHaveBeenCalledWith(
+      CLINIC_ID,
+      'lead_abc',
+      'https://api.calendly.com/invitees/invitee-1',
+    );
+    expect(leads.revertBooking).not.toHaveBeenCalled();
+  });
+
+  it('reverts the lead on cancel when it has no other booked appointment', async () => {
+    const { useCase, leads } = makeUseCase({
+      appointments: makeAppointments({
+        cancelByInviteeUri: jest.fn().mockResolvedValue('lead_abc'),
+        hasOtherBookedAppointment: jest.fn().mockResolvedValue(false),
+      }),
+    });
+
+    await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: undefined }), 'sig');
+
+    expect(leads.revertBooking).toHaveBeenCalledWith('lead_abc');
   });
 
   it('propagates a bad-signature failure from the verifier without touching any repo', async () => {

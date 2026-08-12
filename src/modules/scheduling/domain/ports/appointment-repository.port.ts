@@ -52,13 +52,30 @@ export interface AppointmentRepositoryPort {
 
   /**
    * Sets `status = 'canceled'` (and bumps `updated_at`) for the appointment
-   * with this invitee URI. No-ops (does not throw) if no matching
-   * appointment exists, so a redelivered/unknown cancellation is safe.
+   * with this invitee URI, scoped to `clinicId`: an appointment owned by a
+   * different clinic is left untouched even if the invitee URI matches (a
+   * validly-signed webhook for clinic A must never cancel clinic B's data).
+   * No-ops (does not throw) if no matching appointment for this clinic
+   * exists, so a redelivered/unknown cancellation is safe.
+   *
+   * Returns the canceled appointment's linked lead public id, or `null` if
+   * either no appointment was canceled (wrong clinic / unknown URI) or the
+   * appointment had no linked lead. Callers should treat `null` as "nothing
+   * to revert."
    */
-  cancelByInviteeUri(calendlyInviteeUri: string): Promise<void>;
+  cancelByInviteeUri(clinicId: string, calendlyInviteeUri: string): Promise<string | null>;
 
-  /** Returns the linked lead's public id for an appointment, or null if none/not found. */
-  findLeadIdByInviteeUri(calendlyInviteeUri: string): Promise<string | null>;
+  /**
+   * True if this lead has another appointment (for this clinic) with
+   * `status = 'booked'`, excluding `excludeInviteeUri`. Used to distinguish
+   * a real cancellation from a Calendly reschedule (`invitee.created` for
+   * the new slot followed by `invitee.canceled` for the old one).
+   */
+  hasOtherBookedAppointment(
+    clinicId: string,
+    leadId: string,
+    excludeInviteeUri: string,
+  ): Promise<boolean>;
 
   /** All appointments for a clinic, most recent start time first. */
   listForClinic(clinicId: string): Promise<AppointmentRecord[]>;

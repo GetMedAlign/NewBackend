@@ -32,7 +32,7 @@ function makeRepo(overrides: Partial<AppointmentRepositoryPort> = {}): Appointme
   return {
     createIfAbsent: jest.fn(),
     cancelByInviteeUri: jest.fn(),
-    findLeadIdByInviteeUri: jest.fn(),
+    hasOtherBookedAppointment: jest.fn(),
     listForClinic: jest.fn().mockResolvedValue([]),
     listForPatient: jest.fn().mockResolvedValue([]),
     ...overrides,

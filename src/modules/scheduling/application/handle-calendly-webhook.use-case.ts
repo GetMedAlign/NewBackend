@@ -85,7 +85,7 @@ export class HandleCalendlyWebhookUseCase {
         await this.handleInviteeCreated(clinicId, payload);
         return;
       case 'invitee.canceled':
-        await this.handleInviteeCanceled(payload);
+        await this.handleInviteeCanceled(clinicId, payload);
         return;
       default:
         this.logger.log(`Ignoring unhandled Calendly webhook event=${String(event)}`);
@@ -133,19 +133,35 @@ export class HandleCalendlyWebhookUseCase {
     }
   }
 
-  private async handleInviteeCanceled(payload: CalendlyWebhookPayload): Promise<void> {
+  private async handleInviteeCanceled(
+    clinicId: string,
+    payload: CalendlyWebhookPayload,
+  ): Promise<void> {
     const inviteeUri = payload.uri;
     if (!inviteeUri) {
       this.logger.warn('Ignoring Calendly invitee.canceled with no invitee uri');
       return;
     }
 
-    const decoded = decodeTrackingToken(this.encryption, payload.tracking?.utm_content);
-    const leadId = decoded?.leadId ?? (await this.appointments.findLeadIdByInviteeUri(inviteeUri));
+    // Scoped to (clinicId, inviteeUri): a validly-signed webhook for this
+    // clinic can only cancel an appointment this clinic actually owns. The
+    // returned leadId comes from the DB row itself, not the tracking token,
+    // so a forged/mismatched token can't cause a cross-clinic revert below.
+    // Null means no owned appointment matched, so there is nothing to revert.
+    const leadId = await this.appointments.cancelByInviteeUri(clinicId, inviteeUri);
+    if (!leadId) return;
 
-    await this.appointments.cancelByInviteeUri(inviteeUri);
-
-    if (leadId) {
+    // Calendly reschedules deliver invitee.created (new invitee URI, same
+    // lead) followed by invitee.canceled (old invitee URI). If the lead
+    // still has another booked appointment, this cancellation is just the
+    // old slot going away as part of that reschedule, not the lead actually
+    // un-booking, so don't revert its status.
+    const hasOtherBooking = await this.appointments.hasOtherBookedAppointment(
+      clinicId,
+      leadId,
+      inviteeUri,
+    );
+    if (!hasOtherBooking) {
       await this.leads.revertBooking(leadId);
     }
   }
