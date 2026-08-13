@@ -40,6 +40,8 @@ function makeClinic(overrides: Partial<ClinicReadModel> = {}): ClinicReadModel {
     webhookSecretEncrypted: 'cipher',
     categories: ['hormone'],
     services: [],
+    schedulingProvider: 'none',
+    calendlySchedulingUrl: null,
     ...overrides,
   };
 }
@@ -116,6 +118,10 @@ function buildMocks(): Mocks {
       recordDelivery: jest.fn().mockResolvedValue(undefined),
       setDeliveryStatus: jest.fn().mockResolvedValue(undefined),
       findByPatientUser: jest.fn(),
+      setBookedScheduled: jest.fn(),
+      revertBooking: jest.fn(),
+      findLatestByClinicAndEmail: jest.fn(),
+      findPatientIdByLeadId: jest.fn(),
     },
     webhook: { send: jest.fn() },
     email: { send: jest.fn().mockResolvedValue(undefined) },

@@ -55,6 +55,19 @@ const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
 
   JOB_TRIGGER_SECRET: z.string().min(1),
+
+  // Calendly OAuth app (scheduling integration)
+  CALENDLY_CLIENT_ID: z.string().min(1),
+
+  CALENDLY_CLIENT_SECRET: z.string().min(1),
+
+  CALENDLY_REDIRECT_URI: z.string().url(),
+
+  CALENDLY_WEBHOOK_URL: z.string().url(),
+
+  CALENDLY_API_BASE: z.string().url().default('https://api.calendly.com'),
+
+  CALENDLY_AUTH_BASE: z.string().url().default('https://auth.calendly.com'),
 });
 
 export type Env = z.infer<typeof envSchema>;

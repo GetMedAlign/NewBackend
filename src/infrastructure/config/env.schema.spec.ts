@@ -20,6 +20,10 @@ const validFixture = {
   STRIPE_SECRET_KEY: 'sk_test_fixture',
   STRIPE_WEBHOOK_SECRET: 'whsec_fixture',
   JOB_TRIGGER_SECRET: 'job_fixture',
+  CALENDLY_CLIENT_ID: 'test-calendly-client-id',
+  CALENDLY_CLIENT_SECRET: 'test-calendly-client-secret',
+  CALENDLY_REDIRECT_URI: 'http://localhost:3000/scheduling/calendly/callback',
+  CALENDLY_WEBHOOK_URL: 'http://localhost:3000/scheduling/calendly/webhook',
 };
 
 describe('parseEnv', () => {

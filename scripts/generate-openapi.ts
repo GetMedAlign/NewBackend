@@ -130,6 +130,18 @@ import { ListAdminsUseCase } from '../src/modules/superadmin/application/list-ad
 import { CreateAdminUseCase } from '../src/modules/superadmin/application/create-admin.use-case';
 import { DeleteAdminUseCase } from '../src/modules/superadmin/application/delete-admin.use-case';
 import { SetAdminPasswordUseCase } from '../src/modules/superadmin/application/set-admin-password.use-case';
+import { SchedulingController } from '../src/modules/scheduling/infrastructure/http/scheduling.controller';
+import { GetSchedulingStatusUseCase } from '../src/modules/scheduling/application/get-scheduling-status.use-case';
+import { ConnectAuthorizeUrlUseCase } from '../src/modules/scheduling/application/connect-authorize-url.use-case';
+import { CalendlyCallbackUseCase } from '../src/modules/scheduling/application/calendly-callback.use-case';
+import { DisconnectSchedulingUseCase } from '../src/modules/scheduling/application/disconnect-scheduling.use-case';
+import { ListClinicAppointmentsUseCase } from '../src/modules/scheduling/application/list-clinic-appointments.use-case';
+import { ListPatientAppointmentsUseCase } from '../src/modules/scheduling/application/list-patient-appointments.use-case';
+import { PrepareBookingUseCase } from '../src/modules/scheduling/application/prepare-booking.use-case';
+import { CalendlyWebhookController } from '../src/modules/scheduling/infrastructure/http/calendly-webhook.controller';
+import { PatientAppointmentsController } from '../src/modules/scheduling/infrastructure/http/patient-appointments.controller';
+import { HandleCalendlyWebhookUseCase } from '../src/modules/scheduling/application/handle-calendly-webhook.use-case';
+import { PATIENT_REPOSITORY } from '../src/modules/patients/domain/ports/patient-repository.port';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -174,6 +186,9 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     BillingJobsController,
     AdminRevenueController,
     SuperadminController,
+    SchedulingController,
+    CalendlyWebhookController,
+    PatientAppointmentsController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -251,6 +266,15 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(CreateAdminUseCase),
     stubProvider(DeleteAdminUseCase),
     stubProvider(SetAdminPasswordUseCase),
+    stubProvider(GetSchedulingStatusUseCase),
+    stubProvider(ConnectAuthorizeUrlUseCase),
+    stubProvider(CalendlyCallbackUseCase),
+    stubProvider(DisconnectSchedulingUseCase),
+    stubProvider(HandleCalendlyWebhookUseCase),
+    stubProvider(ListClinicAppointmentsUseCase),
+    stubProvider(ListPatientAppointmentsUseCase),
+    stubProvider(PrepareBookingUseCase),
+    stubProvider(PATIENT_REPOSITORY),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
     // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so

@@ -58,7 +58,7 @@ export function isForbiddenAddress(ip: string): boolean {
     return isForbiddenV6(ip);
   }
 
-  // Not a parseable IP literal — treat as forbidden (fail closed).
+  // Not a parseable IP literal, so treat as forbidden (fail closed).
   return true;
 }
 
@@ -92,7 +92,7 @@ function isForbiddenV6(ip: string): boolean {
   // Unspecified / loopback.
   if (normalized === '::' || normalized === '::1') return true;
 
-  // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible — validate the embedded v4.
+  // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible: validate the embedded v4.
   const mapped = normalized.match(/^::(?:ffff:)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
   if (mapped) {
     return isForbiddenV4(mapped[1]);
@@ -113,7 +113,7 @@ function isForbiddenV6(ip: string): boolean {
 
 /**
  * Options that widen the guard for TESTING ONLY. Never construct the provider
- * with these in production wiring — the DI token binds the no-arg constructor.
+ * with these in production wiring: the DI token binds the no-arg constructor.
  */
 export interface SsrfWebhookSenderTestSeam {
   /**
@@ -143,7 +143,7 @@ export class SsrfWebhookSender implements WebhookSenderPort {
       return { ok: false, error: 'invalid_url' };
     }
 
-    // Require an absolute HTTPS URL — no network call otherwise.
+    // Require an absolute HTTPS URL; no network call otherwise.
     if (parsed.protocol !== 'https:') {
       return { ok: false, error: 'non_https_url' };
     }

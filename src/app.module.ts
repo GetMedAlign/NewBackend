@@ -17,6 +17,7 @@ import { AdminClinicsModule } from './modules/admin-clinics/admin-clinics.module
 import { AdminPatientsModule } from './modules/admin-patients/admin-patients.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { SuperadminModule } from './modules/superadmin/superadmin.module';
+import { SchedulingModule } from './modules/scheduling/scheduling.module';
 
 import { JwtCookieGuard } from './infrastructure/security/jwt-cookie.guard';
 import { RolesGuard } from './infrastructure/security/roles.guard';
@@ -39,6 +40,7 @@ import { CsrfMiddleware } from './infrastructure/security/csrf.middleware';
     AdminPatientsModule,
     BillingModule,
     SuperadminModule,
+    SchedulingModule,
     // Global default rate limit; auth POST routes tighten it via @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
   ],
@@ -56,7 +58,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(CsrfMiddleware)
-      .exclude('stripe/webhook', 'admin/jobs/run/:jobName')
+      .exclude('stripe/webhook', 'admin/jobs/run/:jobName', 'scheduling/calendly/webhook/:clinicId')
       .forRoutes('*');
   }
 }

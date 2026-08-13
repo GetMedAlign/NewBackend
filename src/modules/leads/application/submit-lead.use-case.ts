@@ -192,7 +192,7 @@ export class SubmitLeadUseCase {
     let sentToCrm = false;
     let attempted = false;
 
-    // Email notification — fires whenever a business email is configured AND it
+    // Email notification: fires whenever a business email is configured AND it
     // does not match the patient's own email (matching .NET LeadsController
     // behaviour: a patient must not receive their own clinic notification).
     if (
@@ -210,7 +210,7 @@ export class SubmitLeadUseCase {
       }
     }
 
-    // Webhook (CRM) — signed + SSRF-guarded, single attempt.
+    // Webhook (CRM): signed + SSRF-guarded, single attempt.
     if (clinic.webhookUrl) {
       attempted = true;
       const secret = clinic.webhookSecretEncrypted

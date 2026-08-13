@@ -36,6 +36,20 @@ enum AssessmentCategory {
   @@map("assessment_category")
 }
 
+enum SchedulingProvider {
+  none
+  calendly
+
+  @@map("scheduling_provider")
+}
+
+enum AppointmentStatus {
+  booked
+  canceled
+
+  @@map("appointment_status")
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -250,6 +264,16 @@ model Clinic {
   subscriptionActiveThrough DateTime? @map("subscription_active_through") @db.Timestamptz
   subscriptionCancelledAt   DateTime? @map("subscription_cancelled_at") @db.Timestamptz
 
+  schedulingProvider                 SchedulingProvider @default(none) @map("scheduling_provider")
+  calendlyUserUri                    String?            @map("calendly_user_uri")
+  calendlyOrgUri                     String?            @map("calendly_org_uri")
+  calendlySchedulingUrl              String?            @map("calendly_scheduling_url")
+  calendlyAccessTokenEncrypted       String?            @map("calendly_access_token_encrypted")
+  calendlyRefreshTokenEncrypted      String?            @map("calendly_refresh_token_encrypted")
+  calendlyTokenExpiresAt             DateTime?          @map("calendly_token_expires_at") @db.Timestamptz
+  calendlyWebhookUri                 String?            @map("calendly_webhook_uri")
+  calendlyWebhookSigningKeyEncrypted String?            @map("calendly_webhook_signing_key_encrypted")
+
   categories     ClinicCategory[]
   services       ClinicService[]
   leads          Lead[]
@@ -259,6 +283,7 @@ model Clinic {
   notes          AdminNote[]
   billingProfile BillingProfile?
   invoices       Invoice[]
+  appointments   Appointment[]
 
   @@map("clinics")
 }
@@ -363,14 +388,40 @@ model Lead {
   clinicStatus          String    @map("clinic_status")
   receivedAt            DateTime  @map("received_at") @db.Timestamptz
   deliveredAt           DateTime? @map("delivered_at") @db.Timestamptz
+  scheduledAt           DateTime? @map("scheduled_at") @db.Timestamptz
 
   clinic     Clinic             @relation(fields: [clinicId], references: [id])
   assessment PatientAssessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
   patient    Patient?           @relation(fields: [patientId], references: [id], onDelete: SetNull)
 
   webhookDeliveries WebhookDelivery[]
+  appointments      Appointment[]
 
   @@map("leads")
+}
+
+model Appointment {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clinicId           String            @map("clinic_id") @db.Uuid
+  leadId             String?           @map("lead_id") @db.Uuid
+  patientId          String?           @map("patient_id") @db.Uuid
+  sessionId          String?           @map("session_id")
+  inviteeEmail       String            @map("invitee_email")
+  inviteeName        String?           @map("invitee_name")
+  calendlyEventUri   String            @map("calendly_event_uri")
+  calendlyInviteeUri String            @unique @map("calendly_invitee_uri")
+  startTime          DateTime          @map("start_time") @db.Timestamptz
+  endTime            DateTime?         @map("end_time") @db.Timestamptz
+  status             AppointmentStatus @default(booked)
+  provider           String            @default("calendly")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  lead   Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId])
+  @@map("appointments")
 }
 
 model WebhookDelivery {

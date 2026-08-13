@@ -24,7 +24,7 @@ export class PrismaLeadRepository implements LeadRepositoryPort {
     const leadId = `lead_${randomBytes(16).toString('hex')}`;
     const patientPhone = data.patientPhone ? this.encryption.encrypt(data.patientPhone) : null;
 
-    // Leads can be anonymous — run as system so the insert isn't RLS-blocked.
+    // Leads can be anonymous, so run as system: the insert isn't RLS-blocked.
     const lead = await this.prisma.asSystem((client) =>
       client.lead.create({
         data: {
@@ -153,5 +153,49 @@ export class PrismaLeadRepository implements LeadRepositoryPort {
         appointmentPreference: r.appointmentPreference ?? null,
       }));
     });
+  }
+
+  async setBookedScheduled(leadId: string, scheduledAt: Date): Promise<void> {
+    await this.prisma.asSystem((client) =>
+      client.lead.update({
+        where: { leadId },
+        data: { clinicStatus: 'booked', scheduledAt },
+      }),
+    );
+  }
+
+  async revertBooking(leadId: string): Promise<void> {
+    // Reverts to 'contacted', not 'new': a lead that reached booking had
+    // already been engaged by the clinic, so 'new' would misrepresent its
+    // history (see the port doc comment).
+    await this.prisma.asSystem((client) =>
+      client.lead.update({
+        where: { leadId },
+        data: { clinicStatus: 'contacted', scheduledAt: null },
+      }),
+    );
+  }
+
+  async findLatestByClinicAndEmail(
+    clinicId: string,
+    patientEmail: string,
+  ): Promise<{ leadId: string } | null> {
+    return this.prisma.asSystem((client) =>
+      client.lead.findFirst({
+        where: { clinicId, patientEmail },
+        orderBy: { receivedAt: 'desc' },
+        select: { leadId: true },
+      }),
+    );
+  }
+
+  async findPatientIdByLeadId(leadId: string): Promise<string | null> {
+    const lead = await this.prisma.asSystem((client) =>
+      client.lead.findUnique({
+        where: { leadId },
+        select: { patientId: true },
+      }),
+    );
+    return lead?.patientId ?? null;
   }
 }

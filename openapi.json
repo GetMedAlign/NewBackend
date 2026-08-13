@@ -2395,6 +2395,245 @@
           "Superadmin — Team"
         ]
       }
+    },
+    "/clinic/portal/scheduling": {
+      "get": {
+        "operationId": "SchedulingController_getStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the scheduling connection status for the authenticated clinic",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
+    "/clinic/portal/scheduling/calendly/authorize-url": {
+      "get": {
+        "operationId": "SchedulingController_getAuthorizeUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizeUrlDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Build the Calendly OAuth authorize URL for the authenticated clinic",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
+    "/clinic/portal/scheduling/calendly/callback": {
+      "post": {
+        "operationId": "SchedulingController_calendlyCallback",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendlyCallbackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendlyCallbackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Complete the Calendly OAuth flow and persist the connection",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
+    "/clinic/portal/scheduling/disconnect": {
+      "post": {
+        "operationId": "SchedulingController_disconnect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisconnectSchedulingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Disconnect the scheduling provider for the authenticated clinic",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
+    "/clinic/portal/scheduling/appointments": {
+      "get": {
+        "operationId": "SchedulingController_listAppointments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "List appointments booked with the authenticated clinic",
+        "tags": [
+          "Clinic Portal Scheduling"
+        ]
+      }
+    },
+    "/scheduling/calendly/webhook/{clinicId}": {
+      "post": {
+        "operationId": "CalendlyWebhookController_handle",
+        "parameters": [
+          {
+            "name": "clinicId",
+            "required": true,
+            "in": "path",
+            "description": "Clinic id the webhook subscription was registered for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Calendly invitee webhook (invitee.created / invitee.canceled). Authenticated via the calendly-webhook-signature header, not a session cookie.",
+        "tags": [
+          "Calendly Webhook"
+        ]
+      }
+    },
+    "/patients/me/appointments": {
+      "get": {
+        "operationId": "PatientAppointmentsController_getMyAppointments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the authenticated patient appointment history",
+        "tags": [
+          "patients"
+        ]
+      }
+    },
+    "/patients/me/booking-context/{slug}": {
+      "get": {
+        "operationId": "PatientAppointmentsController_getBookingContext",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the booking context for a clinic (Calendly embed or request-to-book fallback)",
+        "tags": [
+          "patients"
+        ]
+      }
     }
   },
   "info": {
@@ -3642,6 +3881,190 @@
         },
         "required": [
           "newPassword"
+        ]
+      },
+      "SchedulingStatusDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "none",
+              "calendly"
+            ],
+            "description": "Connected scheduling provider"
+          },
+          "connected": {
+            "type": "boolean",
+            "description": "Whether a scheduling provider is currently connected"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public Calendly booking link, present once connected"
+          }
+        },
+        "required": [
+          "provider",
+          "connected",
+          "schedulingUrl"
+        ]
+      },
+      "AuthorizeUrlDto": {
+        "type": "object",
+        "properties": {
+          "authorizeUrl": {
+            "type": "string",
+            "description": "Calendly OAuth authorize URL to redirect the clinic user to"
+          }
+        },
+        "required": [
+          "authorizeUrl"
+        ]
+      },
+      "CalendlyCallbackDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Authorization code returned by Calendly at the end of OAuth"
+          },
+          "state": {
+            "type": "string",
+            "description": "Opaque state value Calendly echoes back from the authorize request"
+          }
+        },
+        "required": [
+          "code",
+          "state"
+        ]
+      },
+      "CalendlyCallbackResponseDto": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Always true on success"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "description": "Public Calendly booking link for the now-connected clinic"
+          }
+        },
+        "required": [
+          "connected",
+          "schedulingUrl"
+        ]
+      },
+      "DisconnectSchedulingResponseDto": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Always false on success"
+          }
+        },
+        "required": [
+          "connected"
+        ]
+      },
+      "AppointmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Appointment id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "canceled"
+            ],
+            "description": "Appointment status"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Appointment start time (ISO 8601)"
+          },
+          "endTime": {
+            "type": "string",
+            "nullable": true,
+            "description": "Appointment end time (ISO 8601)"
+          },
+          "inviteeName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Name given at booking"
+          },
+          "inviteeEmail": {
+            "type": "string",
+            "description": "Email given at booking"
+          },
+          "clinicId": {
+            "type": "string",
+            "description": "Clinic id"
+          },
+          "clinicName": {
+            "type": "string",
+            "description": "Clinic name"
+          },
+          "leadId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The linked lead's public id, or null if the appointment could not be linked to a lead"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startTime",
+          "endTime",
+          "inviteeName",
+          "inviteeEmail",
+          "clinicId",
+          "clinicName",
+          "leadId"
+        ]
+      },
+      "BookingContextDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "request",
+              "calendly"
+            ],
+            "description": "Which booking flow the frontend should render"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Clinic's public Calendly scheduling URL; present only when provider is 'calendly'"
+          },
+          "trackingToken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque encrypted tracking token to pass to Calendly as utm_content; the webhook decrypts it server-side to link the booking to a lead. Never a Calendly OAuth token or signing key."
+          },
+          "inviteeName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Patient's name, to prefill the Calendly invitee form"
+          },
+          "inviteeEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Patient's email, to prefill the Calendly invitee form"
+          }
+        },
+        "required": [
+          "provider",
+          "schedulingUrl",
+          "trackingToken",
+          "inviteeName",
+          "inviteeEmail"
         ]
       }
     }
