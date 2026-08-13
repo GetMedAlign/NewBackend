@@ -109,7 +109,9 @@ describe('ListClinicAppointmentsUseCase', () => {
 
   it('maps a null endTime and leadId through as null', async () => {
     const repo = makeRepo({
-      listForClinic: jest.fn().mockResolvedValue([makeAppointment({ endTime: null, leadId: null })]),
+      listForClinic: jest
+        .fn()
+        .mockResolvedValue([makeAppointment({ endTime: null, leadId: null })]),
     });
     const useCase = new ListClinicAppointmentsUseCase(repo);
 

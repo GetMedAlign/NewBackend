@@ -20,7 +20,8 @@ export class BookingContextDto {
   @ApiProperty({
     type: String,
     nullable: true,
-    description: "Clinic's public Calendly scheduling URL; present only when provider is 'calendly'",
+    description:
+      "Clinic's public Calendly scheduling URL; present only when provider is 'calendly'",
   })
   schedulingUrl!: string | null;
 

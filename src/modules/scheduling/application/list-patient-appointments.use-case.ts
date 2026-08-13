@@ -13,7 +13,8 @@ import { toAppointmentDto } from './list-clinic-appointments.use-case';
 @Injectable()
 export class ListPatientAppointmentsUseCase {
   constructor(
-    @Inject(APPOINTMENT_REPOSITORY) private readonly appointmentRepository: AppointmentRepositoryPort,
+    @Inject(APPOINTMENT_REPOSITORY)
+    private readonly appointmentRepository: AppointmentRepositoryPort,
   ) {}
 
   async execute(params: { patientId: string; sessionId: string }): Promise<AppointmentDto[]> {

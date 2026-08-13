@@ -7,7 +7,9 @@ export class CalendlyCallbackDto {
   @IsNotEmpty()
   code!: string;
 
-  @ApiProperty({ description: 'Opaque state value Calendly echoes back from the authorize request' })
+  @ApiProperty({
+    description: 'Opaque state value Calendly echoes back from the authorize request',
+  })
   @IsString()
   @IsNotEmpty()
   state!: string;

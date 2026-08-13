@@ -105,7 +105,10 @@ export class PrismaAppointmentRepository implements AppointmentRepositoryPort {
     return rows.map((row) => this.toRecord(row));
   }
 
-  async listForPatient(params: { patientId: string; sessionId: string }): Promise<AppointmentRecord[]> {
+  async listForPatient(params: {
+    patientId: string;
+    sessionId: string;
+  }): Promise<AppointmentRecord[]> {
     // Only add the sessionId clause when it's actually present: an empty
     // sessionId must never broaden the match to every anonymous
     // (sessionId: null-ish) appointment. patientId is always included when

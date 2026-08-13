@@ -6,7 +6,11 @@ const CLINIC_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
 function makeCalendly(overrides: Partial<CalendlyPort> = {}): CalendlyPort {
   return {
-    buildAuthorizeUrl: jest.fn().mockImplementation((state: string) => `https://auth.calendly.com/oauth/authorize?state=${state}`),
+    buildAuthorizeUrl: jest
+      .fn()
+      .mockImplementation(
+        (state: string) => `https://auth.calendly.com/oauth/authorize?state=${state}`,
+      ),
     exchangeCode: jest.fn(),
     refreshToken: jest.fn(),
     getMe: jest.fn(),
@@ -37,7 +41,9 @@ describe('ConnectAuthorizeUrlUseCase', () => {
     expect(plaintext.startsWith(`${CLINIC_ID}:`)).toBe(true);
 
     expect(calendly.buildAuthorizeUrl).toHaveBeenCalledWith(`enc:${plaintext}`);
-    expect(result.authorizeUrl).toBe(`https://auth.calendly.com/oauth/authorize?state=enc:${plaintext}`);
+    expect(result.authorizeUrl).toBe(
+      `https://auth.calendly.com/oauth/authorize?state=enc:${plaintext}`,
+    );
   });
 
   it('generates a different nonce (and therefore state) on each call', () => {

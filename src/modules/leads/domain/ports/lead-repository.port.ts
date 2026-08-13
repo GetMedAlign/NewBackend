@@ -87,7 +87,10 @@ export interface LeadRepositoryPort {
    * lead for this clinic + invitee email, or null if none. Runs via
    * `asSystem`.
    */
-  findLatestByClinicAndEmail(clinicId: string, patientEmail: string): Promise<{ leadId: string } | null>;
+  findLatestByClinicAndEmail(
+    clinicId: string,
+    patientEmail: string,
+  ): Promise<{ leadId: string } | null>;
 
   /**
    * Returns the `patientId` attribution link stored on the lead, or null if

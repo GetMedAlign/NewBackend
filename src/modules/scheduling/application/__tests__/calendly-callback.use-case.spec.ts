@@ -99,8 +99,12 @@ describe('CalendlyCallbackUseCase', () => {
     // Signing key persisted encrypted and never in plaintext anywhere in the call.
     const signingKeyEncrypted = connectionInput['signingKeyEncrypted'] as string;
     expect(signingKeyEncrypted.startsWith('enc:')).toBe(true);
-    const [, , signingKeyArg] = (calendly.createWebhookSubscription as jest.Mock).mock
-      .calls[0] as [string, string, string, string];
+    const [, , signingKeyArg] = (calendly.createWebhookSubscription as jest.Mock).mock.calls[0] as [
+      string,
+      string,
+      string,
+      string,
+    ];
     expect(signingKeyEncrypted).toBe(`enc:${signingKeyArg}`);
 
     expect(result).toEqual({ connected: true, schedulingUrl: ME.schedulingUrl });
@@ -126,9 +130,9 @@ describe('CalendlyCallbackUseCase', () => {
     const repo = makeRepo();
     const useCase = new CalendlyCallbackUseCase(calendly, encryption, repo);
 
-    await expect(
-      useCase.execute(CLINIC_ID, 'auth-code', 'not-valid-ciphertext'),
-    ).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute(CLINIC_ID, 'auth-code', 'not-valid-ciphertext')).rejects.toThrow(
+      BadRequestException,
+    );
 
     expect(calendly.exchangeCode).not.toHaveBeenCalled();
     expect(repo.setCalendlyConnection).not.toHaveBeenCalled();

@@ -71,7 +71,10 @@ describe('ListPatientAppointmentsUseCase', () => {
     await useCase.execute({ patientId: PATIENT_ID, sessionId: 'session_abc' });
 
     expect(listForPatient).toHaveBeenCalledTimes(1);
-    expect(listForPatient).toHaveBeenCalledWith({ patientId: PATIENT_ID, sessionId: 'session_abc' });
+    expect(listForPatient).toHaveBeenCalledWith({
+      patientId: PATIENT_ID,
+      sessionId: 'session_abc',
+    });
     expect(listForPatient).not.toHaveBeenCalledWith(
       expect.objectContaining({ patientId: OTHER_PATIENT_ID }),
     );

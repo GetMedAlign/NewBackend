@@ -9,6 +9,7 @@
 **Tech Stack:** NestJS 10, Prisma 7 + `@prisma/adapter-pg`, Postgres, Node 24 (global `fetch`). Reuse `EncryptionPort` (`AesGcmEncryptionService`). Verify: `npm run typecheck`, `npm run lint`, `npm run build`, `npm run openapi`, `npx jest <touched>`.
 
 ## Global Constraints
+
 - Spec: `docs/superpowers/specs/2026-08-11-scheduling-calendly-design.md` (read before Task 1).
 - Calendly OAuth + tokens + webhook signing key **encrypted at rest** via the existing `EncryptionPort` (inject the token, do not re-implement crypto).
 - No em dashes in code/comments. Keep committed OpenAPI updated (`npm run openapi`). Tests run in CI (jest also works in subagent shells).
@@ -29,6 +30,7 @@
 **Files:** `src/infrastructure/config/env.schema.ts`, `src/modules/scheduling/domain/ports/calendly.port.ts` (new module), `src/modules/scheduling/infrastructure/calendly.adapter.ts`, `src/modules/scheduling/infrastructure/__tests__/calendly.adapter.spec.ts`, `src/modules/scheduling/scheduling.module.ts`.
 
 **Interfaces produced:** `CALENDLY_PORT` symbol + `CalendlyPort`:
+
 - `buildAuthorizeUrl(state: string): string`
 - `exchangeCode(code: string): Promise<CalendlyTokens>` (`{ accessToken, refreshToken, expiresAt }`)
 - `refreshToken(refreshToken: string): Promise<CalendlyTokens>`
@@ -56,6 +58,7 @@
 - [ ] **Step 8:** Verify `npm run typecheck`, `npm run lint`, `npm run build`, `npx jest src/modules/scheduling`. Commit `feat(scheduling): Calendly connect, callback, disconnect, and status endpoints`.
 
 ## Self-Review Notes
+
 - Tokens + signing key only ever stored encrypted; no read model or DTO returns ciphertext.
 - `scheduling_provider` defaults to `none`; existing clinics are unaffected and keep request-to-book.
 - The webhook subscription points at the config webhook URL; the receiver is slice 2.

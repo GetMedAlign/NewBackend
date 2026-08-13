@@ -38,10 +38,7 @@ describe('CalendlyHttpAdapter', () => {
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    adapter = new CalendlyHttpAdapter(
-      makeConfigService(),
-      fetchMock as unknown as typeof fetch,
-    );
+    adapter = new CalendlyHttpAdapter(makeConfigService(), fetchMock as unknown as typeof fetch);
   });
 
   describe('buildAuthorizeUrl', () => {
@@ -180,9 +177,7 @@ describe('CalendlyHttpAdapter', () => {
     it('throws InternalServerErrorException on a non-2xx response', async () => {
       fetchMock.mockResolvedValue(jsonResponse(401, { error: 'unauthorized' }));
 
-      await expect(adapter.getMe('bad-token')).rejects.toBeInstanceOf(
-        InternalServerErrorException,
-      );
+      await expect(adapter.getMe('bad-token')).rejects.toBeInstanceOf(InternalServerErrorException);
     });
   });
 
@@ -217,7 +212,9 @@ describe('CalendlyHttpAdapter', () => {
         signing_key: 'signing-key-1',
       });
 
-      expect(result).toEqual({ webhookUri: 'https://api.calendly.com/webhook_subscriptions/WH123' });
+      expect(result).toEqual({
+        webhookUri: 'https://api.calendly.com/webhook_subscriptions/WH123',
+      });
     });
 
     it('builds the per-clinic URL without a double slash when the base URL has a trailing slash', async () => {
@@ -281,7 +278,10 @@ describe('CalendlyHttpAdapter', () => {
       fetchMock.mockResolvedValue(jsonResponse(404, { error: 'not_found' }));
 
       await expect(
-        adapter.deleteWebhookSubscription('access-token-1', 'https://api.calendly.com/webhook_subscriptions/WH123'),
+        adapter.deleteWebhookSubscription(
+          'access-token-1',
+          'https://api.calendly.com/webhook_subscriptions/WH123',
+        ),
       ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
   });

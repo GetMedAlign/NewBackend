@@ -23,7 +23,10 @@ export class CalendlyWebhookController {
   @Public()
   @Post(':clinicId')
   @HttpCode(200)
-  @ApiParam({ name: 'clinicId', description: 'Clinic id the webhook subscription was registered for' })
+  @ApiParam({
+    name: 'clinicId',
+    description: 'Clinic id the webhook subscription was registered for',
+  })
   @ApiOperation({
     summary:
       'Calendly invitee webhook (invitee.created / invitee.canceled). ' +

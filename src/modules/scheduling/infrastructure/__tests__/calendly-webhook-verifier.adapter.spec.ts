@@ -6,7 +6,9 @@ const SIGNING_KEY = 'test-signing-key';
 const BODY = Buffer.from(JSON.stringify({ event: 'invitee.created', payload: { foo: 'bar' } }));
 
 function sign(timestamp: number, signingKey: string, body: Buffer): string {
-  return createHmac('sha256', signingKey).update(`${timestamp}.${body.toString('utf8')}`).digest('hex');
+  return createHmac('sha256', signingKey)
+    .update(`${timestamp}.${body.toString('utf8')}`)
+    .digest('hex');
 }
 
 function header(timestamp: number, signature: string): string {
@@ -26,7 +28,9 @@ describe('CalendlyWebhookVerifierAdapter', () => {
   it('throws when the body has been tampered with', () => {
     const timestamp = Math.floor(Date.now() / 1000);
     const signature = sign(timestamp, SIGNING_KEY, BODY);
-    const tamperedBody = Buffer.from(JSON.stringify({ event: 'invitee.canceled', payload: { foo: 'bar' } }));
+    const tamperedBody = Buffer.from(
+      JSON.stringify({ event: 'invitee.canceled', payload: { foo: 'bar' } }),
+    );
 
     expect(() => verifier.verify(tamperedBody, header(timestamp, signature), SIGNING_KEY)).toThrow(
       BadRequestException,
@@ -56,7 +60,9 @@ describe('CalendlyWebhookVerifierAdapter', () => {
     const timestamp = Math.floor(Date.now() / 1000);
     const signature = sign(timestamp, SIGNING_KEY, BODY);
 
-    expect(() => verifier.verify(BODY, `v1=${signature}`, SIGNING_KEY)).toThrow(BadRequestException);
+    expect(() => verifier.verify(BODY, `v1=${signature}`, SIGNING_KEY)).toThrow(
+      BadRequestException,
+    );
   });
 
   it('throws when the timestamp is stale (older than 5 minutes)', () => {

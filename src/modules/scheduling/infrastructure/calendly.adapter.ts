@@ -74,7 +74,9 @@ export class CalendlyHttpAdapter implements CalendlyPort {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!response.ok) {
-      throw new InternalServerErrorException(`Calendly getMe failed with status ${response.status}`);
+      throw new InternalServerErrorException(
+        `Calendly getMe failed with status ${response.status}`,
+      );
     }
     const data = (await response.json()) as CalendlyMeResponse;
     return {

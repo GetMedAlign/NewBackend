@@ -38,7 +38,9 @@ function makeSchedulingRepo(
   } as jest.Mocked<SchedulingRepositoryPort>;
 }
 
-function makeVerifier(overrides: Partial<CalendlyWebhookVerifierPort> = {}): jest.Mocked<CalendlyWebhookVerifierPort> {
+function makeVerifier(
+  overrides: Partial<CalendlyWebhookVerifierPort> = {},
+): jest.Mocked<CalendlyWebhookVerifierPort> {
   return {
     verify: jest.fn(),
     ...overrides,
@@ -72,11 +74,13 @@ function makeLeads(overrides: Partial<LeadRepositoryPort> = {}): jest.Mocked<Lea
   } as jest.Mocked<LeadRepositoryPort>;
 }
 
-function inviteeCreatedBody(overrides: {
-  uri?: string;
-  email?: string;
-  utmContent?: string | null;
-} = {}): Buffer {
+function inviteeCreatedBody(
+  overrides: {
+    uri?: string;
+    email?: string;
+    utmContent?: string | null;
+  } = {},
+): Buffer {
   return Buffer.from(
     JSON.stringify({
       event: 'invitee.created',
@@ -108,13 +112,15 @@ function inviteeCanceledBody(overrides: { uri?: string; utmContent?: string | nu
   );
 }
 
-function makeUseCase(deps: {
-  schedulingRepo?: jest.Mocked<SchedulingRepositoryPort>;
-  verifier?: jest.Mocked<CalendlyWebhookVerifierPort>;
-  appointments?: jest.Mocked<AppointmentRepositoryPort>;
-  encryption?: jest.Mocked<EncryptionPort>;
-  leads?: jest.Mocked<LeadRepositoryPort>;
-} = {}): {
+function makeUseCase(
+  deps: {
+    schedulingRepo?: jest.Mocked<SchedulingRepositoryPort>;
+    verifier?: jest.Mocked<CalendlyWebhookVerifierPort>;
+    appointments?: jest.Mocked<AppointmentRepositoryPort>;
+    encryption?: jest.Mocked<EncryptionPort>;
+    leads?: jest.Mocked<LeadRepositoryPort>;
+  } = {},
+): {
   useCase: HandleCalendlyWebhookUseCase;
   schedulingRepo: jest.Mocked<SchedulingRepositoryPort>;
   verifier: jest.Mocked<CalendlyWebhookVerifierPort>;
@@ -183,7 +189,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
 
   it('falls back to clinic + email lookup when the tracking token is absent', async () => {
     const { useCase, appointments, leads } = makeUseCase({
-      leads: makeLeads({ findLatestByClinicAndEmail: jest.fn().mockResolvedValue({ leadId: 'lead_fallback' }) }),
+      leads: makeLeads({
+        findLatestByClinicAndEmail: jest.fn().mockResolvedValue({ leadId: 'lead_fallback' }),
+      }),
     });
 
     await useCase.handle(CLINIC_ID, inviteeCreatedBody({ utmContent: undefined }), 'sig');
@@ -197,7 +205,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
 
   it('falls back to email lookup when the tracking token resolves to a different clinic', async () => {
     const { useCase, appointments, leads } = makeUseCase({
-      leads: makeLeads({ findLatestByClinicAndEmail: jest.fn().mockResolvedValue({ leadId: 'lead_fallback' }) }),
+      leads: makeLeads({
+        findLatestByClinicAndEmail: jest.fn().mockResolvedValue({ leadId: 'lead_fallback' }),
+      }),
     });
     const token = `enc(lead_other:${OTHER_CLINIC_ID})`;
 
@@ -233,7 +243,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
 
   it('cancels the appointment and reverts the lead for invitee.canceled, scoped to the clinic', async () => {
     const { useCase, appointments, leads } = makeUseCase({
-      appointments: makeAppointments({ cancelByInviteeUri: jest.fn().mockResolvedValue('lead_abc') }),
+      appointments: makeAppointments({
+        cancelByInviteeUri: jest.fn().mockResolvedValue('lead_abc'),
+      }),
     });
     const token = `enc(lead_abc:${CLINIC_ID})`;
 
@@ -248,7 +260,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
 
   it('cancels and reverts for invitee.canceled even with no tracking token, using the leadId the scoped cancel returns', async () => {
     const { useCase, appointments, leads } = makeUseCase({
-      appointments: makeAppointments({ cancelByInviteeUri: jest.fn().mockResolvedValue('lead_linked') }),
+      appointments: makeAppointments({
+        cancelByInviteeUri: jest.fn().mockResolvedValue('lead_linked'),
+      }),
     });
 
     await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: undefined }), 'sig');
@@ -270,7 +284,11 @@ describe('HandleCalendlyWebhookUseCase', () => {
     });
     const tokenForOtherClinic = `enc(lead_b:${OTHER_CLINIC_ID})`;
 
-    await useCase.handle(CLINIC_ID, inviteeCanceledBody({ utmContent: tokenForOtherClinic }), 'sig');
+    await useCase.handle(
+      CLINIC_ID,
+      inviteeCanceledBody({ utmContent: tokenForOtherClinic }),
+      'sig',
+    );
 
     expect(appointments.cancelByInviteeUri).toHaveBeenCalledWith(
       CLINIC_ID,
@@ -335,7 +353,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
   it('ignores the webhook and writes nothing when the clinic is not connected to Calendly', async () => {
     const { useCase, verifier, appointments, leads } = makeUseCase({
       schedulingRepo: makeSchedulingRepo({
-        getWebhookVerificationState: jest.fn().mockResolvedValue({ provider: 'none', signingKeyEncrypted: null }),
+        getWebhookVerificationState: jest
+          .fn()
+          .mockResolvedValue({ provider: 'none', signingKeyEncrypted: null }),
       }),
     });
 
@@ -363,7 +383,9 @@ describe('HandleCalendlyWebhookUseCase', () => {
 
   it('ignores unhandled event types without writing anything', async () => {
     const { useCase, appointments, leads } = makeUseCase();
-    const body = Buffer.from(JSON.stringify({ event: 'invitee_no_show.created', payload: { uri: 'x' } }));
+    const body = Buffer.from(
+      JSON.stringify({ event: 'invitee_no_show.created', payload: { uri: 'x' } }),
+    );
 
     await expect(useCase.handle(CLINIC_ID, body, 'sig')).resolves.toBeUndefined();
 

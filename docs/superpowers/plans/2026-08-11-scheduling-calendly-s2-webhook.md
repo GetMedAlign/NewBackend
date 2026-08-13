@@ -9,6 +9,7 @@
 **Tech Stack:** NestJS 10, Prisma 7 + adapter-pg, Postgres RLS, Node 24 crypto. Verify: `npm run typecheck`, `npm run lint`, `npm run build`, `npm run openapi`, `npx jest <touched>`.
 
 ## Global Constraints
+
 - Spec: `docs/superpowers/specs/2026-08-11-scheduling-calendly-design.md`. Read before Task 1.
 - Signing key + tokens are stored **encrypted**; decrypt via `EncryptionPort` only inside the verifier/use-case, never expose. No em dashes in code/comments. Keep OpenAPI updated. Reuse the Stripe webhook pattern in `src/modules/billing/**` (`stripe-webhook.controller.ts`, `stripe-webhook-verifier.adapter.ts`, `handle-stripe-webhook.use-case.ts`) for raw-body + verify-first structure.
 - New tables under RLS (mirror an existing `*_rls` migration, e.g. `20260714110000_clinic_portal_rls`). The webhook path is public (no session); it inserts as system with an explicit `clinicId` resolved from the URL, after signature verification.
@@ -54,6 +55,7 @@
 - [ ] **Step 4:** Tests for both list use-cases. Verify typecheck/lint/build/jest. Commit `feat(scheduling): clinic and patient appointment read endpoints`.
 
 ## Self-Review Notes
+
 - Signature verified before any write; unconnected/unknown clinic ignored; idempotent on invitee URI.
 - Appointments under RLS; the public webhook inserts as system with the URL-derived clinicId only after verification.
 - Lead linkage prefers the unforgeable tracking token, falls back to clinic + invitee email.

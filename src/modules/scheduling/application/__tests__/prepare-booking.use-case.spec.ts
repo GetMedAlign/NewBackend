@@ -2,7 +2,10 @@ import { PrepareBookingUseCase } from '../prepare-booking.use-case';
 import type { ClinicRepositoryPort } from '../../../clinics/domain/ports/clinic-repository.port';
 import type { ClinicReadModel } from '../../../clinics/domain/clinic.entity';
 import { ClinicNotFoundError } from '../../../clinics/domain/errors/clinic-not-found.error';
-import type { PatientRepositoryPort, PatientProfile } from '../../../patients/domain/ports/patient-repository.port';
+import type {
+  PatientRepositoryPort,
+  PatientProfile,
+} from '../../../patients/domain/ports/patient-repository.port';
 import type { LeadRepositoryPort } from '../../../leads/domain/ports/lead-repository.port';
 import type { EncryptionPort } from '../../../auth/domain/ports/encryption.port';
 import type { SubmitLeadUseCase } from '../../../leads/application/submit-lead.use-case';
@@ -141,7 +144,9 @@ describe('PrepareBookingUseCase', () => {
   });
 
   it('returns provider "request" with no tracking data when the clinic has not connected Calendly', async () => {
-    clinics.findBySlug.mockResolvedValue(makeClinic({ schedulingProvider: 'none', calendlySchedulingUrl: null }));
+    clinics.findBySlug.mockResolvedValue(
+      makeClinic({ schedulingProvider: 'none', calendlySchedulingUrl: null }),
+    );
 
     const result = await useCase.execute({ userId: USER_ID, slug: SLUG });
 

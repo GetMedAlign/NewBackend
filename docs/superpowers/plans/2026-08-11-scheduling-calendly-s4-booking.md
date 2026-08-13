@@ -7,6 +7,7 @@
 **Repos:** Task 1 = `NewBackend` on `feat/scheduling-calendly`. Tasks 2-4 = `Medalign-frontend` on `feat/scheduling-calendly`.
 
 ## Global Constraints
+
 - Spec: `docs/superpowers/specs/2026-08-11-scheduling-calendly-design.md`.
 - The tracking token is minted by the BACKEND (encrypted with the server key): `EncryptionPort.encrypt(` + "`${leadId}:${clinicId}`" + `)`; the webhook (slice 2) decrypts it and validates the clinicId. The frontend never mints it.
 - No em dashes in code/copy. Keep OpenAPI updated. Reuse existing patterns. No new runtime dependencies (embed Calendly via a plain iframe with prefill query params, not a third-party script).
@@ -59,6 +60,7 @@
 - [ ] **Step 3:** Verify `npm run typecheck` + `npm run build`. Commit `feat(patient): show scheduled appointments in My Consultations`.
 
 ## Self-Review Notes
+
 - The frontend never mints the token; it only passes through what the backend returned.
 - Request-to-book stays fully intact as the fallback.
 - The embed uses an iframe (no new dependency); the server webhook (slice 2) captures the booking via `utm_content`.

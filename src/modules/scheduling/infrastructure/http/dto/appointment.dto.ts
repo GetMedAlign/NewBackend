@@ -34,7 +34,8 @@ export class AppointmentDto {
   @ApiProperty({
     type: String,
     nullable: true,
-    description: "The linked lead's public id, or null if the appointment could not be linked to a lead",
+    description:
+      "The linked lead's public id, or null if the appointment could not be linked to a lead",
   })
   leadId!: string | null;
 }
