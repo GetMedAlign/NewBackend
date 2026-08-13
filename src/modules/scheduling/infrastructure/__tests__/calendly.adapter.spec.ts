@@ -29,6 +29,7 @@ function jsonResponse(status: number, body: unknown) {
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
   };
 }
 

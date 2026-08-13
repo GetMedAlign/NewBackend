@@ -111,7 +111,8 @@ export class CalendlyHttpAdapter implements CalendlyPort {
     });
     if (!response.ok) {
       const requestUrl = `${webhookBaseUrl.replace(/\/$/, '')}/${clinicId}`;
-      const errorBody = await response.text().catch(() => '');
+      const errorBody =
+        typeof response.text === 'function' ? await response.text().catch(() => '') : '';
       this.logger.error(
         `createWebhookSubscription ${response.status} for url=${requestUrl} org=${orgUri} scope=organization :: ${errorBody}`,
       );
