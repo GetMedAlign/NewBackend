@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Optional } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../../infrastructure/config/env.schema';
 import type { CalendlyPort, CalendlyTokens } from '../domain/ports/calendly.port';
@@ -26,6 +26,7 @@ interface CalendlyWebhookResponse {
 /** Real CalendlyPort backed by global fetch. Used only outside tests. */
 @Injectable()
 export class CalendlyHttpAdapter implements CalendlyPort {
+  private readonly logger = new Logger(CalendlyHttpAdapter.name);
   private readonly fetchImpl: typeof fetch;
 
   constructor(
@@ -109,8 +110,13 @@ export class CalendlyHttpAdapter implements CalendlyPort {
       }),
     });
     if (!response.ok) {
+      const requestUrl = `${webhookBaseUrl.replace(/\/$/, '')}/${clinicId}`;
+      const errorBody = await response.text().catch(() => '');
+      this.logger.error(
+        `createWebhookSubscription ${response.status} for url=${requestUrl} org=${orgUri} scope=organization :: ${errorBody}`,
+      );
       throw new InternalServerErrorException(
-        `Calendly createWebhookSubscription failed with status ${response.status}`,
+        `Calendly createWebhookSubscription failed with status ${response.status}: ${errorBody}`,
       );
     }
     const data = (await response.json()) as CalendlyWebhookResponse;
