@@ -4,6 +4,8 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { CryptoModule } from '../../infrastructure/crypto/crypto.module';
 import { LeadsModule } from '../leads/leads.module';
 import { PatientsModule } from '../patients/patients.module';
+import { ClinicsModule } from '../clinics/clinics.module';
+import { AssessmentsModule } from '../assessments/assessments.module';
 import { CALENDLY_PORT } from './domain/ports/calendly.port';
 import { CalendlyHttpAdapter } from './infrastructure/calendly.adapter';
 import { CALENDLY_WEBHOOK_VERIFIER } from './domain/ports/calendly-webhook-verifier.port';
@@ -19,12 +21,21 @@ import { DisconnectSchedulingUseCase } from './application/disconnect-scheduling
 import { HandleCalendlyWebhookUseCase } from './application/handle-calendly-webhook.use-case';
 import { ListClinicAppointmentsUseCase } from './application/list-clinic-appointments.use-case';
 import { ListPatientAppointmentsUseCase } from './application/list-patient-appointments.use-case';
+import { PrepareBookingUseCase } from './application/prepare-booking.use-case';
 import { SchedulingController } from './infrastructure/http/scheduling.controller';
 import { CalendlyWebhookController } from './infrastructure/http/calendly-webhook.controller';
 import { PatientAppointmentsController } from './infrastructure/http/patient-appointments.controller';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, CryptoModule, LeadsModule, PatientsModule],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    CryptoModule,
+    LeadsModule,
+    PatientsModule,
+    ClinicsModule,
+    AssessmentsModule,
+  ],
   controllers: [SchedulingController, CalendlyWebhookController, PatientAppointmentsController],
   providers: [
     {
@@ -50,6 +61,7 @@ import { PatientAppointmentsController } from './infrastructure/http/patient-app
     HandleCalendlyWebhookUseCase,
     ListClinicAppointmentsUseCase,
     ListPatientAppointmentsUseCase,
+    PrepareBookingUseCase,
   ],
   exports: [CALENDLY_PORT, CALENDLY_WEBHOOK_VERIFIER, APPOINTMENT_REPOSITORY],
 })

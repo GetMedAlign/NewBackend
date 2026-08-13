@@ -137,6 +137,7 @@ import { CalendlyCallbackUseCase } from '../src/modules/scheduling/application/c
 import { DisconnectSchedulingUseCase } from '../src/modules/scheduling/application/disconnect-scheduling.use-case';
 import { ListClinicAppointmentsUseCase } from '../src/modules/scheduling/application/list-clinic-appointments.use-case';
 import { ListPatientAppointmentsUseCase } from '../src/modules/scheduling/application/list-patient-appointments.use-case';
+import { PrepareBookingUseCase } from '../src/modules/scheduling/application/prepare-booking.use-case';
 import { CalendlyWebhookController } from '../src/modules/scheduling/infrastructure/http/calendly-webhook.controller';
 import { PatientAppointmentsController } from '../src/modules/scheduling/infrastructure/http/patient-appointments.controller';
 import { HandleCalendlyWebhookUseCase } from '../src/modules/scheduling/application/handle-calendly-webhook.use-case';
@@ -272,6 +273,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(HandleCalendlyWebhookUseCase),
     stubProvider(ListClinicAppointmentsUseCase),
     stubProvider(ListPatientAppointmentsUseCase),
+    stubProvider(PrepareBookingUseCase),
     stubProvider(PATIENT_REPOSITORY),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),

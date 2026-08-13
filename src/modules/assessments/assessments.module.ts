@@ -24,6 +24,6 @@ import { AssessmentsController } from './infrastructure/http/assessments.control
       useClass: PrismaAssessmentRepository,
     },
   ],
-  exports: [ClaimTokenService, ASSESSMENT_REPOSITORY],
+  exports: [ClaimTokenService, ASSESSMENT_REPOSITORY, GetLatestAssessmentUseCase],
 })
 export class AssessmentsModule {}

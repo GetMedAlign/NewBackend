@@ -2598,6 +2598,42 @@
           "patients"
         ]
       }
+    },
+    "/patients/me/booking-context/{slug}": {
+      "get": {
+        "operationId": "PatientAppointmentsController_getBookingContext",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Get the booking context for a clinic (Calendly embed or request-to-book fallback)",
+        "tags": [
+          "patients"
+        ]
+      }
     }
   },
   "info": {
@@ -3989,6 +4025,46 @@
           "clinicId",
           "clinicName",
           "leadId"
+        ]
+      },
+      "BookingContextDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "request",
+              "calendly"
+            ],
+            "description": "Which booking flow the frontend should render"
+          },
+          "schedulingUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Clinic's public Calendly scheduling URL; present only when provider is 'calendly'"
+          },
+          "trackingToken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque encrypted tracking token to pass to Calendly as utm_content; the webhook decrypts it server-side to link the booking to a lead. Never a Calendly OAuth token or signing key."
+          },
+          "inviteeName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Patient's name, to prefill the Calendly invitee form"
+          },
+          "inviteeEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Patient's email, to prefill the Calendly invitee form"
+          }
+        },
+        "required": [
+          "provider",
+          "schedulingUrl",
+          "trackingToken",
+          "inviteeName",
+          "inviteeEmail"
         ]
       }
     }

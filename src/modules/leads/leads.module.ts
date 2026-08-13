@@ -38,6 +38,6 @@ import { LeadsController } from './infrastructure/http/leads.controller';
       useFactory: (): SsrfWebhookSender => new SsrfWebhookSender(),
     },
   ],
-  exports: [LEAD_REPOSITORY],
+  exports: [LEAD_REPOSITORY, SubmitLeadUseCase],
 })
 export class LeadsModule {}
