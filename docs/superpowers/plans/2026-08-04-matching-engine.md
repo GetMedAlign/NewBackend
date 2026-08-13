@@ -54,7 +54,7 @@ Spec: `docs/superpowers/specs/QUEUED-2026-07-31-matching-engine-point-system-tie
   - `scoreLifestyle` (10): SOFT signal, modest baseline (for example 5) for eligible clinics; never excludes. Comment that this is a placeholder.
   - `scorePreferences` (5): timeline-to-start vs `newPatientWait` (reuse the existing wait-time alignment logic, rescaled to 0-5). AM/PM deferred, comment it.
   - `scoreLocation` (10): distance-cap logic. Resolve the cap = `assessment.preferredDistanceMiles ?? 25`. Telehealth pref `yes`: full/partial based on clinic telehealth (distance ignored). `no` (in-person): scaled by distance within the cap (nearer is higher, beyond the cap is 0). `either`: max of the in-person-within-cap score and the telehealth score.
-  Clamp each bucket to its max and the total to 0-100. Round to an integer.
+    Clamp each bucket to its max and the total to 0-100. Round to an integer.
 - [ ] **Step 2:** Add an `isEligible(assessment, clinic, distMiles?): boolean` (or fold into rank): eligible when the fit score is at or above a named floor constant (e.g. `ELIGIBILITY_FLOOR = 40`) OR the clinic offers at least one of the patient's desired/implied services; AND, for in-person-only patients, the clinic is within the distance cap. A clear non-match returns false.
 - [ ] **Step 3:** Replace `recommendation.service.spec.ts` with unit tests for each bucket (full, partial, zero), the total staying 0-100, and `isEligible` true/false cases. Do not keep the old .NET point-value assertions.
 - [ ] **Step 4:** Verify `npm run typecheck`, `npm run lint`, `npm run build`. Commit `feat(recommendations): weighted 0-100 scoring with eligibility gate`.
@@ -80,6 +80,7 @@ Spec: `docs/superpowers/specs/QUEUED-2026-07-31-matching-engine-point-system-tie
 - [ ] **Step 4:** Verify `npm run typecheck`, `npm run lint`, `npm run build`. Commit `feat(recommendations): finalize match DTO docs and regenerate OpenAPI`.
 
 ## Self-Review Notes
+
 - Reasons remain client-side; the DTO gains no tier field (tier never leaves the backend ranking).
 - Preferred distance and tier are optional/defaulted so existing data keeps working (existing clinics default to starter; assessments without a preferred distance default to a 25-mile cap in scoring).
 - AM/PM appointment matching is deliberately deferred pending a client decision on a clinic-side field; timeline-to-start already scores with existing data.
