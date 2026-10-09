@@ -61,15 +61,17 @@ const clinic = (id: string, city: string, services: string[]): RawClinicRecord =
 
 function makeRepo(over: Partial<LocalizationRepositoryPort> = {}): LocalizationRepositoryPort {
   return {
-    loadActiveClinics: jest
-      .fn()
-      .mockResolvedValue([
-        clinic('a', 'Tampa', ['trt']),
-        clinic('b', 'Tampa', ['bhrt']),
-        clinic('c', 'Tampa', ['peptide']),
-        clinic('d', 'Tampa', ['peptide']),
-        clinic('e', 'Tampa', ['rare-code']),
-      ]),
+    loadActiveClinics: jest.fn().mockResolvedValue([
+      clinic('a', 'Tampa', ['trt']),
+      clinic('b', 'Tampa', ['bhrt']),
+      clinic('c', 'Tampa', ['peptide']),
+      clinic('d', 'Tampa', ['peptide']),
+      clinic('e', 'Tampa', ['rare-code']),
+      // Two clinics carry hidden-code, so 'hidden-service' clears minClinics (2)
+      // and can only be excluded by the active-status gate, not the threshold.
+      clinic('f', 'Tampa', ['hidden-code']),
+      clinic('g', 'Tampa', ['hidden-code']),
+    ]),
     getLocations: jest.fn().mockResolvedValue([TAMPA]),
     getLocationBySlug: jest.fn().mockResolvedValue(TAMPA),
     // getServices(false) excludes hidden services, so 'hidden-service' is absent here.
@@ -79,7 +81,7 @@ function makeRepo(over: Partial<LocalizationRepositoryPort> = {}): LocalizationR
       'hormone-optimization': ['trt', 'bhrt'],
       'longevity-anti-aging': ['peptide'],
       'below-threshold-service': ['rare-code'],
-      'hidden-service': ['rare-code'],
+      'hidden-service': ['hidden-code'],
     }),
     getMinClinics: jest.fn().mockResolvedValue(2),
     insertNotify: jest.fn().mockResolvedValue(undefined),
