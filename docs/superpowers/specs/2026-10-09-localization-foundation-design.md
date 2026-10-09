@@ -137,7 +137,7 @@ Publish gates (uniform threshold `minClinics`, default 2):
 
 Rules:
 
-- **Telehealth is excluded from every publish gate.** It only augments a published city page's listing. This preserves "no empty pages": a city served only by telehealth stays below threshold and shows the coming-soon state.
+- **Telehealth counts where the clinic is physically located, not where it's excluded.** The city/combo gates count clinics physically in the city, including in-city clinics that also offer telehealth; an out-of-city telehealth clinic does not count toward that city's gate and is instead surfaced via `telehealthForCity`. The statewide service gate counts all active clinics offering the service, telehealth included. This preserves "no empty pages": a city served only by out-of-city telehealth stays below threshold and shows the coming-soon state.
 - **Combo sparsity:** when a combo has local clinics but fewer than 3, nearby combos (via `near_slugs`) are offered as supplementary. This is presentation data returned by the combo use-case, not a change to the gate.
 - `coverageMatrix()` returns, for each (service, city): local combo count and a state of `published | below_threshold | none`, plus per-city and per-service published flags and summary counts.
 

@@ -6,6 +6,15 @@ import type {
   ServiceRecord,
 } from './coverage.types';
 
+/**
+ * Telehealth semantics: `city` is a clinic's physical-address city; `telehealth` means it
+ * ALSO offers remote visits. The CITY gate (`cityPublished`) and COMBO gate count clinics
+ * PHYSICALLY in the city (`city === slug`) - an in-city clinic that also offers telehealth
+ * IS a real local clinic and counts; an out-of-city telehealth clinic does not count toward
+ * a city's gate and is surfaced separately via `telehealthForCity`. The SERVICE gate
+ * (`servicePublished`) is statewide, so it counts ALL active clinics offering the service,
+ * including telehealth providers regardless of their physical city.
+ */
 @Injectable()
 export class CoverageService {
   private norm(s: string): string {

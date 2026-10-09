@@ -49,12 +49,22 @@ describe('CoverageService', () => {
     expect(s.resolveCitySlug('Orlando', locs)).toBeNull();
   });
 
-  it('localClinicsInCity excludes telehealth-only out-of-city clinics', () => {
+  it('localClinicsInCity counts in-city clinics (including telehealth ones) and excludes out-of-city telehealth clinics', () => {
     const clinics = [
       clinic({ id: 'a', city: 'tampa' }),
-      clinic({ id: 'b', city: 'miami', telehealth: true }),
+      clinic({ id: 'b', city: 'tampa', telehealth: true }),
+      clinic({ id: 'c', city: 'miami', telehealth: true }),
     ];
-    expect(s.localClinicsInCity(clinics, 'tampa').map((c) => c.id)).toEqual(['a']);
+    expect(s.localClinicsInCity(clinics, 'tampa').map((c) => c.id)).toEqual(['a', 'b']);
+  });
+
+  it('telehealthForCity returns active telehealth clinics physically outside the city, not in-city telehealth or non-telehealth out-of-city clinics', () => {
+    const clinics = [
+      clinic({ id: 'a', city: 'miami', telehealth: true }), // out-of-city + telehealth -> surfaced
+      clinic({ id: 'b', city: 'miami', telehealth: false }), // out-of-city but not telehealth -> excluded
+      clinic({ id: 'c', city: 'tampa', telehealth: true }), // in-city telehealth -> already local, excluded here
+    ];
+    expect(s.telehealthForCity(clinics, 'tampa').map((c) => c.id)).toEqual(['a']);
   });
 
   it('clinicsForService matches any mapped code', () => {
@@ -65,7 +75,7 @@ describe('CoverageService', () => {
     expect(s.clinicsForService(clinics, codes).map((c) => c.id)).toEqual(['a']);
   });
 
-  it('cityPublished requires status available AND local count >= min (telehealth excluded)', () => {
+  it('cityPublished requires status available AND counts only clinics physically in the city >= min', () => {
     const clinics = [
       clinic({ id: 'a', city: 'tampa' }),
       clinic({ id: 'b', city: 'miami', telehealth: true }),
@@ -73,6 +83,27 @@ describe('CoverageService', () => {
     expect(s.cityPublished(loc(), clinics, 1)).toBe(true);
     expect(s.cityPublished(loc(), clinics, 2)).toBe(false);
     expect(s.cityPublished(loc({ status: 'coming_soon' }), clinics, 1)).toBe(false);
+  });
+
+  it('cityPublished counts an in-city telehealth clinic toward the gate (not skipped), including strictly-above-threshold', () => {
+    const clinics = [
+      clinic({ id: 'a', city: 'tampa', telehealth: false }),
+      clinic({ id: 'b', city: 'tampa', telehealth: true }),
+    ];
+    // If in-city telehealth were wrongly excluded, the count would be 1 and this would be false.
+    expect(s.cityPublished(loc(), clinics, 2)).toBe(true);
+    // Strictly above threshold: count (2) > min (1).
+    expect(s.cityPublished(loc(), clinics, 1)).toBe(true);
+  });
+
+  it('cityPublished excludes an out-of-city telehealth clinic, which telehealthForCity surfaces separately', () => {
+    const clinics = [
+      clinic({ id: 'a', city: 'tampa' }),
+      clinic({ id: 'b', city: 'miami', telehealth: true }),
+      clinic({ id: 'c', city: 'miami', telehealth: false }),
+    ];
+    expect(s.cityPublished(loc(), clinics, 2)).toBe(false);
+    expect(s.telehealthForCity(clinics, 'tampa').map((c) => c.id)).toEqual(['b']);
   });
 
   it('servicePublished requires status active AND count >= min', () => {
@@ -83,6 +114,15 @@ describe('CoverageService', () => {
     expect(s.servicePublished(svc(), clinics, codes, 2)).toBe(true);
     expect(s.servicePublished(svc({ status: 'hidden' }), clinics, codes, 2)).toBe(false);
     expect(s.servicePublished(svc(), clinics, codes, 3)).toBe(false);
+  });
+
+  it('servicePublished counts telehealth providers toward the statewide gate regardless of physical city', () => {
+    const clinics = [
+      clinic({ id: 'a', city: 'tampa', services: ['trt'], telehealth: false }),
+      clinic({ id: 'b', city: 'miami', services: ['bhrt'], telehealth: true }),
+    ];
+    // If telehealth were excluded from the statewide gate, the count would be 1 and this would be false.
+    expect(s.servicePublished(svc(), clinics, codes, 2)).toBe(true);
   });
 
   it('comboPublished requires available city, active service, and local matching count >= min', () => {
