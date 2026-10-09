@@ -16,6 +16,7 @@ export interface ClinicDirectoryFilter {
   telehealth?: boolean;
   serviceCode?: string;
   search?: string;
+  city?: string;
   sortBy: ClinicDirectorySortBy;
   page: number;
   pageSize: number;

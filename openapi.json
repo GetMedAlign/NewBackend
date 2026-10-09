@@ -635,6 +635,14 @@
             }
           },
           {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "zipCode",
             "required": false,
             "in": "query",

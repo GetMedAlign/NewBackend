@@ -29,6 +29,7 @@ export class ClinicsController {
   @ApiQuery({ name: 'telehealth', required: false, type: Boolean })
   @ApiQuery({ name: 'serviceCode', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'city', required: false })
   @ApiQuery({ name: 'zipCode', required: false })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['rating', 'name', 'reviews', 'distance'] })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -40,6 +41,7 @@ export class ClinicsController {
     @Query('telehealth') telehealth?: string,
     @Query('serviceCode') serviceCode?: string,
     @Query('search') search?: string,
+    @Query('city') city?: string,
     @Query('zipCode') zipCode?: string,
     @Query('sortBy') sortBy?: string,
     @Query('page') page?: string,
@@ -51,6 +53,7 @@ export class ClinicsController {
       telehealth,
       serviceCode,
       search,
+      city,
       zipCode,
       sortBy,
       page,
