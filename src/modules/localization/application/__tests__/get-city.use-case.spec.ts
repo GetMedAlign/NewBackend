@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { GetCityUseCase } from '../get-city.use-case';
 import { CoverageService } from '../../domain/coverage.service';
 import type { LocalizationRepositoryPort } from '../../domain/ports/localization-repository.port';
-import type { LocationRecord, RawClinicRecord } from '../../domain/coverage.types';
+import type { LocationRecord, RawClinicRecord, ServiceRecord } from '../../domain/coverage.types';
 
 const TAMPA: LocationRecord = {
   slug: 'tampa',
@@ -16,6 +16,34 @@ const TAMPA: LocationRecord = {
   seoTitle: 'Specialized Clinics in Tampa, FL | MedAlign',
   seoDescription: 'desc',
   displayOrder: 0,
+};
+
+const CLEARWATER: LocationRecord = {
+  slug: 'clearwater',
+  name: 'Clearwater',
+  stateCode: 'FL',
+  status: 'available',
+  area: '',
+  intro: '',
+  aliases: [],
+  nearSlugs: [],
+  seoTitle: '',
+  seoDescription: '',
+  displayOrder: 1,
+};
+
+const UNPUBLISHED_NEIGHBOR: LocationRecord = {
+  slug: 'coming-soon-neighbor',
+  name: 'Coming Soon Neighbor',
+  stateCode: 'FL',
+  status: 'coming_soon',
+  area: '',
+  intro: '',
+  aliases: [],
+  nearSlugs: [],
+  seoTitle: '',
+  seoDescription: '',
+  displayOrder: 2,
 };
 const clinic = (id: string, city: string, services: string[]): RawClinicRecord => ({
   id,
@@ -68,5 +96,52 @@ describe('GetCityUseCase', () => {
     await expect(
       new GetCityUseCase(repo, new CoverageService()).execute('nowhere'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('excludes an unpublished (not-yet-available) neighbor from nearbyCities', async () => {
+    const TAMPA_WITH_NEAR: LocationRecord = {
+      ...TAMPA,
+      nearSlugs: ['clearwater', 'coming-soon-neighbor'],
+    };
+    const repo = makeRepo({
+      getLocationBySlug: jest.fn().mockResolvedValue(TAMPA_WITH_NEAR),
+      getLocations: jest
+        .fn()
+        .mockResolvedValue([TAMPA_WITH_NEAR, CLEARWATER, UNPUBLISHED_NEIGHBOR]),
+      loadActiveClinics: jest
+        .fn()
+        .mockResolvedValue([
+          clinic('a', 'Tampa', ['trt']),
+          clinic('b', 'Tampa', ['bhrt']),
+          clinic('c', 'Clearwater', ['trt']),
+          clinic('d', 'Clearwater', ['bhrt']),
+          clinic('e', 'Coming Soon Neighbor', ['trt']),
+          clinic('f', 'Coming Soon Neighbor', ['bhrt']),
+        ]),
+    });
+    const result = await new GetCityUseCase(repo, new CoverageService()).execute('tampa');
+
+    expect(result.nearbyCities.some((n) => n.slug === 'clearwater')).toBe(true);
+    expect(result.nearbyCities.some((n) => n.slug === 'coming-soon-neighbor')).toBe(false);
+  });
+
+  it('excludes a service with zero matching clinics from the services list', async () => {
+    const ZERO_MATCH_SERVICE: ServiceRecord = {
+      slug: 'zero-match-service',
+      name: 'Zero Match Service',
+      description: '',
+      status: 'active',
+      relatedSlugs: [],
+      seoTitle: '',
+      seoDescription: '',
+      displayOrder: 0,
+    };
+    const repo = makeRepo({
+      getServices: jest.fn().mockResolvedValue([ZERO_MATCH_SERVICE]),
+      getServiceCodeMap: jest.fn().mockResolvedValue({ 'zero-match-service': ['no-such-code'] }),
+    });
+    const result = await new GetCityUseCase(repo, new CoverageService()).execute('tampa');
+
+    expect(result.services.some((s) => s.slug === 'zero-match-service')).toBe(false);
   });
 });

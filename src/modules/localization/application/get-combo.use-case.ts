@@ -32,9 +32,14 @@ export class GetComboUseCase {
     const local = this.coverage.clinicsForCombo(clinics, location.slug, codes);
     const published = this.coverage.comboPublished(location, service, clinics, codes, minClinics);
 
+    const availableNear = new Set(
+      locations.filter((l) => l.status === 'available').map((l) => l.slug),
+    );
     const nearby =
       local.length < 3
-        ? location.nearSlugs.flatMap((ns) => this.coverage.clinicsForCombo(clinics, ns, codes))
+        ? location.nearSlugs
+            .filter((ns) => availableNear.has(ns))
+            .flatMap((ns) => this.coverage.clinicsForCombo(clinics, ns, codes))
         : [];
 
     return {

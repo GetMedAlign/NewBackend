@@ -31,4 +31,24 @@ describe('CaptureNotifyUseCase', () => {
     expect(result).toEqual({ ok: true });
     expect(repo.insertNotify).toHaveBeenCalledWith('a@b.com', 'orlando');
   });
+
+  it('rejects an email longer than 320 characters', async () => {
+    const localPart = 'a'.repeat(315);
+    const tooLongEmail = `${localPart}@b.com`; // > 320 chars total
+    expect(tooLongEmail.length).toBeGreaterThan(320);
+
+    await expect(
+      new CaptureNotifyUseCase(makeRepo()).execute({ email: tooLongEmail, citySlug: null }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('normalizes a mixed-case/whitespace email before storing it', async () => {
+    const repo = makeRepo();
+    const result = await new CaptureNotifyUseCase(repo).execute({
+      email: '  A@B.CoM  ',
+      citySlug: 'orlando',
+    });
+    expect(result).toEqual({ ok: true });
+    expect(repo.insertNotify).toHaveBeenCalledWith('a@b.com', 'orlando');
+  });
 });

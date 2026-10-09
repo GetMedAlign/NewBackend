@@ -18,9 +18,10 @@ export class GetServiceUseCase {
     const service = await this.repo.getServiceBySlug(slug);
     if (!service) throw new NotFoundException(`No service '${slug}'`);
 
-    const [raws, locations, codeMap, minClinics] = await Promise.all([
+    const [raws, locations, services, codeMap, minClinics] = await Promise.all([
       this.repo.loadActiveClinics(),
       this.repo.getLocations(true),
+      this.repo.getServices(false),
       this.repo.getServiceCodeMap(),
       this.repo.getMinClinics(),
     ]);
@@ -28,6 +29,7 @@ export class GetServiceUseCase {
     const codes = codeMap[service.slug] ?? [];
     const matching = this.coverage.clinicsForService(clinics, codes);
     const published = this.coverage.servicePublished(service, clinics, codes, minClinics);
+    const nameBySlug = new Map(services.map((s) => [s.slug, s.name]));
 
     const cities: NamedCountDto[] = locations
       .filter((l) => l.status === 'available')
@@ -43,11 +45,11 @@ export class GetServiceUseCase {
         const relCodes = codeMap[rs] ?? [];
         return {
           slug: rs,
-          name: rs,
+          name: nameBySlug.get(rs) ?? rs,
           count: this.coverage.clinicsForService(clinics, relCodes).length,
         };
       })
-      .filter((x) => x.count >= minClinics);
+      .filter((x) => nameBySlug.has(x.slug) && x.count >= minClinics);
 
     return {
       slug: service.slug,
