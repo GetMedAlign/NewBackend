@@ -25,6 +25,7 @@ export interface GetClinicDirectoryQuery {
   telehealth?: string;
   serviceCode?: string;
   search?: string;
+  city?: string;
   zipCode?: string;
   sortBy?: string;
   page?: string;
@@ -65,6 +66,7 @@ export class GetClinicDirectoryUseCase {
       telehealth: parseBooleanOr(query.telehealth, undefined),
       serviceCode: nonEmpty(query.serviceCode),
       search: nonEmpty(query.search),
+      city: nonEmpty(query.city),
       sortBy,
       page,
       pageSize,

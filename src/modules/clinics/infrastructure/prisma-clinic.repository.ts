@@ -173,6 +173,9 @@ export class PrismaClinicRepository implements ClinicRepositoryPort {
     if (filter.search !== undefined) {
       conditions.push(Prisma.sql`c.name ILIKE ${'%' + filter.search + '%'}`);
     }
+    if (filter.city !== undefined) {
+      conditions.push(Prisma.sql`lower(c.city) = lower(${filter.city})`);
+    }
 
     const whereSql = Prisma.join(conditions, ' AND ');
 

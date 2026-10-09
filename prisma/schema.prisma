@@ -541,3 +541,100 @@ model AdminNote {
   @@index([clinicId, createdAt(sort: Desc)], map: "admin_notes_clinic_created_idx")
   @@map("admin_notes")
 }
+
+model Location {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String   @unique
+  name            String
+  stateCode       String   @map("state_code")
+  status          String   @default("hidden")
+  area            String   @default("")
+  intro           String   @default("")
+  seoTitle        String   @default("") @map("seo_title")
+  seoDescription  String   @default("") @map("seo_description")
+  displayOrder    Int      @default(0) @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  aliases   LocationAlias[]
+  nearCities LocationNear[]
+
+  @@map("location")
+}
+
+model LocationAlias {
+  locationId String @map("location_id") @db.Uuid
+  alias      String
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, alias])
+  @@map("location_alias")
+}
+
+model LocationNear {
+  locationId   String @map("location_id") @db.Uuid
+  nearSlug     String @map("near_slug")
+  displayOrder Int    @default(0) @map("display_order")
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, nearSlug])
+  @@map("location_near")
+}
+
+model MarketingService {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  name           String
+  description    String   @default("")
+  status         String   @default("active")
+  seoTitle       String   @default("") @map("seo_title")
+  seoDescription String   @default("") @map("seo_description")
+  displayOrder   Int      @default(0) @map("display_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  codes   MarketingServiceCode[]
+  related MarketingServiceRelated[]
+
+  @@map("marketing_service")
+}
+
+model MarketingServiceCode {
+  marketingServiceId String @map("marketing_service_id") @db.Uuid
+  serviceCode        String @map("service_code")
+
+  service MarketingService @relation(fields: [marketingServiceId], references: [id], onDelete: Cascade)
+
+  @@id([marketingServiceId, serviceCode])
+  @@map("marketing_service_code")
+}
+
+model MarketingServiceRelated {
+  marketingServiceId String @map("marketing_service_id") @db.Uuid
+  relatedSlug        String @map("related_slug")
+  displayOrder       Int    @default(0) @map("display_order")
+
+  service MarketingService @relation(fields: [marketingServiceId], references: [id], onDelete: Cascade)
+
+  @@id([marketingServiceId, relatedSlug])
+  @@map("marketing_service_related")
+}
+
+model LocalizationSetting {
+  id         String   @id @default("default")
+  minClinics Int      @default(2) @map("min_clinics")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("localization_setting")
+}
+
+model LocationNotify {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String
+  citySlug  String?  @map("city_slug")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("location_notify")
+}
