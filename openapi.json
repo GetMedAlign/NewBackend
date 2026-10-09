@@ -2634,6 +2634,205 @@
           "patients"
         ]
       }
+    },
+    "/localization/cities": {
+      "get": {
+        "operationId": "LocalizationController_listCities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List non-hidden Florida cities with publish state",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/cities/{slug}": {
+      "get": {
+        "operationId": "LocalizationController_cityDetail",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "City detail (clinics, services, nearby, SEO meta)",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/services": {
+      "get": {
+        "operationId": "LocalizationController_listServices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List active marketing services with publish state",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/services/{slug}": {
+      "get": {
+        "operationId": "LocalizationController_serviceDetail",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Service detail (clinics, cities, related, SEO meta)",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/combo/{city}/{service}": {
+      "get": {
+        "operationId": "LocalizationController_comboDetail",
+        "parameters": [
+          {
+            "name": "city",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "service",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComboDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "City + service combo detail",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/coverage": {
+      "get": {
+        "operationId": "LocalizationController_coverage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Coverage matrix + threshold (drives prerender list and sitemap)",
+        "tags": [
+          "localization"
+        ]
+      }
+    },
+    "/localization/notify": {
+      "post": {
+        "operationId": "LocalizationController_notify",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotifyRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotifyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Capture a coming-soon notify email",
+        "tags": [
+          "localization"
+        ]
+      }
     }
   },
   "info": {
@@ -4065,6 +4264,405 @@
           "trackingToken",
           "inviteeName",
           "inviteeEmail"
+        ]
+      },
+      "CityListItemDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "clinicCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "status",
+          "published",
+          "clinicCount"
+        ]
+      },
+      "CityListDto": {
+        "type": "object",
+        "properties": {
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CityListItemDto"
+            }
+          }
+        },
+        "required": [
+          "cities"
+        ]
+      },
+      "ClinicListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "telehealth": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "services",
+          "telehealth"
+        ]
+      },
+      "NamedCountDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "count"
+        ]
+      },
+      "MetaDto": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "robots": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "title",
+          "description",
+          "robots"
+        ]
+      },
+      "CityDetailDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "area": {
+            "type": "string"
+          },
+          "intro": {
+            "type": "string"
+          },
+          "clinics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicListItemDto"
+            }
+          },
+          "telehealthClinics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicListItemDto"
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedCountDto"
+            }
+          },
+          "nearbyCities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedCountDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaDto"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "status",
+          "published",
+          "area",
+          "intro",
+          "clinics",
+          "telehealthClinics",
+          "services",
+          "nearbyCities",
+          "meta"
+        ]
+      },
+      "ServiceListItemDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "cityCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "description",
+          "published",
+          "cityCount"
+        ]
+      },
+      "ServiceListDto": {
+        "type": "object",
+        "properties": {
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceListItemDto"
+            }
+          }
+        },
+        "required": [
+          "services"
+        ]
+      },
+      "ServiceDetailDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "clinics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicListItemDto"
+            }
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedCountDto"
+            }
+          },
+          "relatedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedCountDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaDto"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "description",
+          "published",
+          "clinics",
+          "cities",
+          "relatedServices",
+          "meta"
+        ]
+      },
+      "ComboDetailDto": {
+        "type": "object",
+        "properties": {
+          "citySlug": {
+            "type": "string"
+          },
+          "serviceSlug": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "clinics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicListItemDto"
+            }
+          },
+          "nearbyClinics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClinicListItemDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MetaDto"
+          }
+        },
+        "required": [
+          "citySlug",
+          "serviceSlug",
+          "published",
+          "clinics",
+          "nearbyClinics",
+          "meta"
+        ]
+      },
+      "CoverageCellDto": {
+        "type": "object",
+        "properties": {
+          "citySlug": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "citySlug",
+          "count",
+          "state"
+        ]
+      },
+      "CoverageRowDto": {
+        "type": "object",
+        "properties": {
+          "serviceSlug": {
+            "type": "string"
+          },
+          "serviceName": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageCellDto"
+            }
+          }
+        },
+        "required": [
+          "serviceSlug",
+          "serviceName",
+          "published",
+          "cells"
+        ]
+      },
+      "CoverageDto": {
+        "type": "object",
+        "properties": {
+          "minClinics": {
+            "type": "number"
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CityListItemDto"
+            }
+          },
+          "matrix": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageRowDto"
+            }
+          }
+        },
+        "required": [
+          "minClinics",
+          "cities",
+          "matrix"
+        ]
+      },
+      "NotifyRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "you@example.com"
+          },
+          "citySlug": {
+            "type": "string",
+            "example": "orlando"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "NotifyResponseDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
         ]
       }
     }

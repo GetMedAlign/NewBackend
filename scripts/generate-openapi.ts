@@ -142,6 +142,14 @@ import { CalendlyWebhookController } from '../src/modules/scheduling/infrastruct
 import { PatientAppointmentsController } from '../src/modules/scheduling/infrastructure/http/patient-appointments.controller';
 import { HandleCalendlyWebhookUseCase } from '../src/modules/scheduling/application/handle-calendly-webhook.use-case';
 import { PATIENT_REPOSITORY } from '../src/modules/patients/domain/ports/patient-repository.port';
+import { LocalizationController } from '../src/modules/localization/infrastructure/http/localization.controller';
+import { GetCitiesUseCase } from '../src/modules/localization/application/get-cities.use-case';
+import { GetCityUseCase } from '../src/modules/localization/application/get-city.use-case';
+import { GetServicesUseCase } from '../src/modules/localization/application/get-services.use-case';
+import { GetServiceUseCase } from '../src/modules/localization/application/get-service.use-case';
+import { GetComboUseCase } from '../src/modules/localization/application/get-combo.use-case';
+import { GetCoverageUseCase } from '../src/modules/localization/application/get-coverage.use-case';
+import { CaptureNotifyUseCase } from '../src/modules/localization/application/capture-notify.use-case';
 
 type InjectionToken = string | symbol | Type<unknown> | Abstract<unknown>;
 
@@ -189,6 +197,7 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     SchedulingController,
     CalendlyWebhookController,
     PatientAppointmentsController,
+    LocalizationController,
   ],
   providers: [
     // Stub every use-case the controller injects
@@ -275,6 +284,13 @@ const stubFilter = { catch: (_e: unknown, _h: unknown) => undefined as any };
     stubProvider(ListPatientAppointmentsUseCase),
     stubProvider(PrepareBookingUseCase),
     stubProvider(PATIENT_REPOSITORY),
+    stubProvider(GetCitiesUseCase),
+    stubProvider(GetCityUseCase),
+    stubProvider(GetServicesUseCase),
+    stubProvider(GetServiceUseCase),
+    stubProvider(GetComboUseCase),
+    stubProvider(GetCoverageUseCase),
+    stubProvider(CaptureNotifyUseCase),
     stubProvider(GenerateInvoicesJob),
     stubProvider(SuspendOverdueAccountsJob),
     // RunBillingJobService exposes `run(jobName, actor)`, not `execute()`, so
